@@ -307,9 +307,8 @@
 	},
 /area/shuttle/tornado)
 "tg" = (
-/turf/closed/shuttle/dropship3/tornado{
-	icon_state = "97a";
-	opacity = 0
+/turf/closed/shuttle/tornado/transparent{
+	icon_state = "97a"
 	},
 /area/shuttle/tornado)
 "vD" = (
@@ -383,9 +382,8 @@
 /turf/open/shuttle/dropship/medium_grey_single_wide_up_to_down,
 /area/shuttle/tornado)
 "CM" = (
-/turf/closed/shuttle/dropship3/tornado{
-	icon_state = "89b";
-	opacity = 0
+/turf/closed/shuttle/tornado/transparent{
+	icon_state = "89b"
 	},
 /area/shuttle/tornado)
 "DU" = (
@@ -452,9 +450,8 @@
 	},
 /area/shuttle/tornado)
 "JK" = (
-/turf/closed/shuttle/dropship3/tornado{
-	icon_state = "86b";
-	opacity = 0
+/turf/closed/shuttle/tornado/transparent{
+	icon_state = "86b"
 	},
 /area/shuttle/tornado)
 "JM" = (
@@ -558,9 +555,8 @@
 /turf/open/shuttle/dropship/light_grey_single_wide_up_to_down,
 /area/shuttle/tornado)
 "Pf" = (
-/turf/closed/shuttle/dropship3/tornado{
-	icon_state = "89a";
-	opacity = 0
+/turf/closed/shuttle/tornado/transparent{
+	icon_state = "89a"
 	},
 /area/shuttle/tornado)
 "QE" = (
@@ -632,9 +628,8 @@
 	},
 /area/shuttle/tornado)
 "XM" = (
-/turf/closed/shuttle/dropship3/tornado{
-	icon_state = "86a";
-	opacity = 0
+/turf/closed/shuttle/tornado/transparent{
+	icon_state = "86a"
 	},
 /area/shuttle/tornado)
 "Yw" = (
