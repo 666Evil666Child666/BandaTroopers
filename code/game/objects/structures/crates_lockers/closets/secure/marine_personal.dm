@@ -11,6 +11,8 @@
 	var/y_to_linked_spawn_turf
 	var/turf/linked_spawn_turf
 
+	var/need_check_content = TRUE // SS220 EDIT - fixes - переменная для единоразовой проверки контента
+
 /obj/structure/closet/secure_closet/marine_personal/get_examine_text(mob/user)
 	. = ..()
 	. += SPAN_NOTICE("It has a name tag[owner ? ": [owner]." : ". They are still in hypersleep..."]")
@@ -31,6 +33,17 @@
 
 /obj/structure/closet/secure_closet/marine_personal/allowed(mob/M)
 	if(owner == M.real_name)
+		// SS220 EDIT - START - Squad Frequency Fix
+		if(need_check_content && ishuman(M))
+			var/mob/living/carbon/human/H = M
+			if(H.assigned_squad)
+				var/found_headset = FALSE // На случай если не найдем и надо будет искать еще раз
+				for(var/obj/item/device/radio/headset/headset in contents)
+					headset.set_frequency(H.assigned_squad.radio_freq)
+					found_headset = TRUE
+				if(found_headset)
+					need_check_content = FALSE
+		// SS220 EDIT - END - Squad Frequency Fix
 		return TRUE
 	return FALSE
 
@@ -39,13 +52,8 @@
 /obj/structure/closet/secure_closet/marine_personal/proc/spawn_gear()
 	new /obj/item/clothing/under/marine(src)
 	new /obj/item/clothing/shoes/marine/knife(src)
-	// SS220 EDIT - START - Squad Frequency Fix
-	var/obj/item/device/radio/headset/headset = new /obj/item/device/radio/headset/almayer/marine/solardevils(src)
-	if(owner && ishuman(owner))
-		var/mob/living/carbon/human/H = owner
-		var/datum/squad/squad = H.assigned_squad
-		headset.frequency = squad.radio_freq
-	// SS220 EDIT - END - Squad Frequency Fix
+	new /obj/item/device/radio/headset/almayer/marine/solardevils(src)
+	need_check_content = TRUE // SS220 EDIT
 
 /obj/structure/closet/secure_closet/marine_personal/rifleman
 	job = JOB_SQUAD_MARINE
