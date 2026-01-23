@@ -497,9 +497,14 @@ GLOBAL_LIST_EMPTY(personal_closets)
 		else if(new_human.job != closet.job)
 			continue
 
+		// SS220 EDIT - START
+		if(!closet.is_correct_squad(new_human))
+			continue
+		// SS220 EDIT - END
+
 		closet.owner = new_human.real_name
 		closet_to_spawn_in = closet
-		closet_to_spawn_in.name = "[closet_to_spawn_in.owner]'s personal locker"
+		closet_to_spawn_in.name = "личный шкафчик [closet_to_spawn_in.owner]" // SS220 EDIT TRANSLATE
 		break
 	if(!closet_to_spawn_in)
 		load_vanity(new_human, mob_client)
