@@ -5,8 +5,16 @@
 /obj/structure/closet/secure_closet/marine_personal/proc/is_correct_squad(mob/living/carbon/human/H)
 	if(!squad_type)
 		return TRUE
-	if(H.assigned_squad && H.assigned_squad.name == squad_type)
+	if(!H.assigned_squad)
+		return FALSE
+	if(H.assigned_squad.name == squad_type)
 		return TRUE
+
+	// Отдельная проверка для первого сквада
+	if(squad_type == SQUAD_MARINE_1)
+		// Так как связаны с ренеймом платунов
+		if(H.assigned_squad.name == GLOB.main_platoon_name)
+			return TRUE
 	return FALSE
 
 
