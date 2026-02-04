@@ -167,13 +167,10 @@
 	return TRUE
 
 /datum/human_ai_brain/proc/add_adjacent_turf(list/path)
-	var/list/tempPath = path
-	for(var/turf/tile in path)
-		tempPath += tile
-		for(var/turf/adjacent in tile.AdjacentTurfs())
-			if(!(adjacent in path))
-				tempPath += adjacent
-	return tempPath
+    var/list/result = path.Copy()
+    for(var/turf/tile in path)
+        result |= tile.AdjacentTurfs()
+    return result
 
 
 
