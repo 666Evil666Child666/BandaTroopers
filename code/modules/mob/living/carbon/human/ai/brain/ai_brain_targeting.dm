@@ -151,8 +151,9 @@
 
 /// Given a target, checks if there are any (not laying down) friendlies in a line between the AI and the target
 /datum/human_ai_brain/proc/friendly_check(atom/target)
-	var/list/turf_list = get_line(get_turf(tied_human), get_turf(target))
+	var/list/turf_list = get_line(get_turf(tied_human), get_turf(target), FALSE)
 	turf_list.Cut(1, 2) // starting turf
+	turf_list = add_adjacent_turf(turf_list)
 	for(var/turf/tile in turf_list)
 		if(istype(tile, /turf/closed))
 			return TRUE
@@ -164,5 +165,17 @@
 			if(faction_check(possible_friendly))
 				return FALSE
 	return TRUE
+
+/datum/human_ai_brain/proc/add_adjacent_turf(list/path)
+	var/list/tempPath = path
+	for(var/turf/tile in path)
+		tempPath += tile
+		for(var/turf/adjacent in tile.AdjacentTurfs())
+			if(!(adjacent in path))
+				tempPath += adjacent
+	return tempPath
+
+
+
 
 #undef EXTRA_CHECK_DISTANCE_MULTIPLIER
