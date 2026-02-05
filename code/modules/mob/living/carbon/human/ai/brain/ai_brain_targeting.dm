@@ -170,7 +170,7 @@
 /datum/human_ai_brain/proc/add_adjacent_turf(list/path)
 	var/list/result = path.Copy()
 	for(var/turf/tile in path)
-    	result |= tile.AdjacentTurfs()
+		result |= tile.AdjacentTurfs()
 	return result
 // SS220 EDIT AI - END
 
