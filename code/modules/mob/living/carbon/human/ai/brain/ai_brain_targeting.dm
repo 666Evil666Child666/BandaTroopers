@@ -151,9 +151,9 @@
 
 /// Given a target, checks if there are any (not laying down) friendlies in a line between the AI and the target
 /datum/human_ai_brain/proc/friendly_check(atom/target)
-	var/list/turf_list = get_line(get_turf(tied_human), get_turf(target), FALSE)
+	var/list/turf_list = get_line(get_turf(tied_human), get_turf(target), FALSE) // SS220 EDIT AI
 	turf_list.Cut(1, 2) // starting turf
-	turf_list = add_adjacent_turf(turf_list)
+	turf_list = add_adjacent_turf(turf_list) // SS220 EDIT AI
 	for(var/turf/tile in turf_list)
 		if(istype(tile, /turf/closed))
 			return TRUE
@@ -166,13 +166,12 @@
 				return FALSE
 	return TRUE
 
+// SS220 EDIT AI - START
 /datum/human_ai_brain/proc/add_adjacent_turf(list/path)
-    var/list/result = path.Copy()
-    for(var/turf/tile in path)
-        result |= tile.AdjacentTurfs()
-    return result
-
-
-
+	var/list/result = path.Copy()
+	for(var/turf/tile in path)
+    	result |= tile.AdjacentTurfs()
+	return result
+// SS220 EDIT AI - END
 
 #undef EXTRA_CHECK_DISTANCE_MULTIPLIER
