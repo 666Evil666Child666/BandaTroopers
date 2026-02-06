@@ -40,36 +40,31 @@
 
 /// Returns TRUE if the target is friendly/neutral to us
 /// This is THE hottest proc that Human AI invokes, so please be careful in adding more to it
+// SS220 EDIT AI - START
 /datum/human_ai_brain/proc/faction_check(atom/target)
+	var/my_faction = tied_human.faction
+	var/target_faction
+
 	if(ismob(target))
 		var/mob/mob_target = target
-
-		if(mob_target.faction == tied_human.faction)
-			return TRUE
-
-		if(mob_target.faction in friendly_factions)
-			return TRUE
-
-		if(mob_target.faction in neutral_factions)
-			return TRUE
-	if(istype(target, /obj/vehicle/multitile))
+		target_faction = mob_target.faction
+	else if(istype(target, /obj/vehicle/multitile))
 		var/obj/vehicle/multitile/vehicle_target = target
-		if(vehicle_target.vehicle_faction == tied_human.faction)
-			return TRUE
-
-		if(vehicle_target.vehicle_faction in friendly_factions)
-			return TRUE
-
-		if(vehicle_target.vehicle_faction in neutral_factions)
-			return TRUE
-	if(isdefenses(target))
+		target_faction = vehicle_target.vehicle_faction
+	else if(isdefenses(target))
 		var/obj/structure/machinery/defenses/defense_target = target
-		if(tied_human.faction in defense_target.faction_group)
-			return TRUE
+		return (my_faction in defense_target.faction_group)
+	else
 		return FALSE
 
+	if(target_faction == my_faction)
+		return TRUE
+	if(target_faction in friendly_factions)
+		return TRUE
+	if(target_faction in neutral_factions)
+		return TRUE
 	return FALSE
-
+// SS220 EDIT AI - END
 /// Removes neutral faction status from a given faction
 /datum/human_ai_brain/proc/on_neutral_faction_betray(faction)
 	if(!tied_human.faction)
