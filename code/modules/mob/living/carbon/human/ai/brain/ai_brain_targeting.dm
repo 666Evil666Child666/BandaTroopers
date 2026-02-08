@@ -134,7 +134,8 @@
 	//модифицируем список для проверки на союзников, добавляя соседние тайлы и уберая тайл стрелка.
 	turf_list.Cut(1, 2) // starting turf
 	var/list/checked_turfs = list()// SS220 EDIT AI
-	for(var/turf/tile in turf_list)
+	for(var/i in 1 to length(turf_list))
+		var/turf/tile = turf_list[i]
 		if(!checked_turfs[tile])
 			checked_turfs[tile] = TRUE
 			for(var/mob/living/carbon/human/possible_friendly in tile)
@@ -142,6 +143,9 @@
 					continue
 				if(faction_check(possible_friendly))
 					return FALSE
+
+		if(i <= 3)
+			continue
 
 		for(var/turf/neighbor in tile.AdjacentTurfs())
 			if(checked_turfs[neighbor])

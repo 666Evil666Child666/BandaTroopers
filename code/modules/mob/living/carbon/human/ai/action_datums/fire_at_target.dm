@@ -133,8 +133,9 @@
 			continue
 
 		var/list/turfs_to_check = list(tile)
-		for(var/turf/neighbor in tile.AdjacentTurfs())
-			turfs_to_check += neighbor
+		if(i > 4)
+			for(var/turf/neighbor in tile.AdjacentTurfs())
+				turfs_to_check += neighbor
 
 		for(var/turf/T as anything in turfs_to_check)
 			if(checked_turfs[T])
