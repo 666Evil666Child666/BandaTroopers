@@ -507,6 +507,7 @@
 
 	RegisterSignal(src, COMSIG_MOB_SCREECH_ACT, PROC_REF(handle_screech_act))
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_XENO_SPAWN, src, ai_hard_off)
+	modular_sound_on_spawn()	// SS220 EDIT Modular Arachnid injection: sound selection implemented in modular/arachnid/code/sound/arachnid_sound_hooks.dm
 
 /mob/living/carbon/xenomorph/proc/handle_screech_act(mob/self, mob/living/carbon/xenomorph/queen/queen)
 	SIGNAL_HANDLER
@@ -707,6 +708,11 @@
 	ammo = null
 	selected_ability = null
 	queued_action = null
+
+	if(length(registered_ai_abilities))
+		for(var/datum/action/xeno_action/registered_ai_action as anything in registered_ai_abilities.Copy())
+			unregister_ai_action(registered_ai_action)
+	registered_ai_abilities = null
 
 	QDEL_NULL(strain)
 	QDEL_NULL(behavior_delegate)

@@ -264,7 +264,8 @@
 				else
 					keys += match.ckey
 
-			show_browser(owner, "Impacted: [english_list(keys)]<br><br>Whitelisted: [english_list(whitelisted)]", "Stickyban Keys", "stickykeys")
+			// show_browser(owner, "Impacted: [english_list(keys)]<br><br>Whitelisted: [english_list(whitelisted)]", "Stickyban Keys", "stickykeys")
+			show_browser(owner, "Затронутые: [english_list(keys)]<br><br>В белом списке: [english_list(whitelisted)]", "Stickyban CKEY", "stickykeys") // SS220 EDIT: локализован просмотр CKEY stickyban
 			return
 
 		if(href_list["view_all_cids"])
@@ -276,7 +277,8 @@
 			for(var/datum/view_record/stickyban_matched_cid/match as anything in all_cids)
 				cids += match.cid
 
-			show_browser(owner, english_list(cids), "Stickyban CIDs", "stickycids")
+			// show_browser(owner, english_list(cids), "Stickyban CIDs", "stickycids")
+			show_browser(owner, english_list(cids), "Stickyban CID", "stickycids") // SS220 EDIT: выровнен заголовок просмотра CID stickyban
 			return
 
 		if(href_list["view_all_ips"])
@@ -288,17 +290,20 @@
 			for(var/datum/view_record/stickyban_matched_ip/match as anything in all_ips)
 				ips += match.ip
 
-			show_browser(owner, english_list(ips), "Stickyban IPs", "stickycips")
+			// show_browser(owner, english_list(ips), "Stickyban IPs", "stickycips")
+			show_browser(owner, english_list(ips), "Stickyban IP", "stickycips") // SS220 EDIT: выровнен заголовок просмотра IP stickyban
 			return
 
 		if(href_list["find_sticky"])
-			var/ckey = ckey(tgui_input_text(owner, "Which CKEY should we attempt to find stickybans for?", "FindABan"))
+			// var/ckey = ckey(tgui_input_text(owner, "Which CKEY should we attempt to find stickybans for?", "FindABan"))
+			var/ckey = ckey(tgui_input_text(owner, "Для какого CKEY нужно найти stickyban?", "Поиск Stickyban")) // SS220 EDIT: локализован prompt поиска stickyban
 			if(!ckey)
 				return
 
 			var/list/datum/view_record/stickyban/stickies = SSstickyban.check_for_sticky_ban(ckey)
 			if(!stickies)
-				to_chat(owner, SPAN_ADMIN("Could not locate any stickbans impacting [ckey]."))
+				// to_chat(owner, SPAN_ADMIN("Could not locate any stickbans impacting [ckey]."))
+				to_chat(owner, SPAN_ADMIN("Не удалось найти stickyban, затрагивающие [ckey].")) // SS220 EDIT: локализовано сообщение об отсутствии stickyban
 				return
 
 			var/list/impacting_stickies = list()
@@ -306,7 +311,8 @@
 			for(var/datum/view_record/stickyban/sticky as anything in stickies)
 				impacting_stickies += sticky.identifier
 
-			to_chat(owner, SPAN_ADMIN("Found the following stickybans for [ckey]: [english_list(impacting_stickies)]"))
+			// to_chat(owner, SPAN_ADMIN("Found the following stickybans for [ckey]: [english_list(impacting_stickies)]"))
+			to_chat(owner, SPAN_ADMIN("Для [ckey] найдены stickyban: [english_list(impacting_stickies)]")) // SS220 EDIT: локализован результат поиска stickyban
 
 		if(!check_rights_for(owner, R_BAN))
 			return
@@ -315,6 +321,12 @@
 			owner.cmd_admin_do_stickyban()
 			return
 
+		// SS220 EDIT - START
+		if(hascall(src, "modular_handle_sticky_topic_action"))
+			if(call(src, "modular_handle_sticky_topic_action")(href_list))
+				return
+		// SS220 EDIT - END
+
 		var/datum/entity/stickyban/sticky = DB_ENTITY(/datum/entity/stickyban, href_list["sticky"])
 		if(!sticky)
 			return
@@ -322,7 +334,8 @@
 		sticky.sync()
 
 		if(href_list["whitelist_ckey"])
-			var/ckey_to_whitelist = ckey(tgui_input_text(owner, "What CKEY should be whitelisted? Editing stickyban: [sticky.identifier]"))
+			// var/ckey_to_whitelist = ckey(tgui_input_text(owner, "What CKEY should be whitelisted? Editing stickyban: [sticky.identifier]"))
+			var/ckey_to_whitelist = ckey(tgui_input_text(owner, "Какой CKEY добавить в белый список? Stickyban: [sticky.identifier]", "Белый список Stickyban")) // SS220 EDIT: локализован prompt whitelist для stickyban
 			if(!ckey_to_whitelist)
 				return
 
@@ -331,11 +344,13 @@
 			important_message_external("[owner] has whitelisted [ckey_to_whitelist] against stickyban '[sticky.identifier]'.", "CKEY Whitelisted")
 
 		if(href_list["add"])
-			var/option = tgui_input_list(owner, "What do you want to add?", "AddABan", list("CID", "CKEY", "IP"))
+			// var/option = tgui_input_list(owner, "What do you want to add?", "AddABan", list("CID", "CKEY", "IP"))
+			var/option = tgui_input_list(owner, "Что нужно добавить?", "Добавление в Stickyban", list("CID", "CKEY", "IP")) // SS220 EDIT: локализован выбор типа добавления stickyban
 			if(!option)
 				return
 
-			var/to_add = tgui_input_text(owner, "Provide the [option] to add to the stickyban.", "AddABan")
+			// var/to_add = tgui_input_text(owner, "Provide the [option] to add to the stickyban.", "AddABan")
+			var/to_add = tgui_input_text(owner, "Укажите [option], который нужно добавить в stickyban.", "Добавление в Stickyban") // SS220 EDIT: локализован prompt добавления значения stickyban
 			if(!to_add)
 				return
 
@@ -351,12 +366,37 @@
 			important_message_external("[owner] has added a [option] ([to_add]) to stickyban '[sticky.identifier]'.", "[option] Added to Stickyban")
 
 		if(href_list["remove"])
-			var/option = tgui_input_list(owner, "What do you want to remove?", "DelABan", list("Entire Stickyban", "CID", "CKEY", "IP"))
+			// var/option = tgui_input_list(owner, "What do you want to remove?", "DelABan", list("Entire Stickyban", "CID", "CKEY", "IP"))
+			var/option = tgui_input_list(owner, "Что нужно удалить?", "Удаление из Stickyban", list("Весь Stickyban", "CID", "CKEY", "IP")) // SS220 EDIT: локализован выбор типа удаления stickyban
 			switch(option)
-				if("Entire Stickyban")
-					if(!(tgui_alert(owner, "Are you sure you want to remove this stickyban? Identifier: [sticky.identifier] Reason: [sticky.reason]", "Confirm", list("Yes", "No")) == "Yes"))
+				// if("Entire Stickyban")
+				if("Весь Stickyban")
+					// if(!(tgui_alert(owner, "Are you sure you want to remove this stickyban? Identifier: [sticky.identifier] Reason: [sticky.reason]", "Confirm", list("Yes", "No")) == "Yes"))
+					if(!(tgui_alert(owner, "Точно удалить этот stickyban? Идентификатор: [sticky.identifier]. Причина: [sticky.reason]", "Подтверждение", list("Да", "Нет")) == "Да")) // SS220 EDIT: локализовано подтверждение удаления stickyban
 						return
 
+					// SS220 EDIT - START
+					if(hascall(SSstickyban, "modular_delete_stickyban_cluster"))
+						var/list/cluster_summary = call(SSstickyban, "modular_delete_stickyban_cluster")(sticky.id, TRUE)
+						if(islist(cluster_summary))
+							var/status = cluster_summary["status"] || "partial"
+							var/cluster_size = cluster_summary["cluster_size"] || 0
+							var/roots_deleted = cluster_summary["roots_deleted"] || 0
+							var/matches_deleted = cluster_summary["matches_deleted"] || 0
+							var/cluster_errors = cluster_summary["errors"] || 0
+							if(status == "ok")
+								message_admins("[key_name_admin(owner)] has deleted stickyban cluster '[sticky.identifier]' (cluster=[cluster_size], roots_deleted=[roots_deleted], matches_deleted=[matches_deleted]).")
+								important_message_external("[owner] has deleted stickyban cluster '[sticky.identifier]'.", "Stickyban Cluster Deleted")
+							else
+								to_chat(owner, SPAN_WARNING("Удаление кластера Stickyban: статус=[status], размер=[cluster_size], root удалено=[roots_deleted], связей удалено=[matches_deleted], ошибок=[cluster_errors].")) // SS220 EDIT: добавлен отчёт о частичном удалении sticky-кластера
+								message_admins("[key_name_admin(owner)] attempted stickyban cluster delete '[sticky.identifier]' (status=[status], cluster=[cluster_size], roots_deleted=[roots_deleted], matches_deleted=[matches_deleted], errors=[cluster_errors]).")
+							return
+						else
+							to_chat(owner, SPAN_WARNING("Удаление кластера Stickyban вернуло некорректный отчёт.")) // SS220 EDIT: добавлена диагностика невалидного отчёта удаления sticky-кластера
+							message_admins("[key_name_admin(owner)] attempted stickyban cluster delete '[sticky.identifier]' but got invalid summary.")
+							return
+
+					// SS220 EDIT - END
 					sticky.active = FALSE
 					sticky.save()
 
@@ -372,7 +412,8 @@
 					for(var/datum/view_record/stickyban_matched_cid/match in all_cids)
 						cid_to_record_id["[match.cid]"] = match.id
 
-					var/picked = tgui_input_list(owner, "Which CID to remove?", "DelABan", cid_to_record_id)
+					// var/picked = tgui_input_list(owner, "Which CID to remove?", "DelABan", cid_to_record_id)
+					var/picked = tgui_input_list(owner, "Какой CID удалить?", "Удаление из Stickyban", cid_to_record_id) // SS220 EDIT: локализован выбор CID для удаления из stickyban
 					if(!picked)
 						return
 
@@ -393,7 +434,8 @@
 					for(var/datum/view_record/stickyban_matched_ckey/match in all_ckeys)
 						ckey_to_record_id["[match.ckey]"] = match.id
 
-					var/picked = tgui_input_list(owner, "Which CKEY to remove?", "DelABan", ckey_to_record_id)
+					// var/picked = tgui_input_list(owner, "Which CKEY to remove?", "DelABan", ckey_to_record_id)
+					var/picked = tgui_input_list(owner, "Какой CKEY удалить?", "Удаление из Stickyban", ckey_to_record_id) // SS220 EDIT: локализован выбор CKEY для удаления из stickyban
 					if(!picked)
 						return
 
@@ -414,7 +456,8 @@
 					for(var/datum/view_record/stickyban_matched_ip/match in all_ips)
 						ip_to_record_id["[match.ip]"] = match.id
 
-					var/picked = tgui_input_list(owner, "Which IP to remove?", "DelABan", ip_to_record_id)
+					// var/picked = tgui_input_list(owner, "Which IP to remove?", "DelABan", ip_to_record_id)
+					var/picked = tgui_input_list(owner, "Какой IP удалить?", "Удаление из Stickyban", ip_to_record_id) // SS220 EDIT: локализован выбор IP для удаления из stickyban
 					if(!picked)
 						return
 
@@ -424,7 +467,8 @@
 					sticky_ip.delete()
 
 					message_admins("[key_name_admin(owner)] has removed an IP ([picked]) from stickyban [sticky.identifier].")
-					important_message_external("[owner] has removed an IP ([picked]) from stickyban '[sticky.identifier].", "IP Removed from Stickyban")
+					// important_message_external("[owner] has removed an IP ([picked]) from stickyban '[sticky.identifier].", "IP Removed from Stickyban")
+					important_message_external("[owner] has removed an IP ([picked]) from stickyban '[sticky.identifier]'.", "IP Removed from Stickyban") // SS220 EDIT: исправлена кавычка в сообщении удаления IP из stickyban
 
 	else if(href_list["warn"])
 		usr.client.warn(href_list["warn"])
@@ -542,7 +586,7 @@
 			if("Medicaldept")
 				joblist += get_job_titles_from_list(GLOB.ROLES_MEDICAL)
 			if("Marinesdept")
-				joblist += get_job_titles_from_list(GLOB.ROLES_MARINES)
+				joblist += get_job_titles_from_list(GLOB.RoleAuthority ? GLOB.RoleAuthority.get_marine_equivalent_role_titles() : GLOB.ROLES_MARINES)
 			if("Miscdept")
 				joblist += get_job_titles_from_list(GLOB.ROLES_MISC)
 			if("Xenosdept")
@@ -765,7 +809,8 @@
 	else if(href_list["c_mode2"])
 		if(!check_rights(R_ADMIN|R_SERVER)) return
 
-		GLOB.master_mode = href_list["c_mode2"]
+		GLOB.master_mode = href_list["c_mode2"] // SS220 EDIT: selected ship mode stays UI-synced through modular roster helpers
+		GLOB.RoleAuthority?.handle_main_ship_mode_changed() // SS220 EDIT: refresh ship-mode role cache after admin mode change
 		message_admins("[key_name_admin(usr)] set the mode as [GLOB.master_mode].")
 		to_world(SPAN_NOTICE("<b><i>The mode is now: [GLOB.master_mode]!</i></b>"))
 		Game() // updates the main game menu
@@ -1167,6 +1212,25 @@
 			return
 		GLOB.orbital_cannon_cancellation["[cancel_token]"] = null
 		message_admins("[src.owner] has cancelled the orbital strike.")
+
+	// SS220 EDIT - START: HALO SPNKr admin callback bridges modular launcher UI to upstream topic handling
+	else if(href_list["adminacceptspnkr"])
+		if(!check_rights(R_MOD)) return
+		var/obj/item/weapon/gun/halo_launcher/spnkr/rocket = locate(href_list["spnkr"])
+		var/turf/sound_turf = locate(href_list["turf"])
+		var/missile_name = url_decode(href_list["missile_name"] || "") // SS220 EDIT: decode modular HALO missile label from href payload
+		if(!rocket)
+			return
+		var/template_choice = tgui_input_list(usr, "Do you want to allow the missile to hit its target?", "AA Missile", list("Yes - Crash", "Yes - Damage", "No - Miss"))
+		if(!template_choice)
+			return
+		var/choice
+		if(template_choice == "Yes - Crash")
+			choice = "crash"
+		if(template_choice == "Yes - Damage")
+			choice = "damage"
+		rocket.hit_announce(sound_turf, choice, missile_name)
+	// SS220 EDIT - END
 
 	else if(href_list["admincancelpredsd"])
 		if (!check_rights(R_MOD)) return

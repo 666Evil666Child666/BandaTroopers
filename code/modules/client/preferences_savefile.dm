@@ -221,6 +221,15 @@
 			base_bindings -= key
 	return base_bindings
 
+/proc/sanitize_volume_preferences(list/pref_list, list/default_volume_preferences)
+	var/list/volume_preferences = sanitize_islist(pref_list, default_volume_preferences)
+	if(length(volume_preferences) != length(default_volume_preferences))
+		volume_preferences = default_volume_preferences
+	for(var/i in 1 to length(volume_preferences))
+		var/num = sanitize_float(volume_preferences[i], 0, 1, 1)
+		volume_preferences[i] = num
+	return volume_preferences
+
 /datum/preferences/proc/load_preferences()
 	if(!path)
 		return FALSE
@@ -264,6 +273,7 @@
 	S["toggles_ghost"] >> toggles_ghost
 	S["toggles_langchat"] >> toggles_langchat
 	S["toggles_sound"] >> toggles_sound
+	S["volume_preferences"] >> volume_preferences
 	S["toggle_prefs"] >> toggle_prefs
 	S["xeno_ability_click_mode"] >> xeno_ability_click_mode
 	S["dual_wield_pref"] >> dual_wield_pref
@@ -448,6 +458,9 @@
 	if(!observer_huds)
 		observer_huds = list("Medical HUD" = FALSE, "Security HUD" = FALSE, "Squad HUD" = FALSE, "Xeno Status HUD" = FALSE)
 
+	volume_preferences = sanitize_volume_preferences(volume_preferences, list(1, 0.5, 1, 0.6, // Game, music, admin midis, lobby music
+	1, 0.5, 0.5)) // Local, Radio,  Announces - SS220 TTS EDIT from "modular/text_to_speech/code/sound.dm"
+
 	return 1
 
 /datum/preferences/proc/save_preferences()
@@ -482,6 +495,7 @@
 	S["toggles_ghost"] << toggles_ghost
 	S["toggles_langchat"] << toggles_langchat
 	S["toggles_sound"] << toggles_sound
+	S["volume_preferences"] << volume_preferences
 	S["toggle_prefs"] << toggle_prefs
 	S["xeno_ability_click_mode"] << xeno_ability_click_mode
 	S["dual_wield_pref"] << dual_wield_pref
@@ -665,6 +679,10 @@
 
 	S["ds_camo"] >> dropship_camo
 	S["plat_name"] >> platoon_name
+	S["squad_name_alpha_pref"] >> squad_name_alpha_pref // SS220 EDIT
+	S["squad_name_bravo_pref"] >> squad_name_bravo_pref // SS220 EDIT
+	S["squad_name_charlie_pref"] >> squad_name_charlie_pref // SS220 EDIT
+	S["squad_name_delta_pref"] >> squad_name_delta_pref // SS220 EDIT
 	S["ds_name"] >> dropship_name
 
 	S["personal_weapon"] >> personal_weapon
@@ -720,8 +738,24 @@
 	//b_type = sanitize_text(b_type, initial(b_type))
 
 	platoon_name = platoon_name ? sanitize_text(platoon_name, initial(platoon_name)) : "Sun Riders"
+	// SS220 EDIT - START
+	squad_name_alpha_pref = squad_name_normalize(squad_name_alpha_pref, 32)
+	squad_name_bravo_pref = squad_name_normalize(squad_name_bravo_pref, 32)
+	squad_name_charlie_pref = squad_name_normalize(squad_name_charlie_pref, 32)
+	squad_name_delta_pref = squad_name_normalize(squad_name_delta_pref, 32)
+	if(!squad_name_alpha_pref)
+		squad_name_alpha_pref = SQUAD_MARINE_1_DEFAULT_NAME
+	if(!squad_name_bravo_pref)
+		squad_name_bravo_pref = SQUAD_MARINE_2_DEFAULT_NAME
+	if(!squad_name_charlie_pref)
+		squad_name_charlie_pref = SQUAD_MARINE_3_DEFAULT_NAME
+	if(!squad_name_delta_pref)
+		squad_name_delta_pref = SQUAD_MARINE_4_DEFAULT_NAME
+	// SS220 EDIT - END
 	dropship_camo = sanitize_inlist(dropship_camo, GLOB.dropship_camos, initial(dropship_camo))
-	dropship_name = dropship_name ? sanitize_text(dropship_name, initial(dropship_name)) : "Midway"
+	dropship_name = squad_name_normalize(dropship_name, 10)
+	if(!dropship_name)
+		dropship_name = "Midway" // SS220 EDIT: unify dropship preset validation with squad preset rules
 
 	personal_weapon = sanitize_inlist(personal_weapon, GLOB.personal_weapons_list+"None", initial(personal_weapon))
 
@@ -845,6 +879,10 @@
 
 	S["ds_camo"] << dropship_camo
 	S["plat_name"] << platoon_name
+	S["squad_name_alpha_pref"] << squad_name_alpha_pref // SS220 EDIT
+	S["squad_name_bravo_pref"] << squad_name_bravo_pref // SS220 EDIT
+	S["squad_name_charlie_pref"] << squad_name_charlie_pref // SS220 EDIT
+	S["squad_name_delta_pref"] << squad_name_delta_pref // SS220 EDIT
 	S["ds_name"] << dropship_name
 
 	S["personal_weapon"] << personal_weapon

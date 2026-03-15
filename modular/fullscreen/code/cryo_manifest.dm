@@ -43,6 +43,7 @@
 	// --- титульник ---
 	var/alert_type = /atom/movable/screen/text/screen_text/picture/starting
 	var/platoon = "3rd Bat. 'Banda Troopers"
+	var/list/ship_profile = faction == FACTION_UNSC ? GLOB.RoleAuthority?.get_main_ship_display_profile() : null
 
 	switch(faction)
 		if(FACTION_MARINE)
@@ -57,6 +58,10 @@
 		if(FACTION_TWE)
 			alert_type = /atom/movable/screen/text/screen_text/picture/starting/twe
 			platoon = "Gamma Troop"
+		if(FACTION_UNSC)
+			if(ship_profile)
+				alert_type = ship_profile["manifest_picture"]
+				platoon = ship_profile["label"]
 
 	var/title_text = "<u>[SSmapping.configs[SHIP_MAP].map_name]<br></u>[platoon]<br><br>"
 

@@ -144,6 +144,19 @@
 	squad = SQUAD_LRRP
 	job = /datum/job/marine/standard/ai/rto
 
+/obj/effect/landmark/start/marine/rto/alpha
+	squad = SQUAD_MARINE_1
+
+/obj/effect/landmark/start/marine/rto/bravo
+	squad = SQUAD_MARINE_2
+
+/obj/effect/landmark/start/marine/rto/charlie
+	squad = SQUAD_MARINE_3
+
+/obj/effect/landmark/start/marine/rto/delta
+	squad = SQUAD_MARINE_4
+
+
 /datum/job/marine/standard/ai/rmc
 	title = JOB_TWE_RMC_RIFLEMAN
 	total_positions = 2

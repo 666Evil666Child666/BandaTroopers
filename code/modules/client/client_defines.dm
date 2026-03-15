@@ -42,8 +42,6 @@
 	var/played = 0
 	var/midi_silenced = 0
 	var/datum/soundOutput/soundOutput
-	var/list/volume_preferences = list(1, 0.5, 1, 0.6,//Game, music, admin midis, lobby music
-	1, 0.5, 0.5) //Local, Radio,  Announces - SS220 TTS EDIT
 
 		////////////
 		//SECURITY//
@@ -138,6 +136,8 @@
 
 	/// Holds the game master datum for this client
 	var/datum/game_master/game_master_menu
+
+	// var/datum/game_rule_panel/game_rule_panel // SS220 EDIT: ownership moved to datum/game_rule_state.open_panels
 
 	/// Holds the human AI manager panel for this client
 	var/datum/human_ai_management_menu/human_ai_menu

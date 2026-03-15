@@ -29,9 +29,11 @@ GLOBAL_DATUM_INIT(data_core, /datum/datacore, new)
 	var/list/eng = GLOB.ROLES_ENGINEERING.Copy()
 	var/list/req = GLOB.ROLES_REQUISITION.Copy()
 	var/list/med = GLOB.ROLES_MEDICAL.Copy()
+	var/datum/authority/branch/role/role_authority = GLOB.RoleAuthority
+	var/list/active_marine_roles = role_authority ? role_authority.get_marine_equivalent_role_titles(TRUE) : GLOB.ROLES_MARINES
 	var/list/marines_by_squad = GLOB.ROLES_SQUAD_ALL.Copy()
 	for(var/squad_name in marines_by_squad)
-		marines_by_squad[squad_name] = GLOB.ROLES_MARINES.Copy()
+		marines_by_squad[squad_name] = active_marine_roles.Copy()
 	var/list/isactive = new()
 
 // If we need not the HTML table, but list
@@ -46,29 +48,46 @@ GLOBAL_DATUM_INIT(data_core, /datum/datacore, new)
 		)
 		departments += marines_by_squad
 		var/list/manifest_out = list()
-		var/datum/squad/marine/main_ship_platoon = MAIN_SHIP_PLATOON
+		var/datum/squad/marine/main_ship_platoon = GLOB.RoleAuthority?.get_active_ship_platoon_type() || MAIN_SHIP_PLATOON || text2path(MAIN_SHIP_DEFAULT_PLATOON) // SS220 EDIT: manifest faction follows active ship platoon resolver with vanilla fallback
 		for(var/datum/data/record/record_entry in GLOB.data_core.general)
 			if(record_entry.fields["mob_faction"] != main_ship_platoon.faction) //we process only humans of the same faction as the ship forces
 				continue
 			var/name = record_entry.fields["name"]
 			var/rank = record_entry.fields["rank"]
 			var/squad = record_entry.fields["squad"]
+			// SS220 EDIT - START
+			var/squad_bucket = squad
+			var/datum/squad_name_manager/manager = GLOB.squad_name_manager
+			if(manager)
+				var/mapped_static_squad = manager.get_static_name_by_runtime(squad)
+				if(mapped_static_squad)
+					squad_bucket = mapped_static_squad
+			// SS220 EDIT - END
 			if(isnull(name) || isnull(rank))
 				continue
 			var/has_department = FALSE
 			for(var/department in departments)
 				// STOP SIGNING ALL MARINES IN ALPHA!
 				if(department in GLOB.ROLES_SQUAD_ALL)
-					if(squad != department)
+					// if(squad != department) // SS220 EDIT: replaced runtime squad compare with static bucket compare
+					if(squad_bucket != department)
 						continue
 				var/list/jobs = departments[department]
 				if(rank in jobs)
-					if(!manifest_out[department])
-						manifest_out[department] = list()
-					manifest_out[department] += list(list(
+					// SS220 EDIT - START
+					var/manifest_department = department
+					if(department in GLOB.ROLES_SQUAD_ALL)
+						manifest_department = squad_name_get_runtime(department)
+					// if(!manifest_out[department])
+					if(!manifest_out[manifest_department])
+						// manifest_out[department] = list()
+						manifest_out[manifest_department] = list()
+					// manifest_out[department] += list(list(
+					manifest_out[manifest_department] += list(list(
 						"name" = name,
 						"rank" = rank
 					))
+					// SS220 EDIT - END
 					has_department = TRUE
 					break
 			if(!has_department)
@@ -100,7 +119,7 @@ GLOBAL_DATUM_INIT(data_core, /datum/datacore, new)
 	var/dept_flags = NO_FLAGS //Is there anybody in the department?.
 	var/list/squad_sublists = GLOB.ROLES_SQUAD_ALL.Copy() //Are there any marines in the squad?
 
-	var/datum/squad/marine/main_ship_platoon = MAIN_SHIP_PLATOON
+	var/datum/squad/marine/main_ship_platoon = GLOB.RoleAuthority?.get_active_ship_platoon_type() || MAIN_SHIP_PLATOON || text2path(MAIN_SHIP_DEFAULT_PLATOON) // SS220 EDIT: datacore faction filters use active ship platoon resolver with vanilla fallback
 	for(var/datum/data/record/record_entry in GLOB.data_core.general)
 		if(record_entry.fields["mob_faction"] != main_ship_platoon.faction) //we process only humans of the same faction as the ship forces
 			continue
@@ -109,6 +128,7 @@ GLOBAL_DATUM_INIT(data_core, /datum/datacore, new)
 		var/rank = record_entry.fields["rank"]
 		var/real_rank = record_entry.fields["real_rank"]
 		var/squad_name = record_entry.fields["squad"]
+		var/squad_bucket = squad_name // SS220 EDIT: initialized static bucket from runtime squad value for manifest grouping
 		if(isnull(name) || isnull(rank) || isnull(real_rank))
 			continue
 
@@ -144,15 +164,24 @@ GLOBAL_DATUM_INIT(data_core, /datum/datacore, new)
 		else if(real_rank in GLOB.ROLES_MEDICAL)
 			dept_flags |= FLAG_SHOW_MEDICAL
 			LAZYSET(med[real_rank], name, rank)
-		else if(real_rank in GLOB.ROLES_MARINES)
+		else if(role_authority ? role_authority.is_marine_equivalent_role(real_rank, TRUE) : (real_rank in GLOB.ROLES_MARINES))
 			if(isnull(squad_name))
 				continue
+			// SS220 EDIT - START
+			if(GLOB.squad_name_manager)
+				var/mapped_static_squad = GLOB.squad_name_manager.get_static_name_by_runtime(squad_name)
+				if(mapped_static_squad)
+					squad_bucket = mapped_static_squad
+			// SS220 EDIT - END
 			dept_flags |= FLAG_SHOW_MARINES
-			squad_sublists[squad_name] = TRUE
+			// squad_sublists[squad_name] = TRUE // SS220 EDIT: old runtime-key bucket activation
+			squad_sublists[squad_bucket] = TRUE
 			///If it is a real squad in the USCM squad list to prevent the crew manifest from breaking
-			if(!(squad_name in GLOB.ROLES_SQUAD_ALL))
+			// if(!(squad_name in GLOB.ROLES_SQUAD_ALL)) // SS220 EDIT: old runtime-key validity check
+			if(!(squad_bucket in GLOB.ROLES_SQUAD_ALL))
 				continue
-			LAZYSET(marines_by_squad[squad_name][real_rank], name, rank)
+			// LAZYSET(marines_by_squad[squad_name][real_rank], name, rank) // SS220 EDIT: old runtime-key manifest insertion
+			LAZYSET(marines_by_squad[squad_bucket][real_rank], name, rank)
 
 	//here we fill manifest
 	var/name
@@ -174,7 +203,11 @@ GLOBAL_DATUM_INIT(data_core, /datum/datacore, new)
 		for(var/squad_name in GLOB.ROLES_SQUAD_ALL)
 			if(!squad_sublists[squad_name])
 				continue
-			dat += "<tr><th colspan=3>[squad_name]</th></tr>"
+			// SS220 EDIT - START
+			// dat += "<tr><th colspan=3>[squad_name]</th></tr>"
+			var/display_squad_name = squad_name_get_runtime(squad_name)
+			dat += "<tr><th colspan=3>[display_squad_name]</th></tr>"
+			// SS220 EDIT - END
 			for(real_rank in marines_by_squad[squad_name])
 				for(name in marines_by_squad[squad_name][real_rank])
 					dat += "<tr[even ? " class='alt'" : ""]><td>[name]</td><td>[marines_by_squad[squad_name][real_rank][name]]</td><td>[isactive[name]]</td></tr>"
@@ -221,7 +254,8 @@ GLOBAL_DATUM_INIT(data_core, /datum/datacore, new)
 		if(!nosleep)
 			sleep(40)
 
-		var/list/jobs_to_check = GLOB.ROLES_CIC + GLOB.ROLES_AUXIL_SUPPORT + GLOB.ROLES_MISC + GLOB.ROLES_POLICE + GLOB.ROLES_ENGINEERING + GLOB.ROLES_REQUISITION + GLOB.ROLES_MEDICAL + GLOB.ROLES_MARINES
+		var/datum/authority/branch/role/role_authority = GLOB.RoleAuthority
+		var/list/jobs_to_check = GLOB.ROLES_CIC + GLOB.ROLES_AUXIL_SUPPORT + GLOB.ROLES_MISC + GLOB.ROLES_POLICE + GLOB.ROLES_ENGINEERING + GLOB.ROLES_REQUISITION + GLOB.ROLES_MEDICAL + (role_authority ? role_authority.get_marine_equivalent_role_titles(TRUE) : GLOB.ROLES_MARINES)
 		for(var/mob/living/carbon/human/H as anything in GLOB.human_mob_list)
 			if(should_block_game_interaction(H))
 				continue
