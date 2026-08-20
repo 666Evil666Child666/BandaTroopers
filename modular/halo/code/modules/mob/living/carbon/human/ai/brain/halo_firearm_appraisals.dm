@@ -59,10 +59,10 @@
 	if(firearm.heat < 60)
 		return
 	var/vent_decision = 0
-	if(AI.current_target)
-		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_DIRECT_COMBAT * get_dist(AI.tied_human, AI.current_target)))
-	else if(AI.target_turf)
-		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_INDIRECT_COMBAT * get_dist(AI.tied_human, AI.target_turf)))
+	if(AI.targeting.current_target)
+		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_DIRECT_COMBAT * get_dist(AI.tied_human, AI.targeting.current_target)))
+	else if(AI.targeting.target_turf)
+		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_INDIRECT_COMBAT * get_dist(AI.tied_human, AI.targeting.target_turf)))
 	vent_decision += max(0, firearm.heat - 65)
 	if(prob(max(0, vent_decision)))
 		AI.unholster_primary()

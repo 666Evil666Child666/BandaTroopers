@@ -83,7 +83,7 @@
 
 				var/has_friendly = FALSE
 				for(var/mob/possible_friendly in range(brain.friendly_throw_check_range, location)) // SS220 EDIT: use configurable range from brain
-					if(!brain.can_target(possible_friendly))
+					if(!brain.targeting.can_target(possible_friendly))
 						has_friendly = TRUE
 						break
 
@@ -145,7 +145,7 @@
 	var/list/possible_targets = list()
 
 	for(var/mob/living/carbon/target in range(view_distance, tied_human))
-		if(brain.can_target(target))
+		if(brain.targeting.can_target(target))
 			possible_targets += target
 
 	var/turf/place_to_throw

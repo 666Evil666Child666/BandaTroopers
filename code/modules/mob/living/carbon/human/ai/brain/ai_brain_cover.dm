@@ -95,10 +95,10 @@
 			turf_dict[scan_turf] -= 5 // even if it's our mine, we don't really want to stand on it
 
 	turf_dict[scan_turf] -= get_dist(tied_human, scan_turf)
-	if(current_target) // Might be smarter to hide in a different direction
-		turf_dict[scan_turf] += get_dist(current_target, scan_turf) * 0.5
+	if(targeting.current_target) // Might be smarter to hide in a different direction
+		turf_dict[scan_turf] += get_dist(targeting.current_target, scan_turf) * 0.5
 
-		if(get_dir(current_target, scan_turf) in get_related_directions(cover_dir))
+		if(get_dir(targeting.current_target, scan_turf) in get_related_directions(cover_dir))
 			turf_dict[scan_turf] -= 20
 
 	for(var/cardinal in shuffle(GLOB.cardinals))

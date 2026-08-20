@@ -27,7 +27,7 @@
 	var/halo_ranged_fire_backoff_until = 0
 
 /datum/human_ai_brain/proc/halo_covenant_get_threat_atom()
-	return current_target || target_turf
+	return targeting.current_target || targeting.target_turf
 
 /datum/human_ai_brain/proc/halo_covenant_get_cached_threat_turf(cache_duration = 0.5 SECONDS)
 	var/atom/threat = halo_covenant_get_threat_atom()

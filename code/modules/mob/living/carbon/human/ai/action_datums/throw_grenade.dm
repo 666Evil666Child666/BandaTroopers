@@ -17,7 +17,7 @@
 	if(!brain.in_combat)
 		return 0
 
-	var/turf/target_turf = brain.target_turf
+	var/turf/target_turf = brain.targeting.target_turf
 	if(!target_turf)
 		return 0
 
@@ -149,7 +149,7 @@
 		return FALSE
 
 	for(var/mob/possible_friendly in range(brain.friendly_throw_check_range, target_turf)) // SS220 EDIT: use configurable range from brain
-		if(!brain.can_target(possible_friendly))
+		if(!brain.targeting.can_target(possible_friendly))
 			return TRUE
 
 	return FALSE
@@ -270,7 +270,7 @@
 	if(mid_throw)
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
-	var/turf/target_turf = brain.target_turf
+	var/turf/target_turf = brain.targeting.target_turf
 	if(QDELETED(throwing) || !target_turf)
 		log_game("AI GRENADE: throw action aborted — grenade missing or no target, QDELETED=[QDELETED(throwing)], target=[target_turf], mob=[key_name(brain?.tied_human)]")
 		return ONGOING_ACTION_COMPLETED

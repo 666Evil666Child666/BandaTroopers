@@ -23,18 +23,18 @@
 	if(!COOLDOWN_FINISHED(brain, stop_fire_cooldown))
 		return 0
 
-	var/should_fire_offscreen = (brain.target_turf && !COOLDOWN_FINISHED(brain, fire_offscreen) && (brain.gun_data.maximum_range > brain.view_distance))
+	var/should_fire_offscreen = (brain.targeting.target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen) && (brain.gun_data.maximum_range > brain.view_distance))
 
-	if(!brain.current_target && !should_fire_offscreen)
+	if(!brain.targeting.current_target && !should_fire_offscreen)
 		return 0
 
-	if((get_dist(brain.tied_human, brain.target_turf) > brain.view_distance) && !should_fire_offscreen)
+	if((get_dist(brain.tied_human, brain.targeting.target_turf) > brain.view_distance) && !should_fire_offscreen)
 		return 0
 
-	if(brain.halo_should_defer_ranged_fire(brain.current_target || brain.target_turf))
+	if(brain.halo_should_defer_ranged_fire(brain.targeting.current_target || brain.targeting.target_turf))
 		return 0
 
-	if(!firing_line_check(brain, brain.target_turf))
+	if(!firing_line_check(brain, brain.targeting.target_turf))
 		return 0
 
 	if(brain.should_reload())
@@ -81,11 +81,11 @@
 	if(!primary_weapon || brain.active_grenade_found || !COOLDOWN_FINISHED(brain, stop_fire_cooldown))
 		return ONGOING_ACTION_COMPLETED
 
-	var/should_fire_offscreen = (brain.target_turf && !COOLDOWN_FINISHED(brain, fire_offscreen))
-	if(!brain.current_target && !should_fire_offscreen)
+	var/should_fire_offscreen = (brain.targeting.target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))
+	if(!brain.targeting.current_target && !should_fire_offscreen)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.halo_should_defer_ranged_fire(brain.current_target || brain.target_turf))
+	if(brain.halo_should_defer_ranged_fire(brain.targeting.current_target || brain.targeting.target_turf))
 		return ONGOING_ACTION_COMPLETED
 
 	if(currently_firing || !COOLDOWN_FINISHED(brain, fire_overload_cooldown))
@@ -102,7 +102,7 @@
 			brain.set_primary_weapon(null)
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/target_turf = brain.target_turf
+	var/turf/target_turf = brain.targeting.target_turf
 	if((get_dist(tied_human, target_turf) > gun_data.maximum_range) && !should_fire_offscreen)
 		return ONGOING_ACTION_COMPLETED
 
@@ -115,7 +115,7 @@
 	RegisterSignal(tied_human, COMSIG_MOB_FIRED_GUN, PROC_REF(on_gun_fire), TRUE)
 
 	// Handling point-blank through attack()
-	var/atom/movable/current_target = brain.current_target
+	var/atom/movable/current_target = brain.targeting.current_target
 	if(current_target && (get_dist(tied_human, current_target) <= 1))
 		currently_firing = FALSE
 		primary_weapon.set_target(null)
@@ -209,7 +209,7 @@
 		qdel(src)
 		return
 
-	var/turf/target_turf = brain.target_turf
+	var/turf/target_turf = brain.targeting.target_turf
 
 	var/mob/living/carbon/tied_human = brain.tied_human
 	tied_human.a_intent_change(INTENT_HARM)
@@ -228,27 +228,27 @@
 		qdel(src)
 		return
 
-	var/should_fire_offscreen = (target_turf && !COOLDOWN_FINISHED(brain, fire_offscreen))
-	var/shoot_next = brain.current_target
+	var/should_fire_offscreen = (target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))
+	var/shoot_next = brain.targeting.current_target
 
-	if(QDELETED(brain.current_target))
+	if(QDELETED(brain.targeting.current_target))
 		if(!should_fire_offscreen)
 			stop_firing(brain)
 			qdel(src)
 			return
 		shoot_next = target_turf
 
-	else if(ismob(brain.current_target))
-		var/mob/mob_target = brain.current_target
+	else if(ismob(brain.targeting.current_target))
+		var/mob/mob_target = brain.targeting.current_target
 		if(mob_target.stat == DEAD)
 			stop_firing(brain)
-			brain.lose_target()
+			brain.targeting.lose_target()
 			qdel(src)
 			return
 
 		var/is_unconscious = (mob_target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in mob_target.effects_list))
 		if(!brain.shoot_to_kill && is_unconscious)
-			brain.lose_target()
+			brain.targeting.lose_target()
 			qdel(src)
 			return
 
@@ -268,12 +268,12 @@
 		return
 
 	if((get_dist(tied_human, shoot_next) > gun_data.maximum_range) && !should_fire_offscreen)
-		brain.lose_target()
+		brain.targeting.lose_target()
 		stop_firing(brain)
 		qdel(src)
 		return
 
-	if(brain.current_target && (get_dist(tied_human, brain.current_target) <= 1))
+	if(brain.targeting.current_target && (get_dist(tied_human, brain.targeting.current_target) <= 1))
 		currently_firing = FALSE
 		return
 
@@ -287,8 +287,8 @@
 		var/obj/item/weapon/gun/energy/plasma/plasma_weapon = brain.primary_weapon
 		if(plasma_weapon.heat >= 60)
 			var/vent_decision = 0
-			if(brain.current_target)
-				vent_decision = max(0, -20 + (6 * get_dist(tied_human, brain.current_target)))
+			if(brain.targeting.current_target)
+				vent_decision = max(0, -20 + (6 * get_dist(tied_human, brain.targeting.current_target)))
 			else if(target_turf)
 				vent_decision = max(0, -20 + (12 * get_dist(tied_human, target_turf)))
 
@@ -342,11 +342,11 @@
 	// SS220 EDIT - START
 	// else if(istype(brain.primary_weapon, /obj/item/weapon/gun/energy/plasma/plasma_pistol))
 	// else if(istype(brain.primary_weapon, /obj/item/weapon/gun/rifle/covenant_carbine))
-	var/datum/callback/followup_fire_callback = brain.primary_weapon.get_ai_followup_fire_callback(tied_human, brain.current_target)
+	var/datum/callback/followup_fire_callback = brain.primary_weapon.get_ai_followup_fire_callback(tied_human, brain.targeting.current_target)
 	if(followup_fire_callback)
 		currently_firing = FALSE
-		var/followup_fire_delay = brain.primary_weapon.get_ai_followup_fire_delay(tied_human, brain.current_target)
-		var/followup_fire_cooldown = brain.primary_weapon.get_ai_followup_fire_cooldown(tied_human, brain.current_target)
+		var/followup_fire_delay = brain.primary_weapon.get_ai_followup_fire_delay(tied_human, brain.targeting.current_target)
+		var/followup_fire_cooldown = brain.primary_weapon.get_ai_followup_fire_cooldown(tied_human, brain.targeting.current_target)
 		addtimer(followup_fire_callback, followup_fire_delay)
 		COOLDOWN_START(brain, stop_fire_cooldown, max(followup_fire_cooldown, followup_fire_delay))
 		stop_firing(brain)
@@ -356,11 +356,11 @@
 
 	else if(brain.primary_weapon.gun_firemode == GUN_FIREMODE_SEMIAUTO)
 		currently_firing = FALSE
-		addtimer(CALLBACK(brain.primary_weapon, TYPE_PROC_REF(/obj/item/weapon/gun, start_fire), null, brain.current_target, null, null, null, TRUE), brain.primary_weapon.get_fire_delay())
+		addtimer(CALLBACK(brain.primary_weapon, TYPE_PROC_REF(/obj/item/weapon/gun, start_fire), null, brain.targeting.current_target, null, null, null, TRUE), brain.primary_weapon.get_fire_delay())
 
 	else if(brain.primary_weapon.gun_firemode == GUN_FIREMODE_BURSTFIRE)
 		currently_firing = FALSE
-		addtimer(CALLBACK(brain.primary_weapon, TYPE_PROC_REF(/obj/item/weapon/gun, start_fire), null, brain.current_target, null, null, null, TRUE), brain.primary_weapon.get_burst_fire_delay())
+		addtimer(CALLBACK(brain.primary_weapon, TYPE_PROC_REF(/obj/item/weapon/gun, start_fire), null, brain.targeting.current_target, null, null, null, TRUE), brain.primary_weapon.get_burst_fire_delay())
 
 	brain.primary_weapon?.set_target(shoot_next)
 

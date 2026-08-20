@@ -211,7 +211,7 @@
 	// SS220 EDIT: modular brains may observe or meter path requests without forking shared navigation flow
 	if(hascall(src, "modular_on_navigation_path_queued"))
 		call(src, "modular_on_navigation_path_queued")(destination, max_range)
-	SSpathfinding.calculate_path(tied_human, destination, max_range, tied_human, CALLBACK(src, PROC_REF(set_path)), list(tied_human, current_target))
+	SSpathfinding.calculate_path(tied_human, destination, max_range, tied_human, CALLBACK(src, PROC_REF(set_path)), list(tied_human, targeting.current_target))
 	current_path_target = destination
 	next_path_generation = world.time + path_update_period
 	return TRUE

@@ -9,8 +9,8 @@
 	if(brain.healing_someone)
 		return 0
 
-	var/should_fire_offscreen = (brain.target_turf && !COOLDOWN_FINISHED(brain, fire_offscreen))
-	if(brain.current_target || should_fire_offscreen)
+	var/should_fire_offscreen = (brain.targeting.target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))
+	if(brain.targeting.current_target || should_fire_offscreen)
 		return 0
 
 	if(length(brain.to_pickup))
@@ -34,7 +34,7 @@
 /datum/ai_action/treat_self/trigger_action()
 	. = ..()
 
-	if(brain.current_target)
+	if(brain.targeting.current_target)
 		return ONGOING_ACTION_COMPLETED
 
 	if(!length(brain.equipment_map[HUMAN_AI_HEALTHITEMS]))

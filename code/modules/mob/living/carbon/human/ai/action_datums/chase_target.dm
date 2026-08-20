@@ -6,16 +6,16 @@
 	if(brain.in_cover)
 		return 0
 
-	if(!brain.target_turf)
+	if(!brain.targeting.target_turf)
 		return 0
 
-	if(brain.current_target)
+	if(brain.targeting.current_target)
 		return 0
 
 	if(brain.hold_position)
 		return 0
 
-	if(get_dist(brain.target_turf, brain.tied_human) > 20)
+	if(get_dist(brain.targeting.target_turf, brain.tied_human) > 20)
 		return 0
 
 	return 6
@@ -27,8 +27,8 @@
 /datum/ai_action/chase_target/trigger_action()
 	. = ..()
 
-	var/turf/target_turf = brain.target_turf
-	if(QDELETED(target_turf) || brain.current_target)
+	var/turf/target_turf = brain.targeting.target_turf
+	if(QDELETED(target_turf) || brain.targeting.current_target)
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/tied_human = brain.tied_human
@@ -44,5 +44,5 @@
 	tied_human.face_dir(direction)
 
 	// Scouted, found nothing, discard
-	brain.target_turf = null
+	brain.targeting.target_turf = null
 	return ONGOING_ACTION_COMPLETED

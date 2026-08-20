@@ -4,6 +4,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// The human that this brain ties into
 	var/mob/living/carbon/human/tied_human
 
+	var/datum/human_ai_module/targeting/targeting
+
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
 	var/medium_action_delay = 2 SECONDS
@@ -11,17 +13,11 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// Global multiplier for all AI action delays
 	var/action_delay_mult = 2 // Doubled from 1, gives hAI a believable time between actions
 
-	/// If TRUE, shoots until the target is dead. Else, stops when downed
-	var/shoot_to_kill = TRUE
-
 	/// If TRUE, may enter the grenade throw-back action from nearby live grenades.
 	var/can_throw_back_grenades = TRUE // SS220 EDIT: modular HALO presets can opt weak HumanAI out of grenade throw-back
 
 	/// Range in tiles for friendly proximity check when throwing grenades. Default 3. Override in HALO presets.
 	var/friendly_throw_check_range = 3 // SS220 EDIT: configurable friendly check range for grenade throws
-
-	/// Distance for view checks
-	var/view_distance = 6
 
 	/// Should we limit our FOV in case view_distance is more than 7
 	var/scope_vision = TRUE
@@ -29,6 +25,11 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// List of whitelisted/blacklisted action datums
 	var/list/action_whitelist = null
 	var/list/action_blacklist = null
+
+	/// Distance for view checks
+	var/view_distance = 6
+		/// If TRUE, shoots until the target is dead. Else, stops when downed
+	var/shoot_to_kill = TRUE
 
 	/// List of current action datums
 	var/list/ongoing_actions = list()
@@ -38,6 +39,12 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	/// A targeted turf that we should quickly approach
 	var/turf/quick_approach
+
+		/// Ref to the last turf that the AI shot at
+	var/turf/shot_at
+	/// If TRUE, the AI will throw grenades at enemies who enter cover
+	var/grenading_allowed = TRUE
+	/// If TRUE, we care about the target being in view after shooting at them. If not, then we only do a line check instead
 
 	// SS220 EDIT - START: upstream AI glue hardens modular HALO actions against owner teardown and projectile re-entry
 	/// Nearby turfs that we're watching for bullets
@@ -90,6 +97,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/New(mob/living/carbon/human/tied_human)
 	. = ..()
 	src.tied_human = tied_human
+	targeting = new(src)
 	RegisterSignal(tied_human, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
 	RegisterSignal(tied_human, COMSIG_HUMAN_EQUIPPED_ITEM, PROC_REF(on_item_equip))
 	RegisterSignal(tied_human, COMSIG_HUMAN_UNEQUIPPED_ITEM, PROC_REF(on_item_unequip))
@@ -109,9 +117,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/Destroy(force, ...)
 	GLOB.human_ai_brains -= src
-	tied_human = null
-
 	reset_ai()
+	QDEL_NULL(targeting)
+	tied_human = null
 
 	return ..()
 
@@ -127,12 +135,12 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	active_grenade_found = null // SS220 EDIT: reset stale grenade threat state so AI can leave throw-back mode cleanly
 	last_detected_projectile = null // SS220 EDIT: clear projectile detection debounce when brain is reset
 	last_detected_projectile_time = -1
-	target_turf = null
+	targeting.target_turf = null
 	shot_at = null
 	drawn_melee_weapon = null
 	primary_weapon = null
 	gun_data = null
-	lose_target()
+	targeting.lose_target()
 
 	for(var/action in ongoing_actions)
 		qdel(action)
@@ -156,7 +164,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		for(var/action in ongoing_actions)
 			qdel(action)
 		ongoing_actions.Cut()
-		lose_target()
+		targeting.lose_target()
 		if(!tied_human.resting)
 			tied_human.set_resting(TRUE, TRUE)
 		else
@@ -168,7 +176,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		for(var/action in ongoing_actions)
 			qdel(action)
 		ongoing_actions.Cut()
-		lose_target()
+		targeting.lose_target()
 		return
 
 	if(!length(detection_turfs))
@@ -198,10 +206,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(tied_human.buckled)
 		tied_human.set_buckled(FALSE) // AI never buckle themselves into chairs at the moment, change if this becomes the case
 
-	if(!current_target)
-		set_target(get_target())
+	if(!targeting.current_target)
+		targeting.set_target(targeting.get_target())
 
-	if(current_target)
+	if(targeting.current_target)
 		enter_combat()
 
 	if(!iszombie(tied_human) && should_run_nearby_item_search())
@@ -271,25 +279,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			if(ONGOING_ACTION_COMPLETED)
 				qdel(action)
 
-/datum/human_ai_brain/proc/set_target(mob/living/new_target)
-	if(!new_target)
-		return
-
-	RegisterSignal(new_target, COMSIG_PARENT_QDELETING, PROC_REF(on_target_delete), TRUE)
-	RegisterSignal(new_target, COMSIG_MOB_DEATH, PROC_REF(on_target_death), TRUE)
-	RegisterSignal(new_target, COMSIG_MOVABLE_MOVED, PROC_REF(on_target_move), TRUE)
-	current_target = new_target
-	target_turf = get_turf(current_target)
-	invalidate_nearby_item_search()
-
-/datum/human_ai_brain/proc/lose_target()
-	if(current_target)
-		UnregisterSignal(current_target, COMSIG_PARENT_QDELETING)
-		UnregisterSignal(current_target, COMSIG_MOB_DEATH)
-		UnregisterSignal(current_target, COMSIG_MOVABLE_MOVED)
-	current_target = null
-	invalidate_nearby_item_search()
-
 /datum/human_ai_brain/proc/should_run_nearby_item_search()
 	if(halo_should_suspend_nearby_item_search())
 		return FALSE
@@ -306,32 +295,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/invalidate_nearby_item_search()
 	nearby_item_search_dirty = TRUE
-
-/datum/human_ai_brain/proc/update_target_pos()
-	if(!has_valid_tied_human())
-		target_turf = null
-		return
-
-	if(current_target)
-		if(tied_human in viewers(view_distance, current_target))
-			target_turf = get_turf(current_target)
-		else
-			COOLDOWN_START(src, fire_offscreen, 2 SECONDS)
-			lose_target()
-
-/datum/human_ai_brain/proc/on_target_delete(datum/source, force)
-	SIGNAL_HANDLER
-	lose_target()
-	target_turf = null
-
-/datum/human_ai_brain/proc/on_target_death(datum/source)
-	SIGNAL_HANDLER
-	lose_target()
-	target_turf = null
-
-/datum/human_ai_brain/proc/on_target_move(atom/oldloc, dir, forced)
-	SIGNAL_HANDLER
-	update_target_pos()
 
 /datum/human_ai_brain/proc/on_human_delete(datum/source, force)
 	SIGNAL_HANDLER
@@ -369,8 +332,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	invalidate_nearby_item_search() // SS220 EDIT: wake-up should immediately invalidate idle pickup/grenade scan throttles
-	if(current_target)
-		update_target_pos() // SS220 EDIT: refresh transient combat targeting state after knockdown recovery
+	if(targeting.current_target)
+		targeting.update_target_pos() // SS220 EDIT: refresh transient combat targeting state after knockdown recovery
 
 	if((last_process_tick == world.time) || (wake_rethink_queued_at == world.time))
 		return
@@ -447,10 +410,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			return
 
 		if(get_dist(tied_human, bullet.firer) <= view_distance)
-			set_target(bullet.firer)
+			targeting.set_target(bullet.firer)
 		else
-			COOLDOWN_START(src, fire_offscreen, 4 SECONDS)
-			target_turf = get_turf(bullet.firer)
+			COOLDOWN_START(src, targeting.fire_offscreen, 4 SECONDS)
+			targeting.target_turf = get_turf(bullet.firer)
 
 /datum/human_ai_brain/proc/on_move(atom/oldloc, direction, forced)
 	if(!has_valid_tied_human())
@@ -461,7 +424,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(in_cover && (get_dist(tied_human, current_cover) > gun_data?.minimum_range))
 		end_cover()
 
-	update_target_pos()
+	targeting.update_target_pos()
 
 /datum/human_ai_brain/proc/enter_combat()
 	SIGNAL_HANDLER
@@ -473,13 +436,13 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		for(var/datum/human_ai_brain/squaddie as anything in squad.ai_in_squad)
 			if(!squaddie.has_valid_tied_human())
 				continue
-			if(squaddie.target_turf)
+			if(squaddie.targeting.target_turf)
 				continue
 			if(get_dist(squaddie.tied_human, tied_human) > squaddie.view_distance)
 				continue
-			if(!squaddie.can_target(current_target))
+			if(!squaddie.targeting.can_target(targeting.current_target))
 				continue
-			squaddie.target_turf = target_turf
+			squaddie.targeting.target_turf = targeting.target_turf
 
 	if(tied_human.client)
 		return
@@ -487,8 +450,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!in_combat)
 		say_in_combat_line()
 
-	if(isxeno(current_target))
-		try_cover(Get_Angle(current_target, tied_human), current_target)
+	if(isxeno(targeting.current_target))
+		try_cover(Get_Angle(targeting.current_target, tied_human), targeting.current_target)
 
 	in_combat = TRUE
 	addtimer(CALLBACK(src, PROC_REF(exit_combat)), rand(combat_decay_time_min, combat_decay_time_max), TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
@@ -496,8 +459,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/exit_combat()
 	if(!has_valid_tied_human())
-		lose_target()
-		target_turf = null
+		targeting.lose_target()
+		targeting.target_turf = null
 		end_cover()
 		in_combat = FALSE
 		return
@@ -507,7 +470,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	if(in_combat)
 		tied_human.a_intent_change(INTENT_DISARM)
-		lose_target()
+		targeting.lose_target()
 		say_exit_combat_line()
 		if(!sniper_home)
 			holster_primary()
@@ -515,10 +478,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	if(current_cover)
 		if(!prob(peek_cover_chance))
-			target_turf = null
+			targeting.target_turf = null
 		end_cover()
 	else
-		target_turf = null
+		targeting.target_turf = null
 
 	in_combat = FALSE
 
@@ -548,10 +511,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	if(get_dist(tied_human, bullet.firer) <= view_distance)
-		set_target(bullet.firer)
+		targeting.set_target(bullet.firer)
 	else
-		COOLDOWN_START(src, fire_offscreen, 4 SECONDS)
-		target_turf = get_turf(bullet.firer)
+		COOLDOWN_START(src, targeting.fire_offscreen, 4 SECONDS)
+		targeting.target_turf = get_turf(bullet.firer)
 
 	if(!current_cover)
 		try_cover(bullet.angle, bullet.firer)

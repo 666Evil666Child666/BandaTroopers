@@ -67,7 +67,7 @@
 	return ONGOING_ACTION_UNFINISHED_BLOCK
 
 /datum/ai_action/unggoy_suicide_bomber/proc/get_charge_target(datum/human_ai_brain/brain)
-	return brain.current_target || brain.target_turf
+	return brain.targeting.current_target || brain.targeting.target_turf
 
 /datum/ai_action/unggoy_suicide_bomber/proc/find_active_held_grenade(mob/living/carbon/human/tied_human)
 	if(istype(tied_human.l_hand, /obj/item/explosive/grenade))

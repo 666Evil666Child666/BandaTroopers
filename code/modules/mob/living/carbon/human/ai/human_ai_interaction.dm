@@ -152,7 +152,7 @@
 				a_intent = random_intent
 		return TRUE
 
-	if((body_position == LYING_DOWN) && (brain.current_target != src))
+	if((body_position == LYING_DOWN) && (brain.targeting.current_target != src))
 		return TRUE
 
 	return ..()
