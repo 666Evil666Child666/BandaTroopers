@@ -5,6 +5,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/mob/living/carbon/human/tied_human
 
 	var/datum/human_ai_module/targeting/targeting
+	var/datum/human_ai_module/perception/perception
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -45,14 +46,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// If TRUE, the AI will throw grenades at enemies who enter cover
 	var/grenading_allowed = TRUE
 	/// If TRUE, we care about the target being in view after shooting at them. If not, then we only do a line check instead
-
-	// SS220 EDIT - START: upstream AI glue hardens modular HALO actions against owner teardown and projectile re-entry
-	/// Nearby turfs that we're watching for bullets
-	var/list/detection_turfs = list()
-	/// Prevent repeated projectile detection re-entry in the same tick
-	var/atom/movable/last_detected_projectile
-	var/last_detected_projectile_time = -1
-	// SS220 EDIT - END
 
 	/// If TRUE, then we're actively fighting someone or saw a bullet go by or saw someone else go into combat
 	var/in_combat = FALSE
@@ -98,6 +91,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	. = ..()
 	src.tied_human = tied_human
 	targeting = new(src)
+	perception = new(src)
+	perception.register_signals()
+	perception.setup_detection_radius()
 	RegisterSignal(tied_human, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
 	RegisterSignal(tied_human, COMSIG_HUMAN_EQUIPPED_ITEM, PROC_REF(on_item_equip))
 	RegisterSignal(tied_human, COMSIG_HUMAN_UNEQUIPPED_ITEM, PROC_REF(on_item_unequip))
@@ -105,13 +101,11 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	RegisterSignal(tied_human, COMSIG_MOB_DROP_ITEM, PROC_REF(on_item_drop))
 	RegisterSignal(tied_human, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: HALO death guard should tear down AI and force corpses prone immediately
 	RegisterSignal(tied_human, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
-	RegisterSignal(tied_human, COMSIG_HUMAN_BULLET_ACT, PROC_REF(on_shot))
 	RegisterSignal(tied_human, COMSIG_HUMAN_HANDCUFFED, PROC_REF(on_handcuffed))
 	RegisterSignal(tied_human, COMSIG_HUMAN_GET_AI_BRAIN, PROC_REF(get_ai_brain))
 	RegisterSignal(tied_human, COMSIG_HUMAN_SET_SPECIES, PROC_REF(on_species_change))
 	RegisterSignal(tied_human, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(on_body_position_change)) // SS220 EDIT: standing back up should wake shared human AI immediately
 	GLOB.human_ai_brains += src
-	setup_detection_radius()
 	appraise_inventory()
 	tied_human.a_intent_change(INTENT_DISARM)
 
@@ -119,6 +113,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	GLOB.human_ai_brains -= src
 	reset_ai()
 	QDEL_NULL(targeting)
+	QDEL_NULL(perception)
 	tied_human = null
 
 	return ..()
@@ -128,13 +123,11 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/reset_ai()
 	end_cover()
-	clear_detection_radius()
+	perception.reset_detection()
 	wake_rethink_queued_at = -1 // SS220 EDIT: reset must always cancel deferred wake-up recovery before owner teardown finishes
 
 	in_combat = FALSE
 	active_grenade_found = null // SS220 EDIT: reset stale grenade threat state so AI can leave throw-back mode cleanly
-	last_detected_projectile = null // SS220 EDIT: clear projectile detection debounce when brain is reset
-	last_detected_projectile_time = -1
 	targeting.target_turf = null
 	shot_at = null
 	drawn_melee_weapon = null
@@ -154,12 +147,11 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	last_process_tick = world.time // SS220 EDIT: track scheduler entry to guard same-tick wake rethinks
 	wake_rethink_queued_at = -1 // SS220 EDIT: any queued wake rethink has been serviced once processing starts
 	if(!has_valid_tied_human()) // SS220 EDIT: upstream process loop must no-op once modular AI owner is gone
-		clear_detection_radius() // SS220 EDIT: stop listening to turf signals once the owner is gone
 		reset_ai()
 		return
 
 	if(tied_human.stat == DEAD) // SS220 EDIT: dead HALO AI must never remain in the wake-up recovery path
-		clear_detection_radius()
+		perception.suspend()
 		wake_rethink_queued_at = -1 // SS220 EDIT: death fallback must kill any queued wake rethink that survived until process()
 		for(var/action in ongoing_actions)
 			qdel(action)
@@ -172,15 +164,14 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	if(tied_human.is_mob_incapacitated())
-		clear_detection_radius() // SS220 EDIT: stunned or dead AI should not keep turf-enter listeners alive
+		perception.suspend() // SS220 EDIT: stunned or dead AI should not keep turf-enter listeners alive
 		for(var/action in ongoing_actions)
 			qdel(action)
 		ongoing_actions.Cut()
 		targeting.lose_target()
 		return
 
-	if(!length(detection_turfs))
-		setup_detection_radius() // SS220 EDIT: restore projectile detection after recovering from incap or reset
+	perception.process_module(delta_time) // SS220 EDIT: restore projectile detection after recovering from incap or reset
 
 	// SS220 EDIT - START: hardcrit AIs should keep resting until the crit loop and knockdown pressure are truly gone
 	var/should_force_resting = ((locate(/datum/effects/crit) in tied_human.effects_list) && (tied_human.status_flags & CANKNOCKOUT))
@@ -189,7 +180,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			tied_human.set_resting(TRUE, TRUE)
 		else
 			tied_human.set_lying_down() // SS220 EDIT: crit-resting AI can keep a stale standing transform unless prone is re-asserted through the shared helper
-		clear_detection_radius() // SS220 EDIT: prone hardcrit AI should not keep live projectile listeners or continue active combat movement
+		perception.suspend() // SS220 EDIT: prone hardcrit AI should not keep live projectile listeners or continue active combat movement
 		for(var/action in ongoing_actions)
 			qdel(action)
 		ongoing_actions.Cut()
@@ -298,7 +289,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/on_human_delete(datum/source, force)
 	SIGNAL_HANDLER
-	clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
+	perception.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
 	reset_ai()
 	wake_rethink_queued_at = -1 // SS220 EDIT: owner delete must not leave a queued wake rethink pointing at a null tied human
 	tied_human = null
@@ -354,72 +345,13 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	process(0) // SS220 EDIT: reuse the existing shared AI loop instead of inventing a separate wake-up behavior
 
-/datum/human_ai_brain/proc/setup_detection_radius()
-	if(!has_valid_tied_human())
-		clear_detection_radius()
-		return
 
-	if(length(detection_turfs))
-		clear_detection_radius()
-
-	for(var/turf/open/floor in range(1, tied_human))
-		RegisterSignal(floor, COMSIG_TURF_ENTERED, PROC_REF(on_detection_turf_enter))
-		detection_turfs += floor
-
-/datum/human_ai_brain/proc/clear_detection_radius()
-	for(var/turf/open/floor as anything in detection_turfs)
-		UnregisterSignal(floor, COMSIG_TURF_ENTERED)
-
-	detection_turfs.Cut()
-
-/datum/human_ai_brain/proc/on_detection_turf_enter(datum/source, atom/movable/entering)
-	SIGNAL_HANDLER
-	if(!has_valid_tied_human())
-		return
-
-	if(tied_human.client)
-		return
-
-	if(entering == tied_human)
-		return
-
-	if(istype(entering, /obj/projectile))
-		var/obj/projectile/bullet = entering
-		if((last_detected_projectile == bullet) && (last_detected_projectile_time == world.time)) // SS220 EDIT: debounce same-tick projectile re-entry storms
-			return
-		last_detected_projectile = bullet
-		last_detected_projectile_time = world.time
-		if(!bullet.firer)
-			return
-
-		enter_combat()
-
-		if(length(neutral_factions))
-			if(ismob(bullet.firer))
-				var/mob/mob_firer = bullet.firer
-				if(mob_firer.faction in neutral_factions)
-					on_neutral_faction_betray(mob_firer.faction)
-
-			else if(isdefenses(bullet.firer))
-				var/obj/structure/machinery/defenses/defense_firer = bullet.firer
-				for(var/faction in defense_firer.faction_group)
-					if(faction in neutral_factions)
-						on_neutral_faction_betray(faction)
-
-		if(faction_check(bullet.firer))
-			return
-
-		if(get_dist(tied_human, bullet.firer) <= view_distance)
-			targeting.set_target(bullet.firer)
-		else
-			COOLDOWN_START(src, targeting.fire_offscreen, 4 SECONDS)
-			targeting.target_turf = get_turf(bullet.firer)
 
 /datum/human_ai_brain/proc/on_move(atom/oldloc, direction, forced)
 	if(!has_valid_tied_human())
 		return
 
-	setup_detection_radius()
+	perception.setup_detection_radius()
 
 	if(in_cover && (get_dist(tied_human, current_cover) > gun_data?.minimum_range))
 		end_cover()
@@ -485,38 +417,27 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	in_combat = FALSE
 
-/datum/human_ai_brain/proc/on_shot(datum/source, damage_result, ammo_flags, obj/projectile/bullet)
-	SIGNAL_HANDLER
-	if(!has_valid_tied_human() || !bullet || !bullet.firer)
+/datum/human_ai_brain/proc/react_to_attacker_faction(atom/attacker)
+	if(!length(neutral_factions))
 		return
 
-	if(tied_human.client)
+	if(ismob(attacker))
+		var/mob/mob_attacker = attacker
+		if(mob_attacker.faction in neutral_factions)
+			on_neutral_faction_betray(mob_attacker.faction)
 		return
 
-	enter_combat()
+	if(isdefenses(attacker))
+		var/obj/structure/machinery/defenses/defense_attacker = attacker
+		for(var/faction in defense_attacker.faction_group)
+			if(faction in neutral_factions)
+				on_neutral_faction_betray(faction)
 
-	if(length(neutral_factions))
-		if(ismob(bullet.firer))
-			var/mob/mob_firer = bullet.firer
-			if(mob_firer.faction in neutral_factions)
-				on_neutral_faction_betray(mob_firer.faction)
-
-		else if(isdefenses(bullet.firer))
-			var/obj/structure/machinery/defenses/defense_firer = bullet.firer
-			for(var/faction in defense_firer.faction_group)
-				if(faction in neutral_factions)
-					on_neutral_faction_betray(faction)
-
-	if(faction_check(bullet.firer))
+/datum/human_ai_brain/proc/react_to_incoming_fire_positioning(angle, atom/firer)
+	if(!has_valid_tied_human())
 		return
-
-	if(get_dist(tied_human, bullet.firer) <= view_distance)
-		targeting.set_target(bullet.firer)
-	else
-		COOLDOWN_START(src, targeting.fire_offscreen, 4 SECONDS)
-		targeting.target_turf = get_turf(bullet.firer)
 
 	if(!current_cover)
-		try_cover(bullet.angle, bullet.firer)
+		try_cover(angle, firer)
 	else if(in_cover)
-		on_shot_inside_cover(bullet.angle, bullet.firer)
+		on_shot_inside_cover(angle, firer)

@@ -38,6 +38,13 @@
 	if(brain)
 		brain.invalidate_nearby_item_search()
 
+/datum/human_ai_module/targeting/proc/set_target_turf(turf/new_target_turf, duration = 4 SECONDS)
+	if(!new_target_turf)
+		return
+
+	target_turf = new_target_turf
+	COOLDOWN_START(src, fire_offscreen, duration)
+
 /datum/human_ai_module/targeting/proc/lose_target()
 	if(current_target)
 		UnregisterSignal(current_target, COMSIG_PARENT_QDELETING)

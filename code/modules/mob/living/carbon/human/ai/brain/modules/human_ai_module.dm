@@ -8,3 +8,6 @@
 /datum/human_ai_module/Destroy(force, ...)
 	brain = null
 	return ..()
+
+/datum/human_ai_module/proc/process_module(delta_time)
+	return

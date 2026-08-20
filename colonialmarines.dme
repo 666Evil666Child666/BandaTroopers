@@ -2150,6 +2150,7 @@
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_pathfinding.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_squad.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\human_ai_module.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\modules\perception.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\targeting.dm"
 #include "code\modules\mob\living\carbon\human\ai\conversations\ai_conversations_general.dm"
 #include "code\modules\mob\living\carbon\human\ai\conversations\ai_conversations_military.dm"
