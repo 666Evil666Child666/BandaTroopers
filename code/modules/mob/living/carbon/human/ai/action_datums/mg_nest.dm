@@ -15,7 +15,7 @@
 	if(brain.tried_reload)
 		return 0
 
-	if(brain.current_cover)
+	if(brain.cover.current_cover)
 		return 0
 
 	if(!brain.primary_weapon)
@@ -39,7 +39,7 @@
 /datum/ai_action/machinegunner_nest/trigger_action()
 	. = ..()
 
-	if(brain.tried_reload || brain.current_cover || brain.healing_someone)
+	if(brain.tried_reload || brain.cover.current_cover || brain.healing_someone)
 		return ONGOING_ACTION_COMPLETED
 
 	var/obj/item/weapon/gun/primary_weapon = brain.primary_weapon

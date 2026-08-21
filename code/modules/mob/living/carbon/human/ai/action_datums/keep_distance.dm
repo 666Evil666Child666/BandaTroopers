@@ -17,7 +17,7 @@
 		if(distance != gun_data.minimum_range)
 			return 10
 
-	else if(brain.in_cover)
+	else if(brain.cover.in_cover)
 		if(distance < gun_data.minimum_range)
 			return 10
 
@@ -38,7 +38,7 @@
 	if(brain.active_grenade_found)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.current_cover && !brain.in_cover)
+	if(brain.cover.current_cover && !brain.cover.in_cover)
 		return ONGOING_ACTION_COMPLETED
 
 	return approach() || back_up() || ONGOING_ACTION_COMPLETED
@@ -57,7 +57,7 @@
 	if(get_dist(brain.tied_human, brain.targeting.current_target) <= range)
 		return
 
-	if(brain.in_cover)
+	if(brain.cover.in_cover)
 		return ONGOING_ACTION_UNFINISHED
 
 	if(!brain.move_to_next_turf(get_turf(brain.targeting.current_target)))
@@ -73,7 +73,7 @@
 		var/mob/current_mob_target = brain.targeting.current_target
 		is_incap = current_mob_target.is_mob_incapacitated()
 
-	if(brain.in_cover || is_incap)
+	if(brain.cover.in_cover || is_incap)
 		range = brain.gun_data.minimum_range
 	else
 		range = brain.gun_data.optimal_range

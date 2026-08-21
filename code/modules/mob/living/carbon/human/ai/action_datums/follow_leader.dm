@@ -4,7 +4,7 @@
 	var/follow_distance = 1
 
 /datum/ai_action/follow_leader/get_weight(datum/human_ai_brain/brain)
-	if(brain.in_cover)
+	if(brain.cover.in_cover)
 		return 0
 
 	if(brain.is_squad_leader)

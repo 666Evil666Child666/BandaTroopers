@@ -88,7 +88,7 @@
 		return
 
 	handle_projectile_threat(bullet)
-	brain.react_to_incoming_fire_positioning(bullet.angle, bullet.firer)
+	brain.cover.react_to_incoming_fire(bullet.angle, bullet.firer)
 
 /datum/human_ai_module/perception/proc/handle_projectile_threat(obj/projectile/bullet)
 	var/atom/firer = bullet.firer

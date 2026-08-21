@@ -42,7 +42,7 @@
 	if(!brain.halo_sangheili_runtime || !tied_human || !threat || !brain.in_combat)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.current_cover && !brain.in_cover)
+	if(brain.cover.current_cover && !brain.cover.in_cover)
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.halo_sangheili_should_sword_charge(threat))
@@ -55,7 +55,7 @@
 		return ONGOING_ACTION_COMPLETED
 
 	tied_human.a_intent_change(INTENT_HARM)
-	brain.end_cover()
+	brain.cover.end_cover()
 	brain.halo_sangheili_holster_sword()
 	brain.halo_covenant_clear_hands()
 

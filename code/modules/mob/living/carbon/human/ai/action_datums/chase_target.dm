@@ -3,7 +3,7 @@
 	action_flags = ACTION_USING_LEGS
 
 /datum/ai_action/chase_target/get_weight(datum/human_ai_brain/brain)
-	if(brain.in_cover)
+	if(brain.cover.in_cover)
 		return 0
 
 	if(!brain.targeting.target_turf)

@@ -6,6 +6,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	var/datum/human_ai_module/targeting/targeting
 	var/datum/human_ai_module/perception/perception
+	var/datum/human_ai_module/cover/cover
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -56,13 +57,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/combat_decay_time_max = 30 SECONDS
 	/// Minimum spacing between AI combat voicelines to avoid runaway chatter loops in prolonged fights.
 	var/combat_voiceline_cooldown_time = 4 SECONDS
-
-	/// If this AI can seek cover while not possessing a gun
-	var/cover_without_gun = FALSE
-
-	/// The chance that the AI will leave cover when exiting combat
-	var/peek_cover_chance = 60
-
 	/// Factions that the AI won't engage in hostilities with. Controlled by the AI's faction
 	var/list/friendly_factions = list()
 	/// Factions that the AI will not become hostile to unless attacked
@@ -91,6 +85,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	. = ..()
 	src.tied_human = tied_human
 	targeting = new(src)
+	cover = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -114,6 +109,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	reset_ai()
 	QDEL_NULL(targeting)
 	QDEL_NULL(perception)
+	QDEL_NULL(cover)
 	tied_human = null
 
 	return ..()
@@ -122,7 +118,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	return tied_human && !QDELETED(tied_human) && !isnull(tied_human.loc)
 
 /datum/human_ai_brain/proc/reset_ai()
-	end_cover()
+	cover.end_cover()
 	perception.reset_detection()
 	wake_rethink_queued_at = -1 // SS220 EDIT: reset must always cancel deferred wake-up recovery before owner teardown finishes
 
@@ -353,8 +349,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	perception.setup_detection_radius()
 
-	if(in_cover && (get_dist(tied_human, current_cover) > gun_data?.minimum_range))
-		end_cover()
+	if(cover.in_cover && (get_dist(tied_human, cover.current_cover) > gun_data?.minimum_range))
+		cover.end_cover()
 
 	targeting.update_target_pos()
 
@@ -383,7 +379,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		say_in_combat_line()
 
 	if(isxeno(targeting.current_target))
-		try_cover(Get_Angle(targeting.current_target, tied_human), targeting.current_target)
+		cover.try_cover(Get_Angle(targeting.current_target, tied_human), targeting.current_target)
 
 	in_combat = TRUE
 	addtimer(CALLBACK(src, PROC_REF(exit_combat)), rand(combat_decay_time_min, combat_decay_time_max), TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
@@ -393,7 +389,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!has_valid_tied_human())
 		targeting.lose_target()
 		targeting.target_turf = null
-		end_cover()
+		cover.end_cover()
 		in_combat = FALSE
 		return
 
@@ -408,10 +404,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			holster_primary()
 		holster_melee()
 
-	if(current_cover)
-		if(!prob(peek_cover_chance))
+	if(cover.current_cover)
+		if(!prob(cover.peek_cover_chance))
 			targeting.target_turf = null
-		end_cover()
+		cover.end_cover()
 	else
 		targeting.target_turf = null
 
@@ -433,11 +429,3 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			if(faction in neutral_factions)
 				on_neutral_faction_betray(faction)
 
-/datum/human_ai_brain/proc/react_to_incoming_fire_positioning(angle, atom/firer)
-	if(!has_valid_tied_human())
-		return
-
-	if(!current_cover)
-		try_cover(angle, firer)
-	else if(in_cover)
-		on_shot_inside_cover(angle, firer)

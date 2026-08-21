@@ -26,7 +26,7 @@
 	if(brain.active_grenade_found)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.current_cover && !brain.in_cover)
+	if(brain.cover.current_cover && !brain.cover.in_cover)
 		return ONGOING_ACTION_COMPLETED
 
 	if(!brain.tried_reload && (brain.primary_weapon || length(brain.secondary_weapons)))

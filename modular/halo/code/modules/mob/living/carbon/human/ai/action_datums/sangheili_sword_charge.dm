@@ -3,7 +3,7 @@
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
 
 /datum/ai_action/sangheili_sword_charge/Added()
-	brain.end_cover()
+	brain.cover.end_cover()
 
 /datum/ai_action/sangheili_sword_charge/get_weight(datum/human_ai_brain/brain)
 	if(!brain.halo_sangheili_runtime)
@@ -40,7 +40,7 @@
 			brain.halo_sangheili_holster_sword()
 		return ONGOING_ACTION_COMPLETED
 
-	brain.end_cover()
+	brain.cover.end_cover()
 	tied_human.a_intent_change(INTENT_HARM)
 
 	var/obj/item/weapon/covenant/energy_sword/sword = brain.halo_sangheili_draw_sword()

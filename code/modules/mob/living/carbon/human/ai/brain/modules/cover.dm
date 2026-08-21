@@ -1,13 +1,16 @@
-/datum/human_ai_brain
+/datum/human_ai_module/cover
 	/// If TRUE, AI is currently in some form of cover
 	var/in_cover = FALSE
-
 	/// Reference to atom currently selected as a cover place
 	var/atom/current_cover
-
 	COOLDOWN_DECLARE(cover_search_cooldown)
 
-/datum/human_ai_brain/proc/end_cover()
+	/// If this AI can seek cover while not possessing a gun
+	var/cover_without_gun = FALSE
+	/// The chance that the AI will leave cover when exiting combat
+	var/peek_cover_chance = 60
+
+/datum/human_ai_module/cover/proc/end_cover()
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
 	if(current_cover)
 		current_cover.color = null
@@ -16,16 +19,21 @@
 	current_cover = null
 	in_cover = FALSE
 
-/datum/human_ai_brain/proc/on_shot_inside_cover(angle, atom/source)
-	// Cover isn't working. Charge!
-	end_cover()
+/datum/human_ai_module/cover/proc/react_to_incoming_fire(angle, atom/firer)
+	if(!brain?.has_valid_tied_human())
+		return
+
+	if(!current_cover)
+		try_cover(angle, firer)
+	else if(in_cover)
+		on_shot_inside_cover(angle, firer)
 
 /// Try to get the AI to find a suitable cover tile based on the angle a projectile came from.
-/datum/human_ai_brain/proc/try_cover(angle, atom/source)
+/datum/human_ai_module/cover/proc/try_cover(angle, atom/source)
 	if(!COOLDOWN_FINISHED(src, cover_search_cooldown))
 		return
 
-	if(!(cover_without_gun || primary_weapon))
+	if(!(cover_without_gun || brain.primary_weapon))
 		return
 
 	COOLDOWN_START(src, cover_search_cooldown, 10 SECONDS)
@@ -35,7 +43,7 @@
 	var/list/turf_dict = list()
 	var/cover_dir = reverse_direction(angle2dir4ai(angle))
 
-	recursive_turf_cover_scan(get_turf(tied_human), turf_dict, cover_dir)
+	recursive_turf_cover_scan(get_turf(brain.tied_human), turf_dict, cover_dir)
 
 #ifdef TESTING
 	addtimer(CALLBACK(src, PROC_REF(clear_cover_value_debug), turf_dict.Copy()), 60 SECONDS)
@@ -43,31 +51,54 @@
 
 	cover_processing(turf_dict)
 
+/datum/human_ai_module/cover/proc/on_shot_inside_cover(angle, atom/source)
+	// Cover isn't working. Charge!
+	end_cover()
+
+/datum/human_ai_module/cover/proc/cover_processing(list/turf_dict, from_squad = FALSE)
+	var/most_weight = -INFINITY
+	var/turf/best_cover
+	for(var/turf/T as anything in turf_dict)
+		var/weight = turf_dict[T]
+		if(weight > most_weight)
+			most_weight = weight
+			best_cover = T
+
+	if(best_cover && best_cover != get_turf(brain.tied_human))
+		turf_dict -= best_cover
+		// insert cover atom deletion/move comsigs here
+		current_cover = best_cover
+		// SS220 EDIT: forward the resolved cover scan once with the correct turf_dict payload
+		if(!from_squad)
+			squad_cover_processing(turf_dict)
+
 /// If an AI decides to go into cover, any squadmates in their view range will process on the same view dictionary so as to help with performance
-/datum/human_ai_brain/proc/squad_cover_processing(list/turf_dict)
-	if(!squad_id)
+/datum/human_ai_module/cover/proc/squad_cover_processing(list/turf_dict)
+	if(!brain.squad_id)
 		return
 
-	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[squad_id]"]
+	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad_id]"]
 	if(!squad)
 		return
 
-	for(var/datum/human_ai_brain/brain as anything in squad.ai_in_squad)
-		if(brain == src)
+	for(var/datum/human_ai_brain/squaddie as anything in squad.ai_in_squad)
+		if(squaddie == brain)
 			continue
 
-		if(get_dist(tied_human, brain.tied_human) > view_distance)
+		if(!squaddie.has_valid_tied_human())
 			continue
 
-		if(brain.tied_human.is_mob_incapacitated())
+		if(get_dist(brain.tied_human, squaddie.tied_human) > brain.view_distance)
 			continue
 
-		COOLDOWN_START(brain, cover_search_cooldown, 15 SECONDS)
+		if(squaddie.tied_human.is_mob_incapacitated())
+			continue
 
-		brain.cover_processing(turf_dict, TRUE)
+		COOLDOWN_START(squaddie.cover, cover_search_cooldown, 15 SECONDS)
+		squaddie.cover.cover_processing(turf_dict, TRUE)
 
 /// Recursively searches each tile nearby (up to 198 tiles, nearly BYOND's recursion limit) and determines how suitable it is as cover, giving it a numerical score and adding it to turf_dict
-/datum/human_ai_brain/proc/recursive_turf_cover_scan(turf/scan_turf, list/turf_dict, cover_dir, first_iteration = TRUE)
+/datum/human_ai_module/cover/proc/recursive_turf_cover_scan(turf/scan_turf, list/turf_dict, cover_dir, first_iteration = TRUE)
 	if(length(turf_dict) > 198) // Slightly lower than byond recursion limit (200)
 		return FALSE // abort if the room is too large
 
@@ -89,16 +120,16 @@
 
 	var/obj/item/explosive/mine/mine = locate() in scan_turf.contents
 	if(mine)
-		if(!faction_check(mine.iff_signal))
+		if(!brain.faction_check(mine.iff_signal))
 			turf_dict[scan_turf] -= 50
 		else
 			turf_dict[scan_turf] -= 5 // even if it's our mine, we don't really want to stand on it
 
-	turf_dict[scan_turf] -= get_dist(tied_human, scan_turf)
-	if(targeting.current_target) // Might be smarter to hide in a different direction
-		turf_dict[scan_turf] += get_dist(targeting.current_target, scan_turf) * 0.5
+	turf_dict[scan_turf] -= get_dist(brain.tied_human, scan_turf)
+	if(brain.targeting.current_target) // Might be smarter to hide in a different direction
+		turf_dict[scan_turf] += get_dist(brain.targeting.current_target, scan_turf) * 0.5
 
-		if(get_dir(targeting.current_target, scan_turf) in get_related_directions(cover_dir))
+		if(get_dir(brain.targeting.current_target, scan_turf) in get_related_directions(cover_dir))
 			turf_dict[scan_turf] -= 20
 
 	for(var/cardinal in shuffle(GLOB.cardinals))
@@ -129,23 +160,6 @@
 
 	return TRUE
 
-/datum/human_ai_brain/proc/clear_cover_value_debug(list/turf_list)
+/datum/human_ai_module/cover/proc/clear_cover_value_debug(list/turf_list)
 	for(var/turf/T as anything in turf_list)
 		T.maptext = null
-
-/datum/human_ai_brain/proc/cover_processing(list/turf_dict, from_squad = FALSE)
-	var/most_weight = -INFINITY
-	var/turf/best_cover
-	for(var/turf/T as anything in turf_dict)
-		var/weight = turf_dict[T]
-		if(weight > most_weight)
-			most_weight = weight
-			best_cover = T
-
-	if(best_cover && best_cover != get_turf(tied_human))
-		turf_dict -= best_cover
-		// insert cover atom deletion/move comsigs here
-		current_cover = best_cover
-		// SS220 EDIT: forward the resolved cover scan once with the correct turf_dict payload
-		if(!from_squad)
-			squad_cover_processing(turf_dict)

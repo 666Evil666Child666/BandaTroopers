@@ -39,7 +39,7 @@
 	tied_human.a_intent_change(INTENT_HARM)
 
 	if(brain.halo_sangheili_should_unarmed_commit(threat))
-		brain.end_cover()
+		brain.cover.end_cover()
 		brain.halo_sangheili_holster_sword()
 		brain.halo_covenant_clear_hands()
 		tied_human.face_atom(threat)
@@ -55,21 +55,21 @@
 	return ONGOING_ACTION_COMPLETED
 
 /datum/ai_action/sangheili_overheat_response/proc/try_cover_retreat(atom/threat)
-	if(!brain.current_cover)
-		brain.try_cover(Get_Angle(threat, brain.tied_human), threat)
+	if(!brain.cover.current_cover)
+		brain.cover.try_cover(Get_Angle(threat, brain.tied_human), threat)
 
-	var/turf/cover_turf = get_turf(brain.current_cover)
+	var/turf/cover_turf = get_turf(brain.cover.current_cover)
 	if(!cover_turf)
 		return FALSE
 
 	if(get_dist(cover_turf, brain.tied_human) > 0)
 		if(!brain.move_to_next_turf(cover_turf))
-			brain.end_cover()
+			brain.cover.end_cover()
 			return FALSE
 
 		return TRUE
 
-	brain.in_cover = TRUE
+	brain.cover.in_cover = TRUE
 	brain.tied_human.face_atom(threat)
 	return TRUE
 

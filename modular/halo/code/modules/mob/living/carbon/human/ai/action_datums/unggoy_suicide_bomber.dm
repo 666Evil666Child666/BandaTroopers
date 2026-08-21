@@ -34,7 +34,7 @@
 	if(!tied_human)
 		return ONGOING_ACTION_COMPLETED
 
-	brain.end_cover()
+	brain.cover.end_cover()
 
 	var/obj/item/explosive/grenade/active_grenade = find_active_held_grenade(tied_human)
 	if(!active_grenade)

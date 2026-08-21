@@ -54,7 +54,7 @@
 /datum/firearm_appraisal/covenant/plasma/before_fire(obj/item/weapon/gun/energy/plasma/firearm, mob/living/carbon/user, datum/human_ai_brain/AI)
 	. = ..()
 	if(firearm.dispersing)
-		AI.try_cover()
+		AI.cover.try_cover()
 		return
 	if(firearm.heat < 60)
 		return

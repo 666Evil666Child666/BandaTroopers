@@ -6,13 +6,13 @@
 	if(!brain.has_valid_tied_human()) // SS220 EDIT: upstream cover action must not score after modular owner teardown
 		return 0
 
-	if(!brain.current_cover)
+	if(!brain.cover.current_cover)
 		return 0
 
 	if(brain.hold_position)
 		return 0
 
-	if(brain.in_cover && !(get_dist(brain.tied_human, brain.targeting.current_target) > brain?.gun_data?.minimum_range))
+	if(brain.cover.in_cover && !(get_dist(brain.tied_human, brain.targeting.current_target) > brain?.gun_data?.minimum_range))
 		return 0
 
 	return 15
@@ -22,8 +22,8 @@
 	if(!brain || !brain.has_valid_tied_human()) // SS220 EDIT: cover movement exits cleanly if the modular AI owner vanishes mid-action
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/current_cover = brain.current_cover
-	if(!brain.current_cover)
+	var/turf/current_cover = brain.cover.current_cover
+	if(!brain.cover.current_cover)
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/living/carbon/human/tied_human = brain.tied_human
@@ -35,7 +35,7 @@
 
 	if(get_dist(current_cover, tied_human) > 0)
 		if(!brain.move_to_next_turf(current_cover))
-			brain.end_cover()
+			brain.cover.end_cover()
 			return ONGOING_ACTION_COMPLETED
 
 		if(!brain || !brain.has_valid_tied_human())
@@ -45,5 +45,5 @@
 		if(get_dist(current_cover, tied_human) > 0)
 			return ONGOING_ACTION_UNFINISHED
 
-	brain.in_cover = TRUE
+	brain.cover.in_cover = TRUE
 	return ONGOING_ACTION_COMPLETED
