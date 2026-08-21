@@ -106,7 +106,7 @@
 		if(tied_human.z != possible_buddy.z)
 			continue
 
-		if(!faction_check(possible_buddy))
+		if(!faction.faction_check(possible_buddy))
 			continue
 
 		if(!(tied_human in viewers(view_distance, possible_buddy)))

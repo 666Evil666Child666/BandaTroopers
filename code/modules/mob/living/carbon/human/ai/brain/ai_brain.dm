@@ -7,6 +7,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/targeting/targeting
 	var/datum/human_ai_module/perception/perception
 	var/datum/human_ai_module/cover/cover
+	var/datum/human_ai_module/faction/faction
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -57,13 +58,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/combat_decay_time_max = 30 SECONDS
 	/// Minimum spacing between AI combat voicelines to avoid runaway chatter loops in prolonged fights.
 	var/combat_voiceline_cooldown_time = 4 SECONDS
-	/// Factions that the AI won't engage in hostilities with. Controlled by the AI's faction
-	var/list/friendly_factions = list()
-	/// Factions that the AI will not become hostile to unless attacked
-	var/list/neutral_factions = list()
-
-	/// The last faction that the AI was/is a part of
-	var/previous_faction
 
 	/// If FALSE, cannot be assigned to a squad
 	var/can_assign_squad = TRUE
@@ -84,6 +78,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/New(mob/living/carbon/human/tied_human)
 	. = ..()
 	src.tied_human = tied_human
+	faction = new(src)
 	targeting = new(src)
 	cover = new(src)
 	perception = new(src)
@@ -110,6 +105,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(targeting)
 	QDEL_NULL(perception)
 	QDEL_NULL(cover)
+	QDEL_NULL(faction)
 	tied_human = null
 
 	return ..()
@@ -412,20 +408,3 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		targeting.target_turf = null
 
 	in_combat = FALSE
-
-/datum/human_ai_brain/proc/react_to_attacker_faction(atom/attacker)
-	if(!length(neutral_factions))
-		return
-
-	if(ismob(attacker))
-		var/mob/mob_attacker = attacker
-		if(mob_attacker.faction in neutral_factions)
-			on_neutral_faction_betray(mob_attacker.faction)
-		return
-
-	if(isdefenses(attacker))
-		var/obj/structure/machinery/defenses/defense_attacker = attacker
-		for(var/faction in defense_attacker.faction_group)
-			if(faction in neutral_factions)
-				on_neutral_faction_betray(faction)
-

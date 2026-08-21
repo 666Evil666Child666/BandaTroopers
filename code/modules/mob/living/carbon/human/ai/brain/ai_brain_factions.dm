@@ -39,8 +39,8 @@
 		brain.need_healing_lines = need_healing_lines
 
 	brain.shoot_to_kill = shoot_to_kill
-	brain.friendly_factions = friendly_factions
-	brain.neutral_factions = neutral_factions
+	brain.faction.friendly_factions = friendly_factions
+	brain.faction.neutral_factions = neutral_factions
 
 /// Reapplies the faction's data to all AI that belong to this faction
 /datum/human_ai_faction/proc/reapply_faction_data()

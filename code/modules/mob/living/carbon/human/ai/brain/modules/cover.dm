@@ -120,7 +120,7 @@
 
 	var/obj/item/explosive/mine/mine = locate() in scan_turf.contents
 	if(mine)
-		if(!brain.faction_check(mine.iff_signal))
+		if(!brain.faction.faction_check(mine.iff_signal))
 			turf_dict[scan_turf] -= 50
 		else
 			turf_dict[scan_turf] -= 5 // even if it's our mine, we don't really want to stand on it

@@ -179,7 +179,7 @@
 				if(possible_friendly.body_position == LYING_DOWN)
 					continue
 
-				if(brain.faction_check(possible_friendly))
+				if(brain.faction.faction_check(possible_friendly))
 					return FALSE
 
 	return TRUE
@@ -198,7 +198,7 @@
 	if(H.body_position == LYING_DOWN)
 		return
 
-	if(brain.faction_check(H))
+	if(brain.faction.faction_check(H))
 		stop_firing(brain)
 		qdel(src)
 

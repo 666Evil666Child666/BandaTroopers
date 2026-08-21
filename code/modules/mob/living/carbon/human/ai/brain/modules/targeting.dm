@@ -205,7 +205,7 @@
 	if(vehicle.health <= 0)
 		return FALSE
 
-	if(brain.faction_check(vehicle))
+	if(brain.faction.faction_check(vehicle))
 		return FALSE
 
 	return path_check(vehicle)
@@ -220,7 +220,7 @@
 	if(!brain.shoot_to_kill && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
 		return FALSE
 
-	if(brain.faction_check(target))
+	if(brain.faction.faction_check(target))
 		return FALSE
 
 	var/distance = get_dist(brain.tied_human, target)
@@ -275,7 +275,7 @@
 			for(var/mob/living/carbon/human/possible_friendly in tile)
 				if(possible_friendly.body_position == LYING_DOWN)
 					continue
-				if(brain.faction_check(possible_friendly))
+				if(brain.faction.faction_check(possible_friendly))
 					return FALSE
 
 		if(i <= 3)
@@ -288,7 +288,7 @@
 			for(var/mob/living/carbon/human/possible_friendly in neighbor)
 				if(possible_friendly.body_position == LYING_DOWN)
 					continue
-				if(brain.faction_check(possible_friendly))
+				if(brain.faction.faction_check(possible_friendly))
 					return FALSE
 	return TRUE
 

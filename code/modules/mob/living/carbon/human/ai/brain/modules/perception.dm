@@ -96,9 +96,9 @@
 		return
 
 	brain.enter_combat()
-	brain.react_to_attacker_faction(firer)
+	brain.faction.react_to_attacker_faction(firer)
 
-	if(brain.faction_check(firer))
+	if(brain.faction.faction_check(firer))
 		return
 
 	if(get_dist(brain.tied_human, firer) <= brain.view_distance)

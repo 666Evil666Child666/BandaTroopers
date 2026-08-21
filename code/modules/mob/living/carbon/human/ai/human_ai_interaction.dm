@@ -144,7 +144,7 @@
 	if(stat == DEAD)
 		return TRUE
 
-	if(brain.faction_check(src))
+	if(brain.faction.faction_check(src))
 		if(!iszombie(ai_human))
 			var/random_intent = pick(INTENT_DISARM, INTENT_HARM, INTENT_HELP, INTENT_DISARM, INTENT_HARM) // lower chance of help intent
 			ai_human.a_intent = random_intent
@@ -168,7 +168,7 @@
 	return XENO_PENALTY
 
 /mob/living/carbon/xenomorph/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	if(brain.faction_check(src))
+	if(brain.faction.faction_check(src))
 		return TRUE
 
 	return ..()
