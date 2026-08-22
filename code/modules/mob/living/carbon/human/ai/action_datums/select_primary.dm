@@ -6,7 +6,7 @@
 	if(!length(brain.inventory.secondary_weapons))
 		return 0
 
-	if(!brain.tried_reload && brain.inventory.primary_weapon)
+	if(!brain.guns.tried_reload && brain.inventory.primary_weapon)
 		return 0
 
 	if(brain.inventory.primary_weapon?.ai_can_use(brain.tied_human, brain))
@@ -55,5 +55,5 @@
 
 	brain.inventory.add_secondary_weapon(primary_weapon)
 	brain.inventory.set_primary_weapon(best_secondary)
-	brain.tried_reload = FALSE
+	brain.guns.tried_reload = FALSE
 	return best_secondary

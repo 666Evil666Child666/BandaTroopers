@@ -276,7 +276,7 @@
 	if(isgun(brain.tied_human.s_store) && (brain.tied_human.s_store != primary_weapon))
 		add_secondary_weapon(brain.tied_human.s_store)
 
-	brain.tried_reload = FALSE // We don't really need to do this in a smart way
+	brain.guns.tried_reload = FALSE // We don't really need to do this in a smart way
 	if(belt)
 		appraise_belt()
 

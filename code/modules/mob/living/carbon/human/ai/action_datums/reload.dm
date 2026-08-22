@@ -4,13 +4,13 @@
 	var/currently_reloading
 
 /datum/ai_action/reload/get_weight(datum/human_ai_brain/brain)
-	if(brain.tried_reload)
+	if(brain.guns.tried_reload)
 		return 0
 
 	if(!brain.inventory.gun_data)
 		return 0
 
-	if(!brain.should_reload())
+	if(!brain.guns.should_reload())
 		return 0
 
 	return 15
@@ -26,7 +26,7 @@
 		return ONGOING_ACTION_UNFINISHED
 
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
-	if(!primary_weapon || brain.tried_reload || !brain.should_reload())
+	if(!primary_weapon || brain.guns.tried_reload || !brain.guns.should_reload())
 		return ONGOING_ACTION_COMPLETED
 
 	reload()
@@ -51,7 +51,7 @@
 	/// Find ammo
 	var/obj/item/ammo_magazine/mag = primary_ammo_search()
 	if(!mag)
-		brain.tried_reload = TRUE
+		brain.guns.tried_reload = TRUE
 		qdel(src)
 		return
 

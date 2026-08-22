@@ -7,7 +7,7 @@
 	if(!current_target)
 		return 0
 
-	if(!brain.inventory.primary_weapon || brain.tried_reload || brain.hold_position)
+	if(!brain.inventory.primary_weapon || brain.guns.tried_reload || brain.hold_position)
 		return 0
 
 	var/distance = get_dist(brain.tied_human, brain.targeting.current_target)

@@ -301,7 +301,7 @@
 	if(halo_covenant_weapon_is_cooling(inventory.primary_weapon))
 		return TRUE
 
-	return should_reload()
+	return guns.should_reload()
 
 /datum/human_ai_brain/proc/halo_sangheili_has_usable_ranged_fallback()
 	if(!halo_sangheili_runtime)
@@ -452,14 +452,14 @@
 
 	halo_sangheili_melee_committed = TRUE
 	halo_sangheili_committed_primary_weapon = inventory.primary_weapon
-	halo_sangheili_committed_tried_reload = tried_reload
+	halo_sangheili_committed_tried_reload = guns.tried_reload
 	halo_sangheili_committed_ignore_looting = inventory.ignore_looting
 	invalidate_halo_runtime_caches()
 
 	if(inventory.primary_weapon)
 		inventory.set_primary_weapon(null)
 
-	tried_reload = TRUE
+	guns.tried_reload = TRUE
 	inventory.ignore_looting = TRUE
 
 	if(!action_blacklist)
@@ -509,7 +509,7 @@
 		if(!length(action_blacklist))
 			action_blacklist = null
 
-	tried_reload = committed_tried_reload
+	guns.tried_reload = committed_tried_reload
 	inventory.ignore_looting = committed_ignore_looting
 
 	if(!restore_firearm || inventory.primary_weapon || !committed_primary_weapon || !halo_sangheili_owns_item(committed_primary_weapon))

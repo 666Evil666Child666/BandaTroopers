@@ -12,6 +12,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/grenade/grenade
 	var/datum/human_ai_module/health/health
 	var/datum/human_ai_module/communication/communication
+	var/datum/human_ai_module/guns/guns
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -70,6 +71,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	grenade = new(src)
 	health = new(src)
 	communication = new(src)
+	guns = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -97,6 +99,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(grenade)
 	QDEL_NULL(health)
 	QDEL_NULL(communication)
+	QDEL_NULL(guns)
 	tied_human = null
 
 	return ..()

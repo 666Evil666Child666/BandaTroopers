@@ -12,7 +12,7 @@
 	if(!brain.sniper_home)
 		return 0
 
-	if(brain.tried_reload)
+	if(brain.guns.tried_reload)
 		return 0
 
 	if(brain.cover.current_cover)
@@ -39,7 +39,7 @@
 /datum/ai_action/sniper_nest/trigger_action()
 	. = ..()
 
-	if(brain.tried_reload || brain.cover.current_cover || brain.health.healing_someone)
+	if(brain.guns.tried_reload || brain.cover.current_cover || brain.health.healing_someone)
 		return ONGOING_ACTION_COMPLETED
 
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
@@ -59,7 +59,7 @@
 		brain.view_distance = 30
 		brain.tied_human.face_dir(brain.sniper_dir)
 
-	if(!brain.should_reload())
+	if(!brain.guns.should_reload())
 		brain.inventory.unholster_primary()
 		brain.inventory.ensure_primary_hand(primary_weapon)
 		brain.inventory.wield_primary()

@@ -12,7 +12,7 @@
 	if(brain.sniper_home)
 		return 0
 
-	if(!brain.tried_reload && (brain.inventory.primary_weapon || length(brain.inventory.secondary_weapons)))
+	if(!brain.guns.tried_reload && (brain.inventory.primary_weapon || length(brain.inventory.secondary_weapons)))
 		return 0
 
 	return 3
@@ -29,7 +29,7 @@
 	if(brain.cover.current_cover && !brain.cover.in_cover)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.tried_reload && (brain.inventory.primary_weapon || length(brain.inventory.secondary_weapons)))
+	if(!brain.guns.tried_reload && (brain.inventory.primary_weapon || length(brain.inventory.secondary_weapons)))
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/tied_human = brain.tied_human

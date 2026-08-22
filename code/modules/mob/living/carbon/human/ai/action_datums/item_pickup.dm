@@ -112,7 +112,7 @@
 		if(istype(brain.inventory.primary_weapon, mag.gun_type))
 			tied_human.put_in_hands(to_pickup, TRUE)
 			brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_AMMUNITION)
-			brain.tried_reload = FALSE // not appraising inventory there, let's say we can reload now
+			brain.guns.tried_reload = FALSE // not appraising inventory there, let's say we can reload now
 		return ONGOING_ACTION_COMPLETED
 
 	if(istype(to_pickup, /obj/item/explosive/grenade))
