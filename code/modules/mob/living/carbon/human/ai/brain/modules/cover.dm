@@ -88,7 +88,7 @@
 		if(!squaddie.has_valid_tied_human())
 			continue
 
-		if(get_dist(brain.tied_human, squaddie.tied_human) > brain.view_distance)
+		if(get_dist(brain.tied_human, squaddie.tied_human) > brain.profile.view_distance)
 			continue
 
 		if(squaddie.tied_human.is_mob_incapacitated())

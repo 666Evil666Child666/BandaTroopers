@@ -27,12 +27,12 @@
 	return 12
 
 /datum/ai_action/machinegunner_nest/Added()
-	initial_view = brain.view_distance
+	initial_view = brain.profile.view_distance
 	initial_reload_line_chance = brain.communication.reload_line_chance
 	brain.communication.reload_line_chance = 0
 
 /datum/ai_action/machinegunner_nest/Destroy(force, ...)
-	brain.view_distance = initial_view
+	brain.profile.view_distance = initial_view
 	brain.communication.reload_line_chance = initial_reload_line_chance
 	return ..()
 
@@ -56,7 +56,7 @@
 			return ONGOING_ACTION_COMPLETED
 
 	if(!get_dist(tied_human, machinegunner_home))
-		brain.view_distance = 30
+		brain.profile.view_distance = 30
 		brain.tied_human.face_dir(brain.machinegunner_dir)
 
 	if(!brain.guns.should_reload())

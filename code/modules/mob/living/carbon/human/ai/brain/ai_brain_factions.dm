@@ -38,7 +38,7 @@
 	if(length(need_healing_lines))
 		brain.communication.need_healing_lines = need_healing_lines
 
-	brain.shoot_to_kill = shoot_to_kill
+	brain.profile.shoot_to_kill = shoot_to_kill
 	brain.faction.friendly_factions = friendly_factions
 	brain.faction.neutral_factions = neutral_factions
 

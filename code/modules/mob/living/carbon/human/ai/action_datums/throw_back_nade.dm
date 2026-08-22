@@ -137,7 +137,7 @@
 	if(world.time < throw_ready_time)
 		return ONGOING_ACTION_UNFINISHED
 
-	var/view_distance = brain.view_distance
+	var/view_distance = brain.profile.view_distance
 	var/list/possible_targets = list()
 
 	for(var/mob/living/carbon/target in range(view_distance, tied_human))

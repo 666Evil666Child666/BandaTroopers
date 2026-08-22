@@ -101,7 +101,7 @@
 	if(brain.faction.faction_check(firer))
 		return
 
-	if(get_dist(brain.tied_human, firer) <= brain.view_distance)
+	if(get_dist(brain.tied_human, firer) <= brain.profile.view_distance)
 		brain.targeting.set_target(firer)
 	else
 		brain.targeting.set_target_turf(get_turf(firer), 4 SECONDS)

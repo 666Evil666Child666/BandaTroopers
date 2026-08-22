@@ -113,11 +113,11 @@
 		if(!brain.faction.faction_check(possible_buddy))
 			continue
 
-		if(!(brain.tied_human in viewers(brain.view_distance, possible_buddy)))
+		if(!(brain.tied_human in viewers(brain.profile.view_distance, possible_buddy)))
 			continue
 
 		var/distance = get_dist(brain.tied_human, possible_buddy)
-		if(distance > brain.view_distance)
+		if(distance > brain.profile.view_distance)
 			continue
 
 		if(!healing_start_check(possible_buddy))
@@ -203,7 +203,7 @@
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(brain.short_action_delay * brain.action_delay_mult)
+	sleep(brain.profile.short_action_delay * brain.profile.action_delay_mult)
 	brute_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(brute_heal))
 		return
@@ -234,7 +234,7 @@
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(brain.short_action_delay * brain.action_delay_mult)
+	sleep(brain.profile.short_action_delay * brain.profile.action_delay_mult)
 	bleed_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(bleed_heal))
 		return
@@ -265,7 +265,7 @@
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(brain.short_action_delay * brain.action_delay_mult)
+	sleep(brain.profile.short_action_delay * brain.profile.action_delay_mult)
 	bone_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(bone_heal))
 		return
@@ -296,7 +296,7 @@
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(brain.short_action_delay * brain.action_delay_mult)
+	sleep(brain.profile.short_action_delay * brain.profile.action_delay_mult)
 	burn_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(burn_heal))
 		return
@@ -327,7 +327,7 @@
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(brain.short_action_delay * brain.action_delay_mult)
+	sleep(brain.profile.short_action_delay * brain.profile.action_delay_mult)
 	painkiller.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(painkiller))
 		return
@@ -358,7 +358,7 @@
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(brain.short_action_delay * brain.action_delay_mult)
+	sleep(brain.profile.short_action_delay * brain.profile.action_delay_mult)
 	tox_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(tox_heal))
 		return
@@ -389,7 +389,7 @@
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(brain.short_action_delay * brain.action_delay_mult)
+	sleep(brain.profile.short_action_delay * brain.profile.action_delay_mult)
 	oxy_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(oxy_heal))
 		healing_someone = FALSE

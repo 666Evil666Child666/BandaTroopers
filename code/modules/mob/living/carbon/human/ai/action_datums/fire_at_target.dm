@@ -23,12 +23,12 @@
 	if(!COOLDOWN_FINISHED(brain.guns, stop_fire_cooldown))
 		return 0
 
-	var/should_fire_offscreen = (brain.targeting.target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen) && (brain.inventory.gun_data.maximum_range > brain.view_distance))
+	var/should_fire_offscreen = (brain.targeting.target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen) && (brain.inventory.gun_data.maximum_range > brain.profile.view_distance))
 
 	if(!brain.targeting.current_target && !should_fire_offscreen)
 		return 0
 
-	if((get_dist(brain.tied_human, brain.targeting.target_turf) > brain.view_distance) && !should_fire_offscreen)
+	if((get_dist(brain.tied_human, brain.targeting.target_turf) > brain.profile.view_distance) && !should_fire_offscreen)
 		return 0
 
 	if(brain.halo_should_defer_ranged_fire(brain.targeting.current_target || brain.targeting.target_turf))
@@ -133,7 +133,7 @@
 	var/list/turf_list = get_line(get_turf(tied_human), get_turf(target))
 	for(var/turf/tile in turf_list)
 		var/tile_dist = get_dist(tied_human, tile)
-		if(tile_dist > brain.view_distance)
+		if(tile_dist > brain.profile.view_distance)
 			continue
 
 		if(tile.density)
@@ -155,7 +155,7 @@
 	for(var/i in 2 to length(turf_list))
 		var/turf/tile = turf_list[i]
 		var/tile_dist = get_dist(tied_human, tile)
-		if(tile_dist > brain.view_distance)
+		if(tile_dist > brain.profile.view_distance)
 			continue
 
 		var/list/turfs_to_check = list(tile)
@@ -247,7 +247,7 @@
 			return
 
 		var/is_unconscious = (mob_target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in mob_target.effects_list))
-		if(!brain.shoot_to_kill && is_unconscious)
+		if(!brain.profile.shoot_to_kill && is_unconscious)
 			brain.targeting.lose_target()
 			qdel(src)
 			return
@@ -262,8 +262,8 @@
 		rounds_burst_fired++
 
 	if(rounds_burst_fired >= gun_data.burst_amount_max)
-		var/short_action_delay = brain.short_action_delay
-		COOLDOWN_START(brain.guns, fire_overload_cooldown, max(short_action_delay, short_action_delay * brain.action_delay_mult))
+		var/short_action_delay = brain.profile.short_action_delay
+		COOLDOWN_START(brain.guns, fire_overload_cooldown, max(short_action_delay, short_action_delay * brain.profile.action_delay_mult))
 		stop_firing(brain)
 		return
 

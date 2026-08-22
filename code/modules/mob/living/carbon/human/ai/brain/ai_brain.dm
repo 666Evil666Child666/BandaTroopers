@@ -19,20 +19,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/combat/combat
 	var/datum/human_ai_module/conversation/conversation
 	var/datum/human_ai_module/orders/orders
-
-	var/micro_action_delay = 0.2 SECONDS
-	var/short_action_delay = 0.5 SECONDS
-	var/medium_action_delay = 2 SECONDS
-	var/long_action_delay = 5 SECONDS
-	/// Global multiplier for all AI action delays
-	var/action_delay_mult = 2 // Doubled from 1, gives hAI a believable time between actions
-
-	/// Distance for view checks
-	var/view_distance = 6
-	/// If TRUE, shoots until the target is dead. Else, stops when downed
-	var/shoot_to_kill = TRUE
-	/// Should we limit our FOV in case view_distance is more than 7
-	var/scope_vision = TRUE
+	var/datum/human_ai_module/profile/profile
 
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
@@ -53,6 +40,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	combat = new(src)
 	conversation = new(src)
 	orders = new(src)
+	profile = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -87,6 +75,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(combat)
 	QDEL_NULL(conversation)
 	QDEL_NULL(orders)
+	QDEL_NULL(profile)
 	tied_human = null
 
 	return ..()

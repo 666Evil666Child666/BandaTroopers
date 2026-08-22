@@ -190,7 +190,7 @@
 		finish_async_throw()
 		return
 
-	var/pre_throw_hold_delay = max(HUMAN_AI_GRENADE_MIN_HOLD_DELAY, brain.short_action_delay * brain.action_delay_mult)
+	var/pre_throw_hold_delay = max(HUMAN_AI_GRENADE_MIN_HOLD_DELAY, brain.profile.short_action_delay * brain.profile.action_delay_mult)
 	sleep(pre_throw_hold_delay) // SS220 EDIT: NPCs should visibly commit to the throw and hold the grenade for at least one second before priming/throwing
 
 	if(!brain || !brain.has_valid_tied_human() || (brain.tied_human != tied_human))

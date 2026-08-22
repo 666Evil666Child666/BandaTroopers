@@ -658,7 +658,7 @@
 /// wield_primary() with a delay inbuilt
 /datum/human_ai_module/inventory/proc/wield_primary_sleep()
 	wield_primary()
-	sleep(max(primary_weapon?.wield_delay, brain.short_action_delay * brain.action_delay_mult))
+	sleep(max(primary_weapon?.wield_delay, brain.profile.short_action_delay * brain.profile.action_delay_mult))
 
 /// Tells the AI to unwield *something*, prioritizing melee
 /datum/human_ai_module/inventory/proc/unholster_any_weapon()

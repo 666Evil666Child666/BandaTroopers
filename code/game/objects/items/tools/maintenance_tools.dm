@@ -452,7 +452,7 @@
 
 			user.zone_selected = limb.name
 			attack(target, user)
-			sleep(ai_brain.short_action_delay * ai_brain.action_delay_mult)
+			sleep(ai_brain.profile.short_action_delay * ai_brain.profile.action_delay_mult)
 
 	if(welding)
 		toggle(FALSE)

@@ -24,7 +24,7 @@
 				continue
 			if(squaddie.targeting.target_turf)
 				continue
-			if(get_dist(squaddie.tied_human, brain.tied_human) > squaddie.view_distance)
+			if(get_dist(squaddie.tied_human, brain.tied_human) > squaddie.profile.view_distance)
 				continue
 			if(!squaddie.targeting.can_target(brain.targeting.current_target))
 				continue

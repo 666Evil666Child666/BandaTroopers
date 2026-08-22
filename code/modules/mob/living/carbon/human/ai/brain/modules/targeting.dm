@@ -89,7 +89,7 @@
 		return
 
 	if(current_target)
-		if(brain.tied_human in viewers(brain.view_distance, current_target))
+		if(brain.tied_human in viewers(brain.profile.view_distance, current_target))
 			target_turf = get_turf(current_target)
 		else
 			COOLDOWN_START(src, fire_offscreen, 2 SECONDS)
@@ -106,11 +106,11 @@
 	var/list/dir_cone
 	var/rear_view_penalty = 0
 
-	if(brain.scope_vision)
+	if(brain.profile.scope_vision)
 		dir_cone = reverse_nearby_direction(reverse_direction(brain.tied_human.dir))
-		rear_view_penalty = brain.view_distance / 7 - 1
+		rear_view_penalty = brain.profile.view_distance / 7 - 1
 
-	for(var/atom/movable/potential_target in view(brain.view_distance, brain.tied_human))
+	for(var/atom/movable/potential_target in view(brain.profile.view_distance, brain.tied_human))
 		if(potential_target == brain.tied_human)
 			continue
 
@@ -157,7 +157,7 @@
 	if(!is_valid_target_ref(target))
 		return FALSE
 
-	if(!brain.scope_vision)
+	if(!brain.profile.scope_vision)
 		return TRUE
 
 	if((distance > 7) && !(get_dir(brain.tied_human, target) in dir_cone))
@@ -165,7 +165,7 @@
 
 	if(istype(target, /mob/living))
 		var/rear_view_check = (get_dir(brain.tied_human, target) in reverse_nearby_direction(brain.tied_human.dir))
-		if(rear_view_check && (distance > brain.view_distance - rear_view_penalty))
+		if(rear_view_check && (distance > brain.profile.view_distance - rear_view_penalty))
 			return FALSE
 
 	return TRUE
@@ -219,7 +219,7 @@
 	if(target.stat == DEAD)
 		return FALSE
 
-	if(!brain.shoot_to_kill && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
+	if(!brain.profile.shoot_to_kill && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
 		return FALSE
 
 	if(brain.faction.faction_check(target))
