@@ -63,7 +63,7 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 
 /// Simple check to see if a conversation should stop at a given line
 /datum/human_ai_conversation/proc/should_interrupt_conversation(datum/human_ai_brain/brain)
-	return (brain.in_combat || !brain.in_conversation || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	return (brain.combat.in_combat || !brain.in_conversation || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
 
 /// Check to be overridden to see if an AI should be able to start a conversation
 /datum/human_ai_conversation/proc/conversation_allowed(datum/human_ai_brain/brain)

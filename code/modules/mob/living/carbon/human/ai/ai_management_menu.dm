@@ -36,7 +36,7 @@
 			"faction" = brain.tied_human.faction,
 			"ref" = REF(brain.tied_human),
 			"brain_ref" = REF(brain),
-			"in_combat" = brain.in_combat,
+			"in_combat" = brain.combat.in_combat,
 			"squad_id" = brain.squad.squad_id,
 			"can_assign_squad" = brain.squad.can_assign_squad,
 		))

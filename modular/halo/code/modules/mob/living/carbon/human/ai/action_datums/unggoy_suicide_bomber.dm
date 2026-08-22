@@ -13,7 +13,7 @@
 	if(!brain.halo_suicide_bomber)
 		return 0
 
-	if(!brain.in_combat || brain.hold_position)
+	if(!brain.combat.in_combat || brain.hold_position)
 		return 0
 
 	if(!get_charge_target(brain))

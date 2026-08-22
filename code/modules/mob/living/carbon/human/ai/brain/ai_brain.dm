@@ -16,6 +16,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/navigation/navigation
 	var/datum/human_ai_module/squad/squad
 	var/datum/human_ai_module/action_runtime/action_runtime
+	var/datum/human_ai_module/combat/combat
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -34,16 +35,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// A targeted turf that we should quickly approach
 	var/turf/quick_approach
 
-	/// Ref to the last turf that the AI shot at
-	var/turf/shot_at
-
-	/// If TRUE, then we're actively fighting someone or saw a bullet go by or saw someone else go into combat
-	var/in_combat = FALSE
-
-	/// The minimum amount of time that can pass before this AI can leave combat
-	var/combat_decay_time_min = 15 SECONDS
-	/// The maximum amount of time that can pass before this AI can leave combat
-	var/combat_decay_time_max = 30 SECONDS
 	/// If TRUE, the AI will not move at all
 	var/hold_position = FALSE
 
@@ -63,6 +54,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	navigation = new(src)
 	squad = new(src)
 	action_runtime = new(src)
+	combat = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -94,6 +86,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(navigation)
 	QDEL_NULL(squad)
 	QDEL_NULL(action_runtime)
+	QDEL_NULL(combat)
 	tied_human = null
 
 	return ..()
@@ -106,10 +99,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	perception.reset_detection()
 	wake_rethink_queued_at = -1 // SS220 EDIT: reset must always cancel deferred wake-up recovery before owner teardown finishes
 
-	in_combat = FALSE
+	combat.reset_combat()
 	grenade.reset_grenade()
 	targeting.target_turf = null
-	shot_at = null
 	inventory.reset_inventory()
 	targeting.lose_target()
 	health.lose_injured_ally()
@@ -168,7 +160,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		targeting.set_target(targeting.get_target())
 
 	if(targeting.current_target)
-		enter_combat()
+		combat.enter_combat()
 
 	if(!iszombie(tied_human) && inventory.should_run_nearby_item_search())
 		inventory.item_search(range(2, tied_human))
@@ -248,60 +240,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	targeting.update_target_pos()
 
 /datum/human_ai_brain/proc/enter_combat()
-	SIGNAL_HANDLER
-	if(!has_valid_tied_human())
-		return
-
-	if(squad.squad_id) // call for help
-		var/datum/human_ai_squad/squad_datum = SShuman_ai.squad_id_dict["[squad.squad_id]"]
-		for(var/datum/human_ai_brain/squaddie as anything in squad_datum.ai_in_squad)
-			if(!squaddie.has_valid_tied_human())
-				continue
-			if(squaddie.targeting.target_turf)
-				continue
-			if(get_dist(squaddie.tied_human, tied_human) > squaddie.view_distance)
-				continue
-			if(!squaddie.targeting.can_target(targeting.current_target))
-				continue
-			squaddie.targeting.target_turf = targeting.target_turf
-
-	if(tied_human.client)
-		return
-
-	if(!in_combat)
-		communication.say_in_combat_line()
-
-	if(isxeno(targeting.current_target))
-		cover.try_cover(Get_Angle(targeting.current_target, tied_human), targeting.current_target)
-
-	in_combat = TRUE
-	addtimer(CALLBACK(src, PROC_REF(exit_combat)), rand(combat_decay_time_min, combat_decay_time_max), TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
-	SShuman_ai.combat_ever_started = TRUE
+	return combat.enter_combat()
 
 /datum/human_ai_brain/proc/exit_combat()
-	if(!has_valid_tied_human())
-		targeting.lose_target()
-		targeting.target_turf = null
-		cover.end_cover()
-		in_combat = FALSE
-		return
-
-	if(tied_human.client)
-		return
-
-	if(in_combat)
-		tied_human.a_intent_change(INTENT_DISARM)
-		targeting.lose_target()
-		communication.say_exit_combat_line()
-		if(!sniper_home)
-			inventory.holster_primary()
-		inventory.holster_melee()
-
-	if(cover.current_cover)
-		if(!prob(cover.peek_cover_chance))
-			targeting.target_turf = null
-		cover.end_cover()
-	else
-		targeting.target_turf = null
-
-	in_combat = FALSE
+	return combat.exit_combat()

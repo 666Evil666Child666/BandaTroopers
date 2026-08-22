@@ -3,7 +3,7 @@
 	action_flags = ACTION_USING_LEGS
 
 /datum/ai_action/patrol_waypoints/get_weight(datum/human_ai_brain/brain)
-	if(brain.in_combat)
+	if(brain.combat.in_combat)
 		return 0
 
 	var/datum/ai_order/patrol/current_order = brain.squad.current_order
@@ -26,7 +26,7 @@
 	. = ..()
 
 	var/datum/ai_order/patrol/current_order = brain.squad.current_order
-	if(current_order.waiting || QDELETED(current_order) || !istype(current_order) || length(brain.inventory.to_pickup) || brain.in_combat)
+	if(current_order.waiting || QDELETED(current_order) || !istype(current_order) || length(brain.inventory.to_pickup) || brain.combat.in_combat)
 		return ONGOING_ACTION_COMPLETED
 
 	var/turf/current_waypoint = current_order.current_waypoint

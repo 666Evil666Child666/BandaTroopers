@@ -8,7 +8,7 @@
 
 	COOLDOWN_START(brain, conversation_start_cooldown, 1 SECONDS)
 
-	if(brain.in_combat || brain.in_conversation || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	if(brain.combat.in_combat || brain.in_conversation || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
 		return 0
 
 	if(!prob(brain.conversation_start_prob))
@@ -24,7 +24,7 @@
 	var/list/ai_nearby = list()
 	for(var/mob/living/carbon/human/nearby_human in view(2, brain.tied_human))
 		var/datum/human_ai_brain/other_brain = nearby_human.get_ai_brain()
-		if(!other_brain || other_brain.in_combat || other_brain.in_conversation || other_brain.tied_human.client || (other_brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+		if(!other_brain || other_brain.combat.in_combat || other_brain.in_conversation || other_brain.tied_human.client || (other_brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
 			continue
 
 		ai_nearby += other_brain
@@ -57,4 +57,3 @@
 	var/datum/human_ai_conversation/gotten_convo = picked_convo
 	INVOKE_ASYNC(gotten_convo, TYPE_PROC_REF(/datum/human_ai_conversation, initiate_conversation), ai_nearby)
 	return ONGOING_ACTION_COMPLETED
-

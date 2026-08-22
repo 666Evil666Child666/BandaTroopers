@@ -69,13 +69,13 @@
 	inventory.nearby_item_search_dirty = TRUE
 
 /datum/human_ai_brain/proc/halo_should_suspend_nearby_item_search(queued_projectiles_override = null)
-	if(!halo_runtime_uses_projectile_pressure_controls() || !in_combat)
+	if(!halo_runtime_uses_projectile_pressure_controls() || !combat.in_combat)
 		return FALSE
 
 	return halo_is_projectile_queue_soft_limited(queued_projectiles_override)
 
 /datum/human_ai_brain/proc/halo_should_disable_cover_retreat(queued_projectiles_override = null)
-	if(!halo_runtime_uses_projectile_pressure_controls() || !in_combat)
+	if(!halo_runtime_uses_projectile_pressure_controls() || !combat.in_combat)
 		return FALSE
 
 	return halo_is_projectile_queue_hard_limited(queued_projectiles_override)

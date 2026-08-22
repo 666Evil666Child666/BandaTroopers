@@ -95,7 +95,7 @@
 	if(!firer)
 		return
 
-	brain.enter_combat()
+	brain.combat.enter_combat()
 	brain.faction.react_to_attacker_faction(firer)
 
 	if(brain.faction.faction_check(firer))
@@ -115,4 +115,3 @@
 /datum/human_ai_module/perception/proc/remember_projectile(obj/projectile/bullet)
 	last_detected_projectile = bullet
 	last_detected_projectile_time = world.time
-

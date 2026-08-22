@@ -11,7 +11,7 @@
 	if(!brain.has_valid_tied_human()) // SS220 EDIT: upstream action glue must not schedule work for detached modular AI owners
 		return 0
 
-	if(!brain.in_combat)
+	if(!brain.combat.in_combat)
 		return 0
 
 	if(brain.guns.tried_reload)
@@ -214,7 +214,7 @@
 	var/mob/living/carbon/tied_human = brain.tied_human
 	tied_human.a_intent_change(INTENT_HARM)
 
-	brain.shot_at = get_turf(target_turf)
+	brain.combat.shot_at = get_turf(target_turf)
 	tied_human.face_atom(target_turf)
 
 	currently_firing = TRUE
