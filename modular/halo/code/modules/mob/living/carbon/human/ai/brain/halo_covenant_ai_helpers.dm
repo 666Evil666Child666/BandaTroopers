@@ -60,10 +60,10 @@
 
 /datum/human_ai_brain/proc/halo_apply_navigation_profile(short_step_range = 0, path_retarget_slack = 0, nearby_item_interval = 1 SECONDS)
 	if(short_step_range > 0)
-		short_step_pathing_range = max(short_step_pathing_range, short_step_range)
+		navigation.short_step_pathing_range = max(navigation.short_step_pathing_range, short_step_range)
 
 	if(path_retarget_slack > 0)
-		path_target_retarget_slack = max(path_target_retarget_slack, path_retarget_slack)
+		navigation.path_target_retarget_slack = max(navigation.path_target_retarget_slack, path_retarget_slack)
 
 	inventory.nearby_item_search_interval = nearby_item_interval
 	inventory.nearby_item_search_dirty = TRUE

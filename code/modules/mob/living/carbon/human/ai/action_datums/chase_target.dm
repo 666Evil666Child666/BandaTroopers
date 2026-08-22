@@ -33,7 +33,7 @@
 
 	var/mob/tied_human = brain.tied_human
 	if(get_dist(target_turf, tied_human) > 0)
-		if(!brain.move_to_next_turf(target_turf))
+		if(!brain.navigation.move_to_next_turf(target_turf))
 			return ONGOING_ACTION_COMPLETED
 
 		if(get_dist(target_turf, tied_human) > 0)

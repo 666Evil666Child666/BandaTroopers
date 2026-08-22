@@ -59,7 +59,7 @@
 	if(!threat_turf)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.move_to_next_turf(threat_turf))
+	if(!brain.navigation.move_to_next_turf(threat_turf))
 		return ONGOING_ACTION_COMPLETED
 
 	tied_human.face_atom(threat)

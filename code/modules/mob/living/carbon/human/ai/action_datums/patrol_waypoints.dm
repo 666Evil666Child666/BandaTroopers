@@ -40,7 +40,7 @@
 
 	var/mob/tied_human = brain.tied_human
 	if(get_dist(current_waypoint, tied_human) > 1)
-		if(!brain.move_to_next_turf(current_waypoint))
+		if(!brain.navigation.move_to_next_turf(current_waypoint))
 			return ONGOING_ACTION_COMPLETED
 
 		if(get_dist(current_waypoint, tied_human) > 1)

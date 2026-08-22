@@ -112,7 +112,7 @@
 	var/mob/living/carbon/human/tied_human = brain.tied_human
 	if(active_grenade_found.loc != tied_human)
 		if(get_dist(active_grenade_found, tied_human) > 1)
-			if(!brain.move_to_next_turf(get_turf(active_grenade_found)))
+			if(!brain.navigation.move_to_next_turf(get_turf(active_grenade_found)))
 				log_game("AI GRENADE: throw-back aborted — could not move to grenade, grenade=[active_grenade_found], mob=[key_name(tied_human)]")
 				return ONGOING_ACTION_COMPLETED
 

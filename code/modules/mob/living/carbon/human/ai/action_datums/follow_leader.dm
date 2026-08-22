@@ -47,7 +47,7 @@
 
 	var/mob/tied_human = brain.tied_human
 	if(get_dist(tied_human, squad_leader) > follow_distance)
-		if(!brain.move_to_next_turf(get_turf(squad_leader)))
+		if(!brain.navigation.move_to_next_turf(get_turf(squad_leader)))
 			return ONGOING_ACTION_COMPLETED
 
 		if(get_dist(tied_human, squad_leader) > follow_distance)

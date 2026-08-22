@@ -52,7 +52,7 @@
 
 	var/mob/living/carbon/tied_human = brain.tied_human
 	if(get_dist(tied_human, machinegunner_home) > 0)
-		if(!brain.move_to_next_turf(machinegunner_home))
+		if(!brain.navigation.move_to_next_turf(machinegunner_home))
 			return ONGOING_ACTION_COMPLETED
 
 	if(!get_dist(tied_human, machinegunner_home))

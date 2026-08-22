@@ -170,7 +170,7 @@
 	if(!charge_turf)
 		return FALSE
 
-	if(!brain.move_to_next_turf(charge_turf))
+	if(!brain.navigation.move_to_next_turf(charge_turf))
 		return FALSE
 
 	if(!brain.has_valid_tied_human())

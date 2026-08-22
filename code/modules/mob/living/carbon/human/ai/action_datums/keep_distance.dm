@@ -60,7 +60,7 @@
 	if(brain.cover.in_cover)
 		return ONGOING_ACTION_UNFINISHED
 
-	if(!brain.move_to_next_turf(get_turf(brain.targeting.current_target)))
+	if(!brain.navigation.move_to_next_turf(get_turf(brain.targeting.current_target)))
 		return ONGOING_ACTION_COMPLETED
 
 	return ONGOING_ACTION_UNFINISHED
@@ -85,7 +85,7 @@
 	var/relative_dir = Get_Compass_Dir(brain.targeting.current_target, tied_human)
 	for(var/direction in list(relative_dir, turn(relative_dir, 90), turn(relative_dir, -90)))
 		var/turf/destination = get_step(tied_human, direction)
-		if(brain.move_to_next_turf(destination))
+		if(brain.navigation.move_to_next_turf(destination))
 			moved = TRUE
 			break
 

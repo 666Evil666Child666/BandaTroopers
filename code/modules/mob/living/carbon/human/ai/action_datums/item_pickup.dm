@@ -53,7 +53,7 @@
 
 	var/mob/living/carbon/human/tied_human = brain.tied_human
 	if(get_dist(to_pickup, tied_human) > 1)
-		if(!brain.move_to_next_turf(get_turf(to_pickup)))
+		if(!brain.navigation.move_to_next_turf(get_turf(to_pickup)))
 			brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
 			brain.inventory.to_pickup -= to_pickup
 			return ONGOING_ACTION_COMPLETED

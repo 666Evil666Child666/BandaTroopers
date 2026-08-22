@@ -34,7 +34,7 @@
 #endif
 
 	if(get_dist(current_cover, tied_human) > 0)
-		if(!brain.move_to_next_turf(current_cover))
+		if(!brain.navigation.move_to_next_turf(current_cover))
 			brain.cover.end_cover()
 			return ONGOING_ACTION_COMPLETED
 

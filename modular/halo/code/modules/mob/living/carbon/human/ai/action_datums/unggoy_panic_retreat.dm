@@ -48,7 +48,7 @@
 		return FALSE
 
 	if(get_dist(cover_turf, brain.tied_human) > 0)
-		if(!brain.move_to_next_turf(cover_turf))
+		if(!brain.navigation.move_to_next_turf(cover_turf))
 			brain.cover.end_cover()
 			return FALSE
 
@@ -88,7 +88,7 @@
 	if(!best_destination)
 		return FALSE
 
-	if(!brain.move_to_next_turf(best_destination))
+	if(!brain.navigation.move_to_next_turf(best_destination))
 		return FALSE
 
 	tied_human.face_atom(threat)

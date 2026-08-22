@@ -39,7 +39,7 @@
 		INVOKE_ASYNC(tied_human, TYPE_PROC_REF(/mob, do_click), brain.targeting.current_target, "", list())
 		tied_human.face_atom(brain.targeting.current_target)
 
-	if(!brain.move_to_next_turf(get_turf(brain.targeting.current_target)))
+	if(!brain.navigation.move_to_next_turf(get_turf(brain.targeting.current_target)))
 		return ONGOING_ACTION_COMPLETED
 
 	return ONGOING_ACTION_COMPLETED
