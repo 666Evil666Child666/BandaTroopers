@@ -8,6 +8,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/perception/perception
 	var/datum/human_ai_module/cover/cover
 	var/datum/human_ai_module/faction/faction
+	var/datum/human_ai_module/inventory/inventory
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -22,17 +23,16 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// Range in tiles for friendly proximity check when throwing grenades. Default 3. Override in HALO presets.
 	var/friendly_throw_check_range = 3 // SS220 EDIT: configurable friendly check range for grenade throws
 
-	/// Should we limit our FOV in case view_distance is more than 7
-	var/scope_vision = TRUE
-
 	/// List of whitelisted/blacklisted action datums
 	var/list/action_whitelist = null
 	var/list/action_blacklist = null
 
 	/// Distance for view checks
 	var/view_distance = 6
-		/// If TRUE, shoots until the target is dead. Else, stops when downed
+	/// If TRUE, shoots until the target is dead. Else, stops when downed
 	var/shoot_to_kill = TRUE
+	/// Should we limit our FOV in case view_distance is more than 7
+	var/scope_vision = TRUE
 
 	/// List of current action datums
 	var/list/ongoing_actions = list()
@@ -43,11 +43,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// A targeted turf that we should quickly approach
 	var/turf/quick_approach
 
-		/// Ref to the last turf that the AI shot at
+	/// Ref to the last turf that the AI shot at
 	var/turf/shot_at
 	/// If TRUE, the AI will throw grenades at enemies who enter cover
 	var/grenading_allowed = TRUE
-	/// If TRUE, we care about the target being in view after shooting at them. If not, then we only do a line check instead
 
 	/// If TRUE, then we're actively fighting someone or saw a bullet go by or saw someone else go into combat
 	var/in_combat = FALSE
@@ -62,15 +61,11 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// If FALSE, cannot be assigned to a squad
 	var/can_assign_squad = TRUE
 
-	/// Ref to the latest weapon we've drawn as a melee
-	var/obj/item/drawn_melee_weapon
+
 
 	/// If TRUE, the AI will not move at all
 	var/hold_position = FALSE
-	/// Optional throttle for nearby item scans. Zero means run every tick.
-	var/nearby_item_search_interval = 0
-	COOLDOWN_DECLARE(nearby_item_search_cooldown)
-	var/nearby_item_search_dirty = FALSE
+
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
 	COOLDOWN_DECLARE(combat_voiceline_cooldown)
@@ -84,11 +79,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
+	inventory = new(src)
+	inventory.register_signals()
 	RegisterSignal(tied_human, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
-	RegisterSignal(tied_human, COMSIG_HUMAN_EQUIPPED_ITEM, PROC_REF(on_item_equip))
-	RegisterSignal(tied_human, COMSIG_HUMAN_UNEQUIPPED_ITEM, PROC_REF(on_item_unequip))
-	RegisterSignal(tied_human, COMSIG_MOB_PICKUP_ITEM, PROC_REF(on_item_pickup))
-	RegisterSignal(tied_human, COMSIG_MOB_DROP_ITEM, PROC_REF(on_item_drop))
 	RegisterSignal(tied_human, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: HALO death guard should tear down AI and force corpses prone immediately
 	RegisterSignal(tied_human, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
 	RegisterSignal(tied_human, COMSIG_HUMAN_HANDCUFFED, PROC_REF(on_handcuffed))
@@ -96,7 +89,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	RegisterSignal(tied_human, COMSIG_HUMAN_SET_SPECIES, PROC_REF(on_species_change))
 	RegisterSignal(tied_human, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(on_body_position_change)) // SS220 EDIT: standing back up should wake shared human AI immediately
 	GLOB.human_ai_brains += src
-	appraise_inventory()
+	inventory.appraise_inventory()
 	tied_human.a_intent_change(INTENT_DISARM)
 
 /datum/human_ai_brain/Destroy(force, ...)
@@ -106,6 +99,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(perception)
 	QDEL_NULL(cover)
 	QDEL_NULL(faction)
+	QDEL_NULL(inventory)
 	tied_human = null
 
 	return ..()
@@ -122,18 +116,14 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	active_grenade_found = null // SS220 EDIT: reset stale grenade threat state so AI can leave throw-back mode cleanly
 	targeting.target_turf = null
 	shot_at = null
-	drawn_melee_weapon = null
-	primary_weapon = null
-	gun_data = null
+	inventory.reset_inventory()
 	targeting.lose_target()
 
 	for(var/action in ongoing_actions)
 		qdel(action)
 
 	ongoing_actions.Cut()
-	to_pickup.Cut()
 	lose_injured_ally()
-	invalidate_nearby_item_search()
 
 /datum/human_ai_brain/process(delta_time)
 	last_process_tick = world.time // SS220 EDIT: track scheduler entry to guard same-tick wake rethinks
@@ -176,8 +166,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		for(var/action in ongoing_actions)
 			qdel(action)
 		ongoing_actions.Cut()
-		to_pickup.Cut() // SS220 EDIT: lying crit AI must drop stale pickup goals so it does not keep chasing far-away weapons after forced prone
-		invalidate_nearby_item_search()
+		inventory.to_pickup.Cut() // SS220 EDIT: lying crit AI must drop stale pickup goals so it does not keep chasing far-away weapons after forced prone
+		inventory.invalidate_nearby_item_search()
 		return
 	else if((tied_human.stat == CONSCIOUS) && tied_human.resting && !HAS_TRAIT(tied_human, TRAIT_FLOORED))
 		// SS220 EDIT - START: final stand-up gate must stay exactly aligned with the existing wake rethink eligibility rules
@@ -195,8 +185,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(targeting.current_target)
 		enter_combat()
 
-	if(!iszombie(tied_human) && should_run_nearby_item_search())
-		item_search(range(2, tied_human))
+	if(!iszombie(tied_human) && inventory.should_run_nearby_item_search())
+		inventory.item_search(range(2, tied_human))
 
 	// List all allowed action types for AI to consider
 	var/list/allowed_actions = action_whitelist || (GLOB.AI_actions.Copy() - action_blacklist)
@@ -262,23 +252,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			if(ONGOING_ACTION_COMPLETED)
 				qdel(action)
 
-/datum/human_ai_brain/proc/should_run_nearby_item_search()
-	if(halo_should_suspend_nearby_item_search())
-		return FALSE
-
-	if(nearby_item_search_interval <= 0)
-		return TRUE
-
-	if(!nearby_item_search_dirty && !COOLDOWN_FINISHED(src, nearby_item_search_cooldown))
-		return FALSE
-
-	nearby_item_search_dirty = FALSE
-	COOLDOWN_START(src, nearby_item_search_cooldown, nearby_item_search_interval)
-	return TRUE
-
-/datum/human_ai_brain/proc/invalidate_nearby_item_search()
-	nearby_item_search_dirty = TRUE
-
 /datum/human_ai_brain/proc/on_human_delete(datum/source, force)
 	SIGNAL_HANDLER
 	perception.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
@@ -302,9 +275,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/proc/on_species_change(datum/source, new_species)
 	SIGNAL_HANDLER
 	if((new_species == SPECIES_YAUTJA) || (new_species == SPECIES_ZOMBIE))
-		ignore_looting = TRUE
+		inventory.ignore_looting = TRUE
 	else
-		ignore_looting = FALSE
+		inventory.ignore_looting = FALSE
 
 /datum/human_ai_brain/proc/on_body_position_change(datum/source, new_position, old_position)
 	SIGNAL_HANDLER
@@ -314,7 +287,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!has_valid_tied_human() || tied_human.client || tied_human.buckled || (tied_human.stat != CONSCIOUS) || tied_human.is_mob_incapacitated())
 		return
 
-	invalidate_nearby_item_search() // SS220 EDIT: wake-up should immediately invalidate idle pickup/grenade scan throttles
+	inventory.invalidate_nearby_item_search() // SS220 EDIT: wake-up should immediately invalidate idle pickup/grenade scan throttles
 	if(targeting.current_target)
 		targeting.update_target_pos() // SS220 EDIT: refresh transient combat targeting state after knockdown recovery
 
@@ -345,7 +318,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	perception.setup_detection_radius()
 
-	if(cover.in_cover && (get_dist(tied_human, cover.current_cover) > gun_data?.minimum_range))
+	if(cover.in_cover && (get_dist(tied_human, cover.current_cover) > inventory.gun_data?.minimum_range))
 		cover.end_cover()
 
 	targeting.update_target_pos()
@@ -397,8 +370,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		targeting.lose_target()
 		say_exit_combat_line()
 		if(!sniper_home)
-			holster_primary()
-		holster_melee()
+			inventory.holster_primary()
+		inventory.holster_melee()
 
 	if(cover.current_cover)
 		if(!prob(cover.peek_cover_chance))

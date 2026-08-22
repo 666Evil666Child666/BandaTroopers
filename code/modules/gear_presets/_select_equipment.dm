@@ -375,7 +375,7 @@
 	// Every AI with a preset should appraise inventory on spawn
 	var/datum/human_ai_brain/ai_brain = new_human.get_ai_brain()
 	if(ai_brain)
-		ai_brain.appraise_inventory()
+		ai_brain.inventory.appraise_inventory()
 
 // SS220 REMOVE (e64bb63898, 2f8015c1f1, dac4758021): /datum/equipment_preset/proc/do_vanity(mob/living/carbon/human/new_human, client/mob_client)
 /datum/equipment_preset/proc/do_vanity(mob/living/carbon/human/new_human, client/mob_client, late_join = FALSE) // SS220 EDIT

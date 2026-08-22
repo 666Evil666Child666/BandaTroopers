@@ -22,7 +22,7 @@
 	if(find_active_held_grenade(brain.tied_human))
 		return 80
 
-	if(!length(brain.equipment_map[HUMAN_AI_GRENADES]))
+	if(!length(brain.inventory.equipment_map[HUMAN_AI_GRENADES]))
 		return 0
 
 	return 70
@@ -81,7 +81,7 @@
 			return right_grenade
 
 /datum/ai_action/unggoy_suicide_bomber/proc/find_stored_grenade(obj/item/explosive/grenade/excluding = null)
-	for(var/obj/item/explosive/grenade/grenade as anything in brain.equipment_map[HUMAN_AI_GRENADES])
+	for(var/obj/item/explosive/grenade/grenade as anything in brain.inventory.equipment_map[HUMAN_AI_GRENADES])
 		if(grenade == excluding)
 			continue
 		return grenade
@@ -90,9 +90,9 @@
 	if(!brain || !brain.has_valid_tied_human())
 		return
 
-	brain.clear_main_hand()
+	brain.inventory.clear_main_hand()
 	brain.tied_human.swap_hand()
-	brain.clear_main_hand()
+	brain.inventory.clear_main_hand()
 	brain.tied_human.swap_hand()
 
 /datum/ai_action/unggoy_suicide_bomber/proc/prime_grenades()
@@ -108,14 +108,14 @@
 	if(!first_grenade)
 		return FALSE
 
-	brain.equip_item_from_equipment_map(HUMAN_AI_GRENADES, first_grenade)
+	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, first_grenade)
 	if(QDELETED(first_grenade) || (first_grenade.loc != tied_human))
 		return FALSE
 
 	var/obj/item/explosive/grenade/second_grenade = find_stored_grenade(first_grenade)
 	if(second_grenade)
 		tied_human.swap_hand()
-		brain.equip_item_from_equipment_map(HUMAN_AI_GRENADES, second_grenade)
+		brain.inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, second_grenade)
 		if(QDELETED(second_grenade) || (second_grenade.loc != tied_human))
 			second_grenade = null
 		tied_human.swap_hand()

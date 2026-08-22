@@ -4,10 +4,10 @@
 	var/obj/item/to_pickup
 
 /datum/ai_action/item_pickup/get_weight(datum/human_ai_brain/brain)
-	if(brain.ignore_looting)
+	if(brain.inventory.ignore_looting)
 		return 0
 
-	if(!length(brain.to_pickup))
+	if(!length(brain.inventory.to_pickup))
 		return 0
 
 	if(HAS_TRAIT_FROM(brain.tied_human, TRAIT_UNDENSE, LYING_DOWN_TRAIT))
@@ -22,17 +22,17 @@
 	if(brain.tied_human.r_hand?.flags_item & NODROP)
 		return 0
 
-	if(!brain.primary_weapon)
+	if(!brain.inventory.primary_weapon)
 		return 16
 
 	return 11
 
 /datum/ai_action/item_pickup/Added()
 	// If we already have a primary weapon, don't set to_pickup and action will be killed immideately
-	if(isgun(to_pickup) && brain.primary_weapon)
+	if(isgun(to_pickup) && brain.inventory.primary_weapon)
 		return
 
-	to_pickup = brain.to_pickup[1]
+	to_pickup = brain.inventory.to_pickup[1]
 
 /datum/ai_action/item_pickup/Destroy(force, ...)
 	to_pickup = null
@@ -43,26 +43,26 @@
 
 	if(QDELETED(to_pickup) || !isturf(to_pickup.loc))
 		brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
-		brain.to_pickup -= to_pickup
+		brain.inventory.to_pickup -= to_pickup
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.primary_weapon && isgun(to_pickup))
+	if(brain.inventory.primary_weapon && isgun(to_pickup))
 		brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
-		brain.to_pickup -= to_pickup
+		brain.inventory.to_pickup -= to_pickup
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/living/carbon/human/tied_human = brain.tied_human
 	if(get_dist(to_pickup, tied_human) > 1)
 		if(!brain.move_to_next_turf(get_turf(to_pickup)))
 			brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
-			brain.to_pickup -= to_pickup
+			brain.inventory.to_pickup -= to_pickup
 			return ONGOING_ACTION_COMPLETED
 
 		if(get_dist(to_pickup, tied_human) > 1)
 			return ONGOING_ACTION_UNFINISHED
 
-	if(brain.primary_weapon)
-		brain.primary_weapon.unwield(tied_human)
+	if(brain.inventory.primary_weapon)
+		brain.inventory.primary_weapon.unwield(tied_human)
 
 	if(tied_human.get_held_item())
 		tied_human.swap_hand()
@@ -76,42 +76,42 @@
 		primary.guaranteed_delay_time = world.time
 		return ONGOING_ACTION_COMPLETED
 
-	if(istype(to_pickup, /obj/item/storage/belt) && !brain.container_refs["belt"])
+	if(istype(to_pickup, /obj/item/storage/belt) && !brain.inventory.container_refs["belt"])
 		tied_human.put_in_hands(to_pickup, TRUE)
 		INVOKE_ASYNC(tied_human, TYPE_PROC_REF(/mob, equip_to_slot), to_pickup, WEAR_WAIST)
 		return ONGOING_ACTION_COMPLETED
 
-	if(istype(to_pickup, /obj/item/storage/backpack) && !brain.container_refs["backpack"])
+	if(istype(to_pickup, /obj/item/storage/backpack) && !brain.inventory.container_refs["backpack"])
 		tied_human.put_in_hands(to_pickup, TRUE)
 		INVOKE_ASYNC(tied_human, TYPE_PROC_REF(/mob, equip_to_slot), to_pickup, WEAR_BACK)
 		return ONGOING_ACTION_COMPLETED
 
-	if(istype(to_pickup, /obj/item/storage/pouch) && !brain.container_refs["left_pocket"])
+	if(istype(to_pickup, /obj/item/storage/pouch) && !brain.inventory.container_refs["left_pocket"])
 		tied_human.put_in_hands(to_pickup, TRUE)
 		INVOKE_ASYNC(tied_human, TYPE_PROC_REF(/mob, equip_to_slot), to_pickup, WEAR_L_STORE)
 		return ONGOING_ACTION_COMPLETED
 
-	if(istype(to_pickup, /obj/item/storage/pouch) && !brain.container_refs["right_pocket"])
+	if(istype(to_pickup, /obj/item/storage/pouch) && !brain.inventory.container_refs["right_pocket"])
 		tied_human.put_in_hands(to_pickup, TRUE)
 		INVOKE_ASYNC(tied_human, TYPE_PROC_REF(/mob, equip_to_slot), to_pickup, WEAR_R_STORE)
 		return ONGOING_ACTION_COMPLETED
 
-	var/storage_spot = brain.storage_has_room(to_pickup)
+	var/storage_spot = brain.inventory.storage_has_room(to_pickup)
 	if(!storage_spot || !to_pickup.ai_can_use(tied_human, brain, tied_human))
 		brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
-		brain.to_pickup -= to_pickup
+		brain.inventory.to_pickup -= to_pickup
 		return ONGOING_ACTION_COMPLETED
 
 	if(to_pickup.flags_human_ai & HEALING_ITEM)
 		tied_human.put_in_hands(to_pickup, TRUE)
-		brain.store_item(to_pickup, storage_spot, HUMAN_AI_HEALTHITEMS)
+		brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_HEALTHITEMS)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.primary_weapon && istype(to_pickup, /obj/item/ammo_magazine))
+	if(brain.inventory.primary_weapon && istype(to_pickup, /obj/item/ammo_magazine))
 		var/obj/item/ammo_magazine/mag = to_pickup
-		if(istype(brain.primary_weapon, mag.gun_type))
+		if(istype(brain.inventory.primary_weapon, mag.gun_type))
 			tied_human.put_in_hands(to_pickup, TRUE)
-			brain.store_item(to_pickup, storage_spot, HUMAN_AI_AMMUNITION)
+			brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_AMMUNITION)
 			brain.tried_reload = FALSE // not appraising inventory there, let's say we can reload now
 		return ONGOING_ACTION_COMPLETED
 
@@ -119,12 +119,12 @@
 		var/obj/item/explosive/grenade/nade = to_pickup
 		if(!nade.active)
 			tied_human.put_in_hands(to_pickup, TRUE)
-			brain.store_item(to_pickup, storage_spot, HUMAN_AI_GRENADES)
+			brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_GRENADES)
 		return ONGOING_ACTION_COMPLETED
 
 	if(to_pickup.flags_human_ai & TOOL_ITEM)
 		tied_human.put_in_hands(to_pickup, TRUE)
-		brain.store_item(to_pickup, storage_spot, HUMAN_AI_TOOLS)
+		brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_TOOLS)
 		return ONGOING_ACTION_COMPLETED
 
 	return ONGOING_ACTION_COMPLETED

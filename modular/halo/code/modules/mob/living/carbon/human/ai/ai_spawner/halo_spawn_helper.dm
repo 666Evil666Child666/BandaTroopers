@@ -14,6 +14,6 @@
 		ai_human.face_dir(facing_dir)
 
 	var/datum/component/human_ai/ai_component = ai_human.AddComponent(/datum/component/human_ai)
-	ai_component?.ai_brain?.appraise_inventory(armor = TRUE)
+	ai_component?.ai_brain?.inventory?.appraise_inventory(armor = TRUE)
 
 	return ai_human

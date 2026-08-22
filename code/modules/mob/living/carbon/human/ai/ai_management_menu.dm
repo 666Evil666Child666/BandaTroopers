@@ -173,7 +173,7 @@
 
 	ai_human.face_dir(mob.dir)
 	ai_human.forceMove(get_turf(mob))
-	ai_human.get_ai_brain().appraise_inventory(armor = TRUE)
+	ai_human.get_ai_brain().inventory.appraise_inventory(armor = TRUE)
 
 /client/proc/make_human_ai(mob/living/carbon/human/mob in GLOB.human_mob_list)
 	set name = "Make AI"
@@ -194,7 +194,7 @@
 		return
 
 	mob.AddComponent(/datum/component/human_ai)
-	mob.get_ai_brain().appraise_inventory()
+	mob.get_ai_brain().inventory.appraise_inventory()
 
 	message_admins("[key_name_admin(usr)] assigned an AI component to [mob.real_name].")
 

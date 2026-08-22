@@ -229,7 +229,7 @@
 				owner.free_for_ghosts(spawned_human)
 			if(make_hai)
 				spawned_human.AddComponent(/datum/component/human_ai)
-				spawned_human.get_ai_brain().appraise_inventory(armor = TRUE)
+				spawned_human.get_ai_brain()?.inventory?.appraise_inventory(armor = TRUE)
 			if(paradropping)
 				spawned_human.paradrop()
 

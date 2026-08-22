@@ -50,9 +50,9 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	SHOULD_CALL_PARENT(TRUE) // Every weapon may be twohanded or have safety
 	set waitfor = FALSE
 
-	AI.ensure_primary_hand(firearm)
+	AI.inventory.ensure_primary_hand(firearm)
 	if((firearm.flags_item & TWOHANDED) && !(firearm.flags_item & WIELDED))
-		AI.wield_primary_sleep()
+		AI.inventory.wield_primary_sleep()
 
 	if(firearm.flags_gun_features & GUN_TRIGGER_SAFETY)
 		firearm.flags_gun_features ^= GUN_TRIGGER_SAFETY
@@ -62,8 +62,8 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 /datum/firearm_appraisal/proc/do_reload(obj/item/weapon/gun/firearm, obj/item/ammo_magazine/mag, mob/living/carbon/user, datum/human_ai_brain/AI)
 	if(QDELETED(firearm) || QDELETED(mag) || QDELETED(user) || !AI || !AI.has_valid_tied_human())
 		return
-	AI.unholster_primary()
-	AI.ensure_primary_hand(firearm)
+	AI.inventory.unholster_primary()
+	AI.inventory.ensure_primary_hand(firearm)
 	firearm.unwield(user)
 	sleep(AI.short_action_delay * AI.action_delay_mult)
 	if(QDELETED(firearm) || QDELETED(user) || !AI.has_valid_tied_human())
@@ -74,7 +74,7 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	sleep(AI.micro_action_delay * AI.action_delay_mult)
 	if(QDELETED(firearm) || QDELETED(mag) || QDELETED(user) || !AI.has_valid_tied_human())
 		return
-	AI.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, mag)
+	AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, mag)
 	sleep(AI.short_action_delay * AI.action_delay_mult)
 	if(QDELETED(firearm) || QDELETED(mag) || QDELETED(user) || !AI.has_valid_tied_human())
 		return
@@ -85,9 +85,9 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 			firearm?.attackby(mag, user)
 			sleep(AI.micro_action_delay * AI.action_delay_mult)
 		if(!QDELETED(mag) && (mag.current_rounds > 0))
-			var/storage_slot = AI.storage_has_room(mag)
+			var/storage_slot = AI.inventory.storage_has_room(mag)
 			if(storage_slot)
-				AI.store_item(mag, storage_slot, HUMAN_AI_AMMUNITION)
+				AI.inventory.store_item(mag, storage_slot, HUMAN_AI_AMMUNITION)
 			else
 				user.drop_held_item(mag)
 	else
@@ -96,7 +96,7 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	if(QDELETED(user) || !AI.has_valid_tied_human())
 		return
 	user.swap_hand()
-	AI.wield_primary_sleep()
+	AI.inventory.wield_primary_sleep()
 
 /datum/firearm_appraisal/sniper
 	optimal_range = 7
@@ -139,8 +139,8 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	primary_weight = 10
 
 /datum/firearm_appraisal/smartgun/do_reload(obj/item/weapon/gun/firearm, obj/item/ammo_magazine/mag, mob/living/carbon/user, datum/human_ai_brain/AI)
-	AI.unholster_primary()
-	AI.ensure_primary_hand(firearm)
+	AI.inventory.unholster_primary()
+	AI.inventory.ensure_primary_hand(firearm)
 	firearm.unwield(user)
 	user.swap_hand()
 	firearm.clicked(user, list("alt" = TRUE))
@@ -150,14 +150,14 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 		firearm?.unload(user, FALSE, TRUE, FALSE)
 	user.swap_hand()
 	sleep(AI.micro_action_delay * AI.action_delay_mult)
-	AI.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, mag)
+	AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, mag)
 	sleep(AI.short_action_delay * AI.action_delay_mult)
 	firearm?.attackby(mag, user)
 	sleep(AI.short_action_delay * AI.action_delay_mult)
 	firearm.clicked(user, list("alt" = TRUE))
 	sleep(AI.short_action_delay * AI.action_delay_mult)
 	user.swap_hand()
-	AI.wield_primary_sleep()
+	AI.inventory.wield_primary_sleep()
 
 /datum/firearm_appraisal/smg
 	burst_amount_max = 10
@@ -179,26 +179,26 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	)
 
 /datum/firearm_appraisal/shotgun_db/do_reload(obj/item/weapon/gun/firearm, obj/item/ammo_magazine/mag, mob/living/carbon/user, datum/human_ai_brain/AI)
-	AI.unholster_primary()
-	AI.ensure_primary_hand(firearm)
+	AI.inventory.unholster_primary()
+	AI.inventory.ensure_primary_hand(firearm)
 	firearm.unwield(user)
 	firearm.unique_action()
 	user.swap_hand()
 	sleep(AI.short_action_delay * AI.action_delay_mult)
-	AI.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, mag)
+	AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, mag)
 	sleep(AI.short_action_delay * AI.action_delay_mult)
 	firearm.attackby(mag, user)
 	sleep(AI.micro_action_delay * AI.action_delay_mult)
 	firearm.attackby(mag, user)
 	if(!QDELETED(mag))
-		var/storage_spot = AI.storage_has_room(mag)
+		var/storage_spot = AI.inventory.storage_has_room(mag)
 		if(storage_spot)
 			sleep(AI.micro_action_delay * AI.action_delay_mult)
-			AI.store_item(mag, storage_spot, HUMAN_AI_AMMUNITION)
+			AI.inventory.store_item(mag, storage_spot, HUMAN_AI_AMMUNITION)
 	sleep(AI.short_action_delay * AI.action_delay_mult)
 	user.swap_hand()
 	firearm.unique_action()
-	AI.wield_primary_sleep()
+	AI.inventory.wield_primary_sleep()
 
 /datum/firearm_appraisal/shotgun
 	burst_amount_max = 2

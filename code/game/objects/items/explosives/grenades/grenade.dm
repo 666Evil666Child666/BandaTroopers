@@ -176,7 +176,7 @@
 	sleep(ai_brain.short_action_delay * ai_brain.action_delay_mult)
 	attack_self(user)
 	user.toggle_throw_mode(THROW_MODE_NORMAL)
-	ai_brain.ensure_primary_hand(src)
+	ai_brain.inventory.ensure_primary_hand(src)
 	sleep(det_time * 0.4)
 	if(QDELETED(src) || (loc != user))
 		return

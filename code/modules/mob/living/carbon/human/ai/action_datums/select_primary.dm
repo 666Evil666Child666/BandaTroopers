@@ -3,13 +3,13 @@
 	action_flags = ACTION_USING_HANDS
 
 /datum/ai_action/select_primary/get_weight(datum/human_ai_brain/brain)
-	if(!length(brain.secondary_weapons))
+	if(!length(brain.inventory.secondary_weapons))
 		return 0
 
-	if(!brain.tried_reload && brain.primary_weapon)
+	if(!brain.tried_reload && brain.inventory.primary_weapon)
 		return 0
 
-	if(brain.primary_weapon?.ai_can_use(brain.tied_human, brain))
+	if(brain.inventory.primary_weapon?.ai_can_use(brain.tied_human, brain))
 		return 0
 
 	return 12
@@ -25,7 +25,7 @@
 
 	var/obj/item/weapon/gun/best_secondary
 	var/datum/firearm_appraisal/best_secondary_appraisal
-	for(var/obj/item/weapon/gun/secondary as anything in brain.secondary_weapons)
+	for(var/obj/item/weapon/gun/secondary as anything in brain.inventory.secondary_weapons)
 		if(!secondary.ai_can_use(tied_human, brain))
 			continue
 
@@ -43,17 +43,17 @@
 	if(!best_secondary)
 		return
 
-	var/obj/item/weapon/gun/primary_weapon = brain.primary_weapon
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
 	if(primary_weapon && brain.tied_human.is_holding(primary_weapon))
-		var/possible_storage_loc = brain.storage_has_room(primary_weapon)
+		var/possible_storage_loc = brain.inventory.storage_has_room(primary_weapon)
 		if((primary_weapon.flags_equip_slot & SLOT_BACK) && !tied_human.back)
 			tied_human.equip_to_slot(primary_weapon, WEAR_BACK, TRUE)
 		else if(!tied_human.s_store && tied_human.wear_suit && ((primary_weapon.flags_equip_slot & SLOT_SUIT_STORE) || is_type_in_list(primary_weapon, tied_human.wear_suit.allowed)))
 			tied_human.equip_to_slot(primary_weapon, WEAR_J_STORE, TRUE)
 		else if(possible_storage_loc)
-			brain.store_item(primary_weapon, possible_storage_loc)
+			brain.inventory.store_item(primary_weapon, possible_storage_loc)
 
-	brain.add_secondary_weapon(primary_weapon)
-	brain.set_primary_weapon(best_secondary)
+	brain.inventory.add_secondary_weapon(primary_weapon)
+	brain.inventory.set_primary_weapon(best_secondary)
 	brain.tried_reload = FALSE
 	return best_secondary

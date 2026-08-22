@@ -18,7 +18,7 @@
 	if(brain.cover.current_cover)
 		return 0
 
-	if(!brain.primary_weapon)
+	if(!brain.inventory.primary_weapon)
 		return 0
 
 	if(brain.healing_someone)
@@ -42,7 +42,7 @@
 	if(brain.tried_reload || brain.cover.current_cover || brain.healing_someone)
 		return ONGOING_ACTION_COMPLETED
 
-	var/obj/item/weapon/gun/primary_weapon = brain.primary_weapon
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
 	if(!primary_weapon)
 		return ONGOING_ACTION_COMPLETED
 
@@ -60,9 +60,9 @@
 		brain.tied_human.face_dir(brain.sniper_dir)
 
 	if(!brain.should_reload())
-		brain.unholster_primary()
-		brain.ensure_primary_hand(primary_weapon)
-		brain.wield_primary()
+		brain.inventory.unholster_primary()
+		brain.inventory.ensure_primary_hand(primary_weapon)
+		brain.inventory.wield_primary()
 
 	return ONGOING_ACTION_UNFINISHED
 

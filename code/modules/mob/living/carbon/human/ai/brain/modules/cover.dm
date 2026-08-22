@@ -33,7 +33,7 @@
 	if(!COOLDOWN_FINISHED(src, cover_search_cooldown))
 		return
 
-	if(!(cover_without_gun || brain.primary_weapon))
+	if(!(cover_without_gun || brain.inventory.primary_weapon))
 		return
 
 	COOLDOWN_START(src, cover_search_cooldown, 10 SECONDS)

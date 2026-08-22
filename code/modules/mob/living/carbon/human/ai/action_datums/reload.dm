@@ -7,7 +7,7 @@
 	if(brain.tried_reload)
 		return 0
 
-	if(!brain.gun_data)
+	if(!brain.inventory.gun_data)
 		return 0
 
 	if(!brain.should_reload())
@@ -25,7 +25,7 @@
 	if(currently_reloading)
 		return ONGOING_ACTION_UNFINISHED
 
-	var/obj/item/weapon/gun/primary_weapon = brain.primary_weapon
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
 	if(!primary_weapon || brain.tried_reload || !brain.should_reload())
 		return ONGOING_ACTION_COMPLETED
 
@@ -35,14 +35,14 @@
 /datum/ai_action/reload/proc/reload()
 	set waitfor = FALSE
 
-	var/obj/item/weapon/gun/primary_weapon = brain.primary_weapon
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
 	var/mob/living/carbon/tied_human = brain.tied_human
 
-	var/datum/firearm_appraisal/gun_data = brain.gun_data
+	var/datum/firearm_appraisal/gun_data = brain.inventory.gun_data
 	if(gun_data.disposable)
 		tied_human.drop_held_item(primary_weapon)
-		brain.to_pickup -= primary_weapon
-		brain.set_primary_weapon(null)
+		brain.inventory.to_pickup -= primary_weapon
+		brain.inventory.set_primary_weapon(null)
 		qdel(src)
 		return
 
@@ -62,6 +62,6 @@
 	currently_reloading = FALSE
 
 /datum/ai_action/reload/proc/primary_ammo_search()
-	for(var/obj/item/ammo_magazine/mag as anything in brain.equipment_map[HUMAN_AI_AMMUNITION])
-		if(istype(brain.primary_weapon, mag.gun_type) && mag.ai_can_use(brain.tied_human, src))
+	for(var/obj/item/ammo_magazine/mag as anything in brain.inventory.equipment_map[HUMAN_AI_AMMUNITION])
+		if(istype(brain.inventory.primary_weapon, mag.gun_type) && mag.ai_can_use(brain.tied_human, src))
 			return mag

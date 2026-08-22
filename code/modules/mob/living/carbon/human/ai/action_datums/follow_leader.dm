@@ -13,7 +13,7 @@
 	if(brain.hold_position)
 		return 0
 
-	if(length(brain.to_pickup))
+	if(length(brain.inventory.to_pickup))
 		return 0
 
 	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad_id]"]
@@ -39,7 +39,7 @@
 /datum/ai_action/follow_leader/trigger_action()
 	. = ..()
 
-	if(brain.in_combat || length(brain.to_pickup))
+	if(brain.in_combat || length(brain.inventory.to_pickup))
 		return ONGOING_ACTION_COMPLETED
 
 	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad_id]"]

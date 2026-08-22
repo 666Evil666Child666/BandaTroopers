@@ -481,7 +481,7 @@ f
 	equip_to_slot_or_del(to_move, WEAR_R_HAND)
 	equip_to_slot_or_del(new /obj/item/parachute(src), WEAR_BACK)
 	if(get_ai_brain()) //have to do this again because slot swapping fucks with hAI
-		get_ai_brain().appraise_inventory(armor = TRUE)
+		get_ai_brain()?.inventory?.appraise_inventory(armor = TRUE)
 
 /mob/living/carbon/human/proc/strip_all()
 	for(var/obj/item/current_item in src)
@@ -490,7 +490,7 @@ f
 			continue
 		qdel(current_item)
 	if(get_ai_brain())
-		get_ai_brain().appraise_inventory(armor = TRUE)
+		get_ai_brain()?.inventory?.appraise_inventory(armor = TRUE)
 
 /mob/living/carbon/human/proc/strip_weapons()
 	var/obj/item_storage
@@ -520,4 +520,4 @@ f
 		if(istype(hand_item, /obj/item/explosive))
 			qdel(hand_item)
 	if(get_ai_brain())
-		get_ai_brain().appraise_inventory(armor = TRUE)
+		get_ai_brain()?.inventory?.appraise_inventory(armor = TRUE)

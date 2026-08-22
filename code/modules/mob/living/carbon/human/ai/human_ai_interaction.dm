@@ -7,7 +7,7 @@
 	if(!mouse_opacity || (level < 2))
 		return FALSE
 
-	if(!brain.unholster_any_weapon())
+	if(!brain.inventory.unholster_any_weapon())
 		ai_human.a_intent_change(INTENT_HARM)
 
 	ai_human.do_click(src, "", list())
@@ -40,18 +40,18 @@
 //       MINERAL DOOR      //
 /////////////////////////////
 /obj/structure/mineral_door/human_ai_obstacle(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain, direction, turf/target)
-	if(!brain.primary_weapon)
+	if(!brain.inventory.primary_weapon)
 		return INFINITY
 
 	return DOOR_PENALTY
 
 /obj/structure/mineral_door/resin/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	var/obj/item/weapon/gun/primary_weapon = brain.primary_weapon
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
 	if(!primary_weapon)
 		return TRUE
 
-	brain.unholster_primary()
-	brain.ensure_primary_hand(primary_weapon)
+	brain.inventory.unholster_primary()
+	brain.inventory.ensure_primary_hand(primary_weapon)
 
 	return ..()
 
@@ -78,20 +78,20 @@
 	if(!(stat & NOPOWER))
 		return INFINITY
 
-	if(density && !operating && !unacidable && brain.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR))
+	if(density && !operating && !unacidable && brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR))
 		return DOOR_PENALTY
 
 	return INFINITY
 
 /obj/structure/machinery/door/poddoor/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	if(!(stat & NOPOWER) || !brain.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR))
+	if(!(stat & NOPOWER) || !brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR))
 		return
 
-	brain.holster_primary()
-	var/obj/item/crowbar = brain.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR)
-	brain.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
+	brain.inventory.holster_primary()
+	var/obj/item/crowbar = brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR)
+	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
 	ai_human.do_click(src, "", list())
-	brain.store_item(crowbar, brain.storage_has_room(crowbar), HUMAN_AI_TOOLS)
+	brain.inventory.store_item(crowbar, brain.inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
 
 /////////////////////////////
 //         AIRLOCK         //
@@ -124,11 +124,11 @@
 		ai_human.do_click(src, "", list())
 		return
 
-	brain.holster_primary()
-	var/obj/item/crowbar = brain.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR)
-	brain.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
+	brain.inventory.holster_primary()
+	var/obj/item/crowbar = brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR)
+	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
 	ai_human.do_click(src, "", list())
-	brain.store_item(crowbar, brain.storage_has_room(crowbar), HUMAN_AI_TOOLS)
+	brain.inventory.store_item(crowbar, brain.inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
 
 /////////////////////////////
 //         HUMANS         //

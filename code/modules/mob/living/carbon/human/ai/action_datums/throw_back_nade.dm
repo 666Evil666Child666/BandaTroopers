@@ -37,7 +37,7 @@
 		return TRUE
 
 	if(!(tied_human.get_active_hand()?.flags_item & NODROP))
-		brain.clear_main_hand()
+		brain.inventory.clear_main_hand()
 		if(tied_human.put_in_active_hand(grenade))
 			return TRUE
 
@@ -46,7 +46,7 @@
 		return TRUE
 
 	if(!(tied_human.get_active_hand()?.flags_item & NODROP))
-		brain.clear_main_hand()
+		brain.inventory.clear_main_hand()
 		if(tied_human.put_in_active_hand(grenade))
 			return TRUE
 
@@ -57,7 +57,7 @@
 /datum/ai_action/throw_back_nade/proc/try_hold_grenade_ensure_primary(mob/living/carbon/human/tied_human, obj/item/explosive/grenade/grenade)
 	if(!try_hold_grenade(tied_human, grenade))
 		return FALSE
-	brain.ensure_primary_hand(grenade)
+	brain.inventory.ensure_primary_hand(grenade)
 	return TRUE
 // SS220 EDIT END
 
@@ -191,7 +191,7 @@
 	tied_human.face_atom(place_to_throw)
 	log_game("AI GRENADE: throw-back proceeding to async throw — grenade=[active_grenade_found], target=[place_to_throw], mob=[key_name(tied_human)]")
 	brain.active_grenade_found = null // SS220 EDIT: the grenade is already under this AI's control, stop blocking the rest of its combat state
-	brain.to_pickup -= active_grenade_found // Do NOT play fetch. Please.
+	brain.inventory.to_pickup -= active_grenade_found // Do NOT play fetch. Please.
 	throw_ready_time = 0
 	mid_throw = TRUE // SS220 EDIT: actual throw runs asynchronously so trigger_action() stays no-sleep for DreamChecker
 	INVOKE_ASYNC(src, PROC_REF(async_throw_grenade), tied_human, active_grenade_found, place_to_throw) // SS220 EDIT: async throw avoids DreamChecker sleep violations from throw_item/launch paths

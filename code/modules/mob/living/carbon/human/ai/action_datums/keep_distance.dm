@@ -7,11 +7,11 @@
 	if(!current_target)
 		return 0
 
-	if(!brain.primary_weapon || brain.tried_reload || brain.hold_position)
+	if(!brain.inventory.primary_weapon || brain.tried_reload || brain.hold_position)
 		return 0
 
 	var/distance = get_dist(brain.tied_human, brain.targeting.current_target)
-	var/datum/firearm_appraisal/gun_data = brain.gun_data
+	var/datum/firearm_appraisal/gun_data = brain.inventory.gun_data
 
 	if(ismob(current_target) && current_target?:is_mob_incapacitated())
 		if(distance != gun_data.minimum_range)
@@ -32,7 +32,7 @@
 	if(!brain.targeting.current_target)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.primary_weapon)
+	if(!brain.inventory.primary_weapon)
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.active_grenade_found)
@@ -48,11 +48,11 @@
 	if(ismob(brain.targeting.current_target))
 		var/mob/current_mob_target = brain.targeting.current_target
 		if(current_mob_target.is_mob_incapacitated())
-			range = brain.gun_data.minimum_range
+			range = brain.inventory.gun_data.minimum_range
 		else
-			range = brain.gun_data.optimal_range
+			range = brain.inventory.gun_data.optimal_range
 	else
-		range = brain.gun_data.optimal_range
+		range = brain.inventory.gun_data.optimal_range
 
 	if(get_dist(brain.tied_human, brain.targeting.current_target) <= range)
 		return
@@ -74,9 +74,9 @@
 		is_incap = current_mob_target.is_mob_incapacitated()
 
 	if(brain.cover.in_cover || is_incap)
-		range = brain.gun_data.minimum_range
+		range = brain.inventory.gun_data.minimum_range
 	else
-		range = brain.gun_data.optimal_range
+		range = brain.inventory.gun_data.optimal_range
 
 	if(get_dist(brain.tied_human, brain.targeting.current_target) >= range)
 		return

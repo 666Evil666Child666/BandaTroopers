@@ -184,7 +184,7 @@
 /datum/human_ai_brain/proc/brute_heal(mob/living/carbon/human/target)
 	. = FALSE
 	var/obj/item/brute_heal
-	for(var/obj/item/heal_item as anything in equipment_map[HUMAN_AI_HEALTHITEMS])
+	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
 		if(is_type_in_list(heal_item, brute_heal_items) && heal_item.ai_can_use(tied_human, src, target))
 			brute_heal = heal_item
 			break
@@ -192,8 +192,8 @@
 	if(!brute_heal)
 		return
 
-	clear_main_hand()
-	if(!equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, brute_heal))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, brute_heal))
 		healing_someone = FALSE
 		return
 
@@ -204,9 +204,9 @@
 	if(QDELETED(brute_heal))
 		return
 
-	var/storage_slot = storage_has_room(brute_heal)
+	var/storage_slot = inventory.storage_has_room(brute_heal)
 	if(storage_slot)
-		store_item(brute_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(brute_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		tied_human.drop_held_item(brute_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
@@ -215,7 +215,7 @@
 
 /datum/human_ai_brain/proc/bleed_heal(mob/living/carbon/human/target)
 	var/obj/item/bleed_heal
-	for(var/obj/item/heal_item as anything in equipment_map[HUMAN_AI_HEALTHITEMS])
+	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
 		if(is_type_in_list(heal_item, bleed_heal_items) && heal_item.ai_can_use(tied_human, src, target))
 			bleed_heal = heal_item
 			break
@@ -223,8 +223,8 @@
 	if(!bleed_heal)
 		return
 
-	clear_main_hand()
-	if(!equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, bleed_heal))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, bleed_heal))
 		healing_someone = FALSE
 		return
 
@@ -235,9 +235,9 @@
 	if(QDELETED(bleed_heal))
 		return
 
-	var/storage_slot = storage_has_room(bleed_heal)
+	var/storage_slot = inventory.storage_has_room(bleed_heal)
 	if(storage_slot)
-		store_item(bleed_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(bleed_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		tied_human.drop_held_item(bleed_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
@@ -246,7 +246,7 @@
 
 /datum/human_ai_brain/proc/bone_heal(mob/living/carbon/human/target)
 	var/obj/item/bone_heal
-	for(var/obj/item/heal_item as anything in equipment_map[HUMAN_AI_HEALTHITEMS])
+	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
 		if(is_type_in_list(heal_item, bonebreak_heal_items) && heal_item.ai_can_use(tied_human, src, target))
 			bone_heal = heal_item
 			break
@@ -254,8 +254,8 @@
 	if(!bone_heal)
 		return
 
-	clear_main_hand()
-	if(!equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, bone_heal))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, bone_heal))
 		healing_someone = FALSE
 		return
 
@@ -266,9 +266,9 @@
 	if(QDELETED(bone_heal))
 		return
 
-	var/storage_slot = storage_has_room(bone_heal)
+	var/storage_slot = inventory.storage_has_room(bone_heal)
 	if(storage_slot)
-		store_item(bone_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(bone_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		tied_human.drop_held_item(bone_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
@@ -277,7 +277,7 @@
 
 /datum/human_ai_brain/proc/burn_heal(mob/living/carbon/human/target)
 	var/obj/item/burn_heal
-	for(var/obj/item/heal_item as anything in equipment_map[HUMAN_AI_HEALTHITEMS])
+	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
 		if(is_type_in_list(heal_item, burn_heal_items) && heal_item.ai_can_use(tied_human, src, target))
 			burn_heal = heal_item
 			break
@@ -285,8 +285,8 @@
 	if(!burn_heal)
 		return
 
-	clear_main_hand()
-	if(!equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, burn_heal))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, burn_heal))
 		healing_someone = FALSE
 		return
 
@@ -297,9 +297,9 @@
 	if(QDELETED(burn_heal))
 		return
 
-	var/storage_slot = storage_has_room(burn_heal)
+	var/storage_slot = inventory.storage_has_room(burn_heal)
 	if(storage_slot)
-		store_item(burn_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(burn_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		tied_human.drop_held_item(burn_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
@@ -308,7 +308,7 @@
 
 /datum/human_ai_brain/proc/pain_heal(mob/living/carbon/human/target)
 	var/obj/item/painkiller
-	for(var/obj/item/heal_item as anything in equipment_map[HUMAN_AI_HEALTHITEMS])
+	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
 		if(is_type_in_list(heal_item, painkiller_items) && heal_item.ai_can_use(tied_human, src, target))
 			painkiller = heal_item
 			break
@@ -316,8 +316,8 @@
 	if(!painkiller)
 		return
 
-	clear_main_hand()
-	if(!equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, painkiller))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, painkiller))
 		healing_someone = FALSE
 		return
 
@@ -328,9 +328,9 @@
 	if(QDELETED(painkiller))
 		return
 
-	var/storage_slot = storage_has_room(painkiller)
+	var/storage_slot = inventory.storage_has_room(painkiller)
 	if(storage_slot)
-		store_item(painkiller, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(painkiller, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		tied_human.drop_held_item(painkiller)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
@@ -339,7 +339,7 @@
 
 /datum/human_ai_brain/proc/tox_heal(mob/living/carbon/human/target)
 	var/obj/item/tox_heal
-	for(var/obj/item/heal_item as anything in equipment_map[HUMAN_AI_HEALTHITEMS])
+	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
 		if(is_type_in_list(heal_item, tox_heal_items) && heal_item.ai_can_use(tied_human, src, target))
 			tox_heal = heal_item
 			break
@@ -347,8 +347,8 @@
 	if(!tox_heal)
 		return
 
-	clear_main_hand()
-	if(!equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, tox_heal))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, tox_heal))
 		healing_someone = FALSE
 		return
 
@@ -359,9 +359,9 @@
 	if(QDELETED(tox_heal))
 		return
 
-	var/storage_slot = storage_has_room(tox_heal)
+	var/storage_slot = inventory.storage_has_room(tox_heal)
 	if(storage_slot)
-		store_item(tox_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(tox_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		tied_human.drop_held_item(tox_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
@@ -370,7 +370,7 @@
 
 /datum/human_ai_brain/proc/oxy_heal(mob/living/carbon/human/target)
 	var/obj/item/oxy_heal
-	for(var/obj/item/heal_item as anything in equipment_map[HUMAN_AI_HEALTHITEMS])
+	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
 		if(is_type_in_list(heal_item, oxy_heal_items) && heal_item.ai_can_use(tied_human, src, target))
 			oxy_heal = heal_item
 
@@ -378,8 +378,8 @@
 		healing_someone = FALSE
 		return
 
-	clear_main_hand()
-	if(!equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, oxy_heal))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, oxy_heal))
 		healing_someone = FALSE
 		return
 
@@ -391,9 +391,9 @@
 		healing_someone = FALSE
 		return
 
-	var/storage_slot = storage_has_room(oxy_heal)
+	var/storage_slot = inventory.storage_has_room(oxy_heal)
 	if(storage_slot)
-		store_item(oxy_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(oxy_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		tied_human.drop_held_item(oxy_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)

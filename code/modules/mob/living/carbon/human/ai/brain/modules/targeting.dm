@@ -7,6 +7,8 @@
 	var/turf/target_turf
 	/// At how far out the AI can see cloaked enemies
 	var/cloak_visible_range = 3
+	/// If TRUE, we care about the target being in view after shooting at them. If not, then we only do a line check instead
+	var/requires_vision = TRUE
 
 	COOLDOWN_DECLARE(fire_offscreen)
 
@@ -36,7 +38,7 @@
 	target_turf = get_turf(current_target)
 
 	if(brain)
-		brain.invalidate_nearby_item_search()
+		brain.inventory.invalidate_nearby_item_search()
 
 /datum/human_ai_module/targeting/proc/set_target_turf(turf/new_target_turf, duration = 4 SECONDS)
 	if(!new_target_turf)
@@ -63,7 +65,7 @@
 	target_turf = null
 
 	if(brain)
-		brain.invalidate_nearby_item_search()
+		brain.inventory.invalidate_nearby_item_search()
 
 /datum/human_ai_module/targeting/proc/on_target_delete(datum/source, force)
 	SIGNAL_HANDLER
@@ -225,7 +227,7 @@
 
 	var/distance = get_dist(brain.tied_human, target)
 
-	if(!brain.has_nightvision && distance > 1 && !can_detect_living_target(target))
+	if(!brain.inventory.has_nightvision && distance > 1 && !can_detect_living_target(target))
 		return FALSE
 
 	if(HAS_TRAIT(target, TRAIT_CLOAKED) && get_dist(brain.tied_human, target) > cloak_visible_range)

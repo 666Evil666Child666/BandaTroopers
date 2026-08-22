@@ -21,10 +21,10 @@
 	if(!target_turf)
 		return 0
 
-	if(!length(brain.equipment_map[HUMAN_AI_GRENADES]))
+	if(!length(brain.inventory.equipment_map[HUMAN_AI_GRENADES]))
 		return 0
 
-	if(!brain.primary_weapon)
+	if(!brain.inventory.primary_weapon)
 		return 10
 
 	if(locate(/turf/closed) in get_line(brain.tied_human, target_turf))
@@ -38,9 +38,9 @@
 	. += /datum/ai_action/sniper_nest
 
 /datum/ai_action/throw_grenade/Added()
-	throwing = locate() in brain.equipment_map[HUMAN_AI_GRENADES]
+	throwing = locate() in brain.inventory.equipment_map[HUMAN_AI_GRENADES]
 	throw_range_override = isnum(throwing?.throw_range) ? throwing.throw_range : null
-	log_game("AI GRENADE: throw action created — grenade=[throwing] ([throwing?.type]), available=[english_list(brain?.equipment_map[HUMAN_AI_GRENADES])], throw_range=[throw_range_override], mob=[key_name(brain?.tied_human)]")
+	log_game("AI GRENADE: throw action created — grenade=[throwing] ([throwing?.type]), available=[english_list(brain?.inventory?.equipment_map[HUMAN_AI_GRENADES])], throw_range=[throw_range_override], mob=[key_name(brain?.tied_human)]")
 	cancel_conflicting_actions()
 
 /datum/ai_action/throw_grenade/Destroy(force, ...)
@@ -75,17 +75,17 @@
 	if(active_hand && (active_hand != grenade))
 		if(active_hand.flags_item & NODROP)
 			return FALSE
-		brain.clear_main_hand()
+		brain.inventory.clear_main_hand()
 		if(tied_human.get_active_hand())
 			return FALSE
 
 	if(grenade.loc != tied_human)
-		if(!brain.equip_item_from_equipment_map(HUMAN_AI_GRENADES, grenade))
+		if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, grenade))
 			return FALSE
 	else if(!tied_human.put_in_active_hand(grenade))
 		return FALSE
 
-	brain.ensure_primary_hand(grenade)
+	brain.inventory.ensure_primary_hand(grenade)
 	return tied_human.get_active_hand() == grenade
 
 /datum/ai_action/throw_grenade/proc/can_throw_to_target(mob/living/carbon/human/tied_human, obj/item/explosive/grenade/grenade, turf/target_turf)
@@ -217,7 +217,7 @@
 		finish_async_throw()
 		return
 
-	brain.ensure_primary_hand(grenade)
+	brain.inventory.ensure_primary_hand(grenade)
 	brain.say_grenade_thrown_line() // SS220 EDIT: keep the voiceline inside the fixed one-second post-prime throw window
 	sleep(HUMAN_AI_GRENADE_POST_PRIME_THROW_DELAY) // SS220 EDIT: generic AI should release its own primed grenade after one second, not after burning most of the fuse in hand
 	if(QDELETED(grenade) || (grenade.loc != tied_human))
@@ -276,9 +276,9 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/living/carbon/human/tied_human = brain.tied_human
-	if(brain.primary_weapon)
-		brain.primary_weapon.unwield(tied_human)
-		if(tied_human.get_active_hand() == brain.primary_weapon)
+	if(brain.inventory.primary_weapon)
+		brain.inventory.primary_weapon.unwield(tied_human)
+		if(tied_human.get_active_hand() == brain.inventory.primary_weapon)
 			tied_human.swap_hand()
 
 	cancel_conflicting_actions() // SS220 EDIT: cancel any already-running move/fire/reload actions before the grenade is primed

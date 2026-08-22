@@ -65,8 +65,8 @@
 	if(path_retarget_slack > 0)
 		path_target_retarget_slack = max(path_target_retarget_slack, path_retarget_slack)
 
-	nearby_item_search_interval = nearby_item_interval
-	nearby_item_search_dirty = TRUE
+	inventory.nearby_item_search_interval = nearby_item_interval
+	inventory.nearby_item_search_dirty = TRUE
 
 /datum/human_ai_brain/proc/halo_should_suspend_nearby_item_search(queued_projectiles_override = null)
 	if(!halo_runtime_uses_projectile_pressure_controls() || !in_combat)
@@ -90,10 +90,10 @@
 	if(!threat)
 		threat = halo_covenant_get_threat_atom()
 
-	if(!tied_human || !primary_weapon || !threat)
+	if(!tied_human || !inventory.primary_weapon || !threat)
 		return FALSE
 
-	var/datum/ammo/gun_ammo = halo_get_gun_combat_ammo(primary_weapon)
+	var/datum/ammo/gun_ammo = halo_get_gun_combat_ammo(inventory.primary_weapon)
 	if(halo_should_backpressure_ai_only_projectile_fire(tied_human, threat, gun_ammo, queued_projectiles_override))
 		halo_ranged_fire_backoff_until = world.time + 0.6 SECONDS
 		halo_perf_bump_projectile_throttles()
@@ -112,7 +112,7 @@
 
 /datum/human_ai_brain/proc/halo_covenant_weapon_is_cooling(obj/item/weapon/gun/gun = null)
 	if(!gun)
-		gun = primary_weapon
+		gun = inventory.primary_weapon
 
 	if(!istype(gun, /obj/item/weapon/gun/energy/plasma))
 		return FALSE
@@ -132,7 +132,7 @@
 		human.swap_hand()
 		return !human.get_active_hand()
 
-	clear_main_hand()
+	inventory.clear_main_hand()
 	if(!human.get_active_hand())
 		return TRUE
 
@@ -140,7 +140,7 @@
 	if(!human.get_active_hand())
 		return TRUE
 
-	clear_main_hand()
+	inventory.clear_main_hand()
 	if(!human.get_active_hand())
 		return TRUE
 
@@ -242,7 +242,7 @@
 	if(!halo_covenant_get_threat_atom())
 		return FALSE
 
-	return halo_covenant_weapon_is_cooling(primary_weapon)
+	return halo_covenant_weapon_is_cooling(inventory.primary_weapon)
 
 /datum/human_ai_brain/proc/halo_unggoy_should_hold_anchor_on_overheat()
 	if(!halo_unggoy_should_retreat_on_overheat())
@@ -292,13 +292,13 @@
 	if(!tied_human)
 		return TRUE
 
-	if(!primary_weapon)
+	if(!inventory.primary_weapon)
 		return TRUE
 
-	if(!primary_weapon.ai_can_use(tied_human, src))
+	if(!inventory.primary_weapon.ai_can_use(tied_human, src))
 		return TRUE
 
-	if(halo_covenant_weapon_is_cooling(primary_weapon))
+	if(halo_covenant_weapon_is_cooling(inventory.primary_weapon))
 		return TRUE
 
 	return should_reload()
@@ -310,7 +310,7 @@
 	if(halo_cached_ranged_fallback_time == world.time)
 		return halo_cached_ranged_fallback_available
 
-	var/obj/item/weapon/gun/fallback_weapon = halo_sangheili_committed_primary_weapon || primary_weapon
+	var/obj/item/weapon/gun/fallback_weapon = halo_sangheili_committed_primary_weapon || inventory.primary_weapon
 	if(!tied_human || !fallback_weapon || QDELETED(fallback_weapon))
 		halo_cached_ranged_fallback_time = world.time
 		halo_cached_ranged_fallback_available = FALSE
@@ -332,7 +332,7 @@
 		return TRUE
 
 	halo_cached_ranged_fallback_time = world.time
-	halo_cached_ranged_fallback_available = !isnull(weapon_ammo_search(fallback_weapon))
+	halo_cached_ranged_fallback_available = !isnull(inventory.weapon_ammo_search(fallback_weapon))
 	return halo_cached_ranged_fallback_available
 
 /datum/human_ai_brain/proc/halo_sangheili_should_preserve_drawn_sword()
@@ -385,7 +385,7 @@
 	if(!tied_human || !threat)
 		return FALSE
 
-	if(!halo_covenant_weapon_is_cooling(primary_weapon))
+	if(!halo_covenant_weapon_is_cooling(inventory.primary_weapon))
 		return FALSE
 
 	if(halo_sangheili_should_sword_charge(threat))
@@ -451,16 +451,16 @@
 		return FALSE
 
 	halo_sangheili_melee_committed = TRUE
-	halo_sangheili_committed_primary_weapon = primary_weapon
+	halo_sangheili_committed_primary_weapon = inventory.primary_weapon
 	halo_sangheili_committed_tried_reload = tried_reload
-	halo_sangheili_committed_ignore_looting = ignore_looting
+	halo_sangheili_committed_ignore_looting = inventory.ignore_looting
 	invalidate_halo_runtime_caches()
 
-	if(primary_weapon)
-		set_primary_weapon(null)
+	if(inventory.primary_weapon)
+		inventory.set_primary_weapon(null)
 
 	tried_reload = TRUE
-	ignore_looting = TRUE
+	inventory.ignore_looting = TRUE
 
 	if(!action_blacklist)
 		action_blacklist = list()
@@ -510,12 +510,12 @@
 			action_blacklist = null
 
 	tried_reload = committed_tried_reload
-	ignore_looting = committed_ignore_looting
+	inventory.ignore_looting = committed_ignore_looting
 
-	if(!restore_firearm || primary_weapon || !committed_primary_weapon || !halo_sangheili_owns_item(committed_primary_weapon))
+	if(!restore_firearm || inventory.primary_weapon || !committed_primary_weapon || !halo_sangheili_owns_item(committed_primary_weapon))
 		return
 
-	set_primary_weapon(committed_primary_weapon)
+	inventory.set_primary_weapon(committed_primary_weapon)
 
 /datum/human_ai_brain/proc/halo_sangheili_should_keep_sword_drawn()
 	if(halo_sangheili_should_preserve_drawn_sword())
@@ -573,7 +573,7 @@
 		halo_sangheili_begin_melee_commit(sword)
 		if(!sword.activated && !sword.nonfunctional)
 			sword.set_activation_state(TRUE, human)
-		ensure_primary_hand(sword)
+		inventory.ensure_primary_hand(sword)
 		return sword
 
 	if(!halo_covenant_clear_hands())
@@ -601,7 +601,7 @@
 
 	if(!sword.activated && !sword.nonfunctional)
 		sword.set_activation_state(TRUE, human)
-	ensure_primary_hand(sword)
+	inventory.ensure_primary_hand(sword)
 	return sword
 
 /datum/human_ai_brain/proc/halo_sangheili_holster_sword(force = FALSE)

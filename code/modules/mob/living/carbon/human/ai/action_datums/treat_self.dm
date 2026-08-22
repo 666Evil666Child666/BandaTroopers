@@ -13,10 +13,10 @@
 	if(brain.targeting.current_target || should_fire_offscreen)
 		return 0
 
-	if(length(brain.to_pickup))
+	if(length(brain.inventory.to_pickup))
 		return 0
 
-	if(!length(brain.equipment_map[HUMAN_AI_HEALTHITEMS]))
+	if(!length(brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS]))
 		return 0
 
 	if(brain.cant_be_treated_stacks >= brain.treatment_stack_threshold)
@@ -37,7 +37,7 @@
 	if(brain.targeting.current_target)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!length(brain.equipment_map[HUMAN_AI_HEALTHITEMS]))
+	if(!length(brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS]))
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/living/tied_human = brain.tied_human
