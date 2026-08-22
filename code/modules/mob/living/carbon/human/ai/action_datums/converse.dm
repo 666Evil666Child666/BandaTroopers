@@ -3,15 +3,7 @@
 	action_flags = ACTION_USING_MOUTH
 
 /datum/ai_action/converse/get_weight(datum/human_ai_brain/brain)
-	if(!COOLDOWN_FINISHED(brain, conversation_start_cooldown))
-		return 0
-
-	COOLDOWN_START(brain, conversation_start_cooldown, 1 SECONDS)
-
-	if(brain.combat.in_combat || brain.in_conversation || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
-		return 0
-
-	if(!prob(brain.conversation_start_prob))
+	if(!brain.conversation.can_try_start())
 		return 0
 
 	return 1
@@ -24,7 +16,7 @@
 	var/list/ai_nearby = list()
 	for(var/mob/living/carbon/human/nearby_human in view(2, brain.tied_human))
 		var/datum/human_ai_brain/other_brain = nearby_human.get_ai_brain()
-		if(!other_brain || other_brain.combat.in_combat || other_brain.in_conversation || other_brain.tied_human.client || (other_brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+		if(!other_brain || !other_brain.conversation.can_participate())
 			continue
 
 		ai_nearby += other_brain

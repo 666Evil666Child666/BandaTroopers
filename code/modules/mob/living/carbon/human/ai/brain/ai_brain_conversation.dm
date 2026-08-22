@@ -35,7 +35,7 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 		return
 
 	for(var/datum/human_ai_brain/brain as anything in brains_involved)
-		brain.in_conversation = TRUE
+		brain.conversation.start_conversation()
 
 	for(var/string in conversation_data)
 		switch(string[1])
@@ -44,7 +44,7 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 				var/datum/human_ai_brain/brain = brains_involved[ai_index]
 				if(should_interrupt_conversation(brain))
 					for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
-						other_brain.in_conversation = FALSE
+						other_brain.conversation.end_conversation()
 					return
 
 				for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
@@ -58,12 +58,11 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 				sleep(text2num(copytext(string, 3)))
 
 	for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
-		other_brain.in_conversation = FALSE
-		COOLDOWN_START(other_brain, conversation_success_cooldown, other_brain.conversation_success_cooldown_time)
+		other_brain.conversation.end_conversation(TRUE)
 
 /// Simple check to see if a conversation should stop at a given line
 /datum/human_ai_conversation/proc/should_interrupt_conversation(datum/human_ai_brain/brain)
-	return (brain.combat.in_combat || !brain.in_conversation || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	return (brain.combat.in_combat || !brain.conversation.in_conversation || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
 
 /// Check to be overridden to see if an AI should be able to start a conversation
 /datum/human_ai_conversation/proc/conversation_allowed(datum/human_ai_brain/brain)
@@ -101,16 +100,3 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 	if(brain.tied_human.faction in acceptable_factions)
 		return ..()
 	return FALSE
-
-
-/datum/human_ai_brain
-	/// If TRUE, this AI is currently in a conversation with others
-	var/in_conversation = FALSE
-	/// The chance that the AI will try to initiate a conversation. Trying to initiate a conversation is on a 1 second cooldown, so this is really every 5 ticks
-	/// Disabled until more conversations are added
-	var/conversation_start_prob = 0 //0.75 // at 1 chance / sec, this'll mean we hit the equivalent of a 50% chance of a conversation at ~90 chances, which would take ~90 seconds
-	COOLDOWN_DECLARE(conversation_start_cooldown)
-	/// Cooldown upon a successful conversation, started on everyone involved at the end of the conversation
-	COOLDOWN_DECLARE(conversation_success_cooldown)
-	/// Length of the conversation success cooldown
-	var/conversation_success_cooldown_time = 45 SECONDS

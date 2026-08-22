@@ -17,6 +17,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/squad/squad
 	var/datum/human_ai_module/action_runtime/action_runtime
 	var/datum/human_ai_module/combat/combat
+	var/datum/human_ai_module/conversation/conversation
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -55,6 +56,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	squad = new(src)
 	action_runtime = new(src)
 	combat = new(src)
+	conversation = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -87,6 +89,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(squad)
 	QDEL_NULL(action_runtime)
 	QDEL_NULL(combat)
+	QDEL_NULL(conversation)
 	tied_human = null
 
 	return ..()
