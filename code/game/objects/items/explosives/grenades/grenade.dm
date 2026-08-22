@@ -181,7 +181,7 @@
 	if(QDELETED(src) || (loc != user))
 		return
 
-	ai_brain.say_grenade_thrown_line()
+	ai_brain.communication.say_grenade_thrown_line()
 	sleep(det_time * 0.4)
 	if(QDELETED(src) || (loc != user))
 		return

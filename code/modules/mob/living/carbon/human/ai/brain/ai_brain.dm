@@ -11,6 +11,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/inventory/inventory
 	var/datum/human_ai_module/grenade/grenade
 	var/datum/human_ai_module/health/health
+	var/datum/human_ai_module/communication/communication
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -49,9 +50,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/combat_decay_time_min = 15 SECONDS
 	/// The maximum amount of time that can pass before this AI can leave combat
 	var/combat_decay_time_max = 30 SECONDS
-	/// Minimum spacing between AI combat voicelines to avoid runaway chatter loops in prolonged fights.
-	var/combat_voiceline_cooldown_time = 4 SECONDS
-
 	/// If FALSE, cannot be assigned to a squad
 	var/can_assign_squad = TRUE
 
@@ -62,7 +60,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
-	COOLDOWN_DECLARE(combat_voiceline_cooldown)
 
 /datum/human_ai_brain/New(mob/living/carbon/human/tied_human)
 	. = ..()
@@ -72,6 +69,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	cover = new(src)
 	grenade = new(src)
 	health = new(src)
+	communication = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -98,6 +96,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(inventory)
 	QDEL_NULL(grenade)
 	QDEL_NULL(health)
+	QDEL_NULL(communication)
 	tied_human = null
 
 	return ..()
@@ -330,7 +329,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	if(!in_combat)
-		say_in_combat_line()
+		communication.say_in_combat_line()
 
 	if(isxeno(targeting.current_target))
 		cover.try_cover(Get_Angle(targeting.current_target, tied_human), targeting.current_target)
@@ -353,7 +352,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(in_combat)
 		tied_human.a_intent_change(INTENT_DISARM)
 		targeting.lose_target()
-		say_exit_combat_line()
+		communication.say_exit_combat_line()
 		if(!sniper_home)
 			inventory.holster_primary()
 		inventory.holster_melee()

@@ -78,7 +78,7 @@
 		if(squaddie.tied_human.is_mob_incapacitated())
 			continue
 
-		squaddie.on_squad_member_death(dead_mob)
+		squaddie.communication.on_squad_member_death(dead_mob)
 
 /datum/human_ai_squad/proc/on_squad_member_delete(datum/human_ai_brain/deleting)
 	SIGNAL_HANDLER

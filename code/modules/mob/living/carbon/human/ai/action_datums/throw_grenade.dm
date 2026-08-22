@@ -218,7 +218,7 @@
 		return
 
 	brain.inventory.ensure_primary_hand(grenade)
-	brain.say_grenade_thrown_line() // SS220 EDIT: keep the voiceline inside the fixed one-second post-prime throw window
+	brain.communication.say_grenade_thrown_line() // SS220 EDIT: keep the voiceline inside the fixed one-second post-prime throw window
 	sleep(HUMAN_AI_GRENADE_POST_PRIME_THROW_DELAY) // SS220 EDIT: generic AI should release its own primed grenade after one second, not after burning most of the fuse in hand
 	if(QDELETED(grenade) || (grenade.loc != tied_human))
 		log_game("AI GRENADE: async throw aborted after post-prime hold — grenade lost, QDELETED=[QDELETED(grenade)], loc=[grenade?.loc], mob=[key_name(tied_human)]")
