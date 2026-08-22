@@ -11,6 +11,28 @@
 /datum/human_ai_module/grenade/proc/reset_grenade()
 	active_grenade_found = null // SS220 EDIT: reset stale grenade threat state so AI can leave throw-back mode cleanly
 
+/datum/human_ai_module/grenade/proc/get_active_grenade()
+	RETURN_TYPE(/obj/item/explosive/grenade)
+	return active_grenade_found
+
+/datum/human_ai_module/grenade/proc/has_active_grenade()
+	return active_grenade_found && !QDELETED(active_grenade_found)
+
+/datum/human_ai_module/grenade/proc/set_active_grenade(obj/item/explosive/grenade/grenade)
+	active_grenade_found = grenade
+
+/datum/human_ai_module/grenade/proc/clear_active_grenade()
+	active_grenade_found = null
+
+/datum/human_ai_module/grenade/proc/can_throw_back()
+	return can_throw_back_grenades
+
+/datum/human_ai_module/grenade/proc/can_throw_grenades()
+	return grenading_allowed
+
+/datum/human_ai_module/grenade/proc/get_friendly_throw_check_range()
+	return friendly_throw_check_range
+
 /datum/human_ai_module/grenade/proc/has_throw_in_progress()
 	if(!brain)
 		return FALSE

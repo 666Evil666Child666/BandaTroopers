@@ -68,6 +68,60 @@
 	to_pickup.Cut()
 	invalidate_nearby_item_search()
 
+/datum/human_ai_module/inventory/proc/get_primary_weapon()
+	RETURN_TYPE(/obj/item/weapon/gun)
+	return primary_weapon
+
+/datum/human_ai_module/inventory/proc/has_primary_weapon()
+	return !!primary_weapon
+
+/datum/human_ai_module/inventory/proc/get_gun_data()
+	RETURN_TYPE(/datum/firearm_appraisal)
+	return gun_data
+
+/datum/human_ai_module/inventory/proc/has_gun_data()
+	return !!gun_data
+
+/datum/human_ai_module/inventory/proc/has_secondary_weapons()
+	return length(secondary_weapons)
+
+/datum/human_ai_module/inventory/proc/get_secondary_weapons()
+	return secondary_weapons
+
+/datum/human_ai_module/inventory/proc/has_pickup_queue()
+	return length(to_pickup)
+
+/datum/human_ai_module/inventory/proc/get_next_pickup()
+	RETURN_TYPE(/obj/item)
+	if(!length(to_pickup))
+		return null
+	return to_pickup[1]
+
+/datum/human_ai_module/inventory/proc/remove_from_pickup(obj/item/item)
+	to_pickup -= item
+
+/datum/human_ai_module/inventory/proc/clear_pickup_queue()
+	to_pickup.Cut()
+
+/datum/human_ai_module/inventory/proc/is_looting_disabled()
+	return ignore_looting
+
+/datum/human_ai_module/inventory/proc/set_looting_disabled(disabled)
+	ignore_looting = disabled
+
+/datum/human_ai_module/inventory/proc/get_container_ref(container_id)
+	RETURN_TYPE(/obj/item/storage)
+	return container_refs[container_id]
+
+/datum/human_ai_module/inventory/proc/has_container_ref(container_id)
+	return !!container_refs[container_id]
+
+/datum/human_ai_module/inventory/proc/get_equipment_list(equipment_type)
+	return equipment_map[equipment_type]
+
+/datum/human_ai_module/inventory/proc/has_equipment(equipment_type)
+	return length(equipment_map[equipment_type])
+
 /datum/human_ai_module/inventory/proc/should_run_nearby_item_search()
 	if(brain.halo_should_suspend_nearby_item_search())
 		return FALSE
@@ -192,8 +246,8 @@
 
 	UnregisterSignal(source, COMSIG_PARENT_QDELETING)
 	to_pickup -= source
-	if(source == brain.grenade.active_grenade_found) // SS220 EDIT: purge deleted grenade threat refs immediately
-		brain.grenade.active_grenade_found = null
+	if(source == brain.grenade.get_active_grenade()) // SS220 EDIT: purge deleted grenade threat refs immediately
+		brain.grenade.clear_active_grenade()
 	invalidate_nearby_item_search()
 	brain.invalidate_halo_runtime_caches() //halo code is not in our work zone
 	equipped_items_original_loc -= source // SS220 EDIT: deleted held items must not keep stale original-slot tracking
@@ -276,7 +330,7 @@
 	if(isgun(brain.tied_human.s_store) && (brain.tied_human.s_store != primary_weapon))
 		add_secondary_weapon(brain.tied_human.s_store)
 
-	brain.guns.tried_reload = FALSE // We don't really need to do this in a smart way
+	brain.guns.clear_tried_reload() // We don't really need to do this in a smart way
 	if(belt)
 		appraise_belt()
 
@@ -452,15 +506,15 @@
 		set_primary_weapon(picked_up)
 
 	to_pickup -= picked_up
-	if(picked_up == brain.grenade.active_grenade_found) // SS220 EDIT: once someone holds the grenade, stop floor-threat gating — unless throw-back is active
+	if(picked_up == brain.grenade.get_active_grenade()) // SS220 EDIT: once someone holds the grenade, stop floor-threat gating — unless throw-back is active
 		if(!brain.action_runtime.has_ongoing_action(/datum/ai_action/throw_back_nade))
 			addtimer(CALLBACK(src, PROC_REF(clear_active_grenade_if_stale), picked_up), 1 SECONDS) // SS220 EDIT: delay reset so throw-back action has time to spawn on next scheduler tick
 	invalidate_nearby_item_search()
 
 /// SS220 EDIT: delayed reset of active_grenade_found — gives throw-back action one scheduler tick to spawn before clearing
 /datum/human_ai_module/inventory/proc/clear_active_grenade_if_stale(obj/item/explosive/grenade/grenade)
-	if(brain.grenade.active_grenade_found == grenade && !brain.action_runtime.has_ongoing_action(/datum/ai_action/throw_back_nade))
-		brain.grenade.active_grenade_found = null
+	if(brain.grenade.get_active_grenade() == grenade && !brain.action_runtime.has_ongoing_action(/datum/ai_action/throw_back_nade))
+		brain.grenade.clear_active_grenade()
 
 /datum/human_ai_module/inventory/proc/on_item_drop(datum/source, obj/item/dropped)
 	SIGNAL_HANDLER
@@ -533,9 +587,10 @@
 /datum/human_ai_module/inventory/proc/item_search(list/things_around)
 	// SS220 EDIT - START: grenade threat must come only from the current local scan, not from stale refs.
 	// Preserve active_grenade_found across ticks if it is already the currently held, still-active timed grenade.
-	if(!brain.grenade.active_grenade_found || QDELETED(brain.grenade.active_grenade_found) || !brain.grenade.active_grenade_found.active || (brain.grenade.active_grenade_found.fuse_type != TIMED_FUSE) || (brain.grenade.active_grenade_found.loc != brain.tied_human))
-		brain.grenade.active_grenade_found = null
-	var/can_handle_live_grenade = brain.grenade.can_throw_back_grenades && !((brain.tied_human.l_hand?.flags_item & NODROP) && (brain.tied_human.r_hand?.flags_item & NODROP))
+	var/obj/item/explosive/grenade/active_grenade = brain.grenade.get_active_grenade()
+	if(!active_grenade || QDELETED(active_grenade) || !active_grenade.active || (active_grenade.fuse_type != TIMED_FUSE) || (active_grenade.loc != brain.tied_human))
+		brain.grenade.clear_active_grenade()
+	var/can_handle_live_grenade = brain.grenade.can_throw_back() && !((brain.tied_human.l_hand?.flags_item & NODROP) && (brain.tied_human.r_hand?.flags_item & NODROP))
 	// SS220 EDIT - END
 	search_loop:
 		for(var/obj/item/thing in things_around)
@@ -550,7 +605,7 @@
 				if(nade.active && (nade.fuse_type == IMPACT_FUSE))
 					return
 				else if(nade.active && (nade.fuse_type == TIMED_FUSE) && can_handle_live_grenade) // SS220 EDIT: only enter throw-back mode if we can actually manipulate the grenade
-					brain.grenade.active_grenade_found = thing
+					brain.grenade.set_active_grenade(thing)
 					continue
 
 			// SS220 EDIT - START: ignore_looting must also suppress pickup candidates, not only the Item Pickup action.

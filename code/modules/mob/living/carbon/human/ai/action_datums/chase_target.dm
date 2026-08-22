@@ -3,19 +3,20 @@
 	action_flags = ACTION_USING_LEGS
 
 /datum/ai_action/chase_target/get_weight(datum/human_ai_brain/brain)
-	if(brain.cover.in_cover)
+	if(brain.cover.is_in_cover())
 		return 0
 
-	if(!brain.targeting.target_turf)
+	var/turf/target_turf = brain.targeting.get_target_turf()
+	if(!target_turf)
 		return 0
 
-	if(brain.targeting.current_target)
+	if(brain.targeting.has_current_target())
 		return 0
 
 	if(!brain.orders.can_move_for_action())
 		return 0
 
-	if(get_dist(brain.targeting.target_turf, brain.tied_human) > 20)
+	if(get_dist(target_turf, brain.tied_human) > 20)
 		return 0
 
 	return 6
@@ -27,8 +28,8 @@
 /datum/ai_action/chase_target/trigger_action()
 	. = ..()
 
-	var/turf/target_turf = brain.targeting.target_turf
-	if(QDELETED(target_turf) || brain.targeting.current_target)
+	var/turf/target_turf = brain.targeting.get_target_turf()
+	if(QDELETED(target_turf) || brain.targeting.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/tied_human = brain.tied_human
@@ -44,5 +45,5 @@
 	tied_human.face_dir(direction)
 
 	// Scouted, found nothing, discard
-	brain.targeting.target_turf = null
+	brain.targeting.clear_target_turf()
 	return ONGOING_ACTION_COMPLETED

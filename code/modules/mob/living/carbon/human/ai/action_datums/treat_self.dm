@@ -9,14 +9,14 @@
 	if(brain.health.healing_someone)
 		return 0
 
-	var/should_fire_offscreen = (brain.targeting.target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))
-	if(brain.targeting.current_target || should_fire_offscreen)
+	var/should_fire_offscreen = (brain.targeting.has_target_turf() && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))
+	if(brain.targeting.has_current_target() || should_fire_offscreen)
 		return 0
 
-	if(length(brain.inventory.to_pickup))
+	if(brain.inventory.has_pickup_queue())
 		return 0
 
-	if(!length(brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS]))
+	if(!brain.inventory.has_equipment(HUMAN_AI_HEALTHITEMS))
 		return 0
 
 	if(brain.health.cant_be_treated_stacks >= brain.health.treatment_stack_threshold)
@@ -34,10 +34,10 @@
 /datum/ai_action/treat_self/trigger_action()
 	. = ..()
 
-	if(brain.targeting.current_target)
+	if(brain.targeting.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
-	if(!length(brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS]))
+	if(!brain.inventory.has_equipment(HUMAN_AI_HEALTHITEMS))
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/living/carbon/human/tied_human = brain.tied_human

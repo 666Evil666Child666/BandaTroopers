@@ -22,13 +22,14 @@
 		for(var/datum/human_ai_brain/squaddie as anything in squad_datum.ai_in_squad)
 			if(!squaddie.has_valid_tied_human())
 				continue
-			if(squaddie.targeting.target_turf)
+			if(squaddie.targeting.has_target_turf())
 				continue
 			if(get_dist(squaddie.tied_human, brain.tied_human) > squaddie.profile.view_distance)
 				continue
-			if(!squaddie.targeting.can_target(brain.targeting.current_target))
+			var/atom/movable/current_target = brain.targeting.get_current_target()
+			if(!squaddie.targeting.can_target(current_target))
 				continue
-			squaddie.targeting.target_turf = brain.targeting.target_turf
+			squaddie.targeting.set_target_turf_direct(brain.targeting.get_target_turf())
 
 	if(brain.tied_human.client)
 		return
@@ -36,8 +37,9 @@
 	if(!in_combat)
 		brain.communication.say_in_combat_line()
 
-	if(isxeno(brain.targeting.current_target))
-		brain.cover.try_cover(Get_Angle(brain.targeting.current_target, brain.tied_human), brain.targeting.current_target)
+	var/atom/movable/current_target = brain.targeting.get_current_target()
+	if(isxeno(current_target))
+		brain.cover.try_cover(Get_Angle(current_target, brain.tied_human), current_target)
 
 	in_combat = TRUE
 	addtimer(CALLBACK(brain, TYPE_PROC_REF(/datum/human_ai_brain, exit_combat)), rand(combat_decay_time_min, combat_decay_time_max), TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
@@ -46,7 +48,7 @@
 /datum/human_ai_module/combat/proc/exit_combat()
 	if(!brain.has_valid_tied_human())
 		brain.targeting.lose_target()
-		brain.targeting.target_turf = null
+		brain.targeting.clear_target_turf()
 		brain.cover.end_cover()
 		in_combat = FALSE
 		return
@@ -62,11 +64,11 @@
 			brain.inventory.holster_primary()
 		brain.inventory.holster_melee()
 
-	if(brain.cover.current_cover)
+	if(brain.cover.has_cover())
 		if(!prob(brain.cover.peek_cover_chance))
-			brain.targeting.target_turf = null
+			brain.targeting.clear_target_turf()
 		brain.cover.end_cover()
 	else
-		brain.targeting.target_turf = null
+		brain.targeting.clear_target_turf()
 
 	in_combat = FALSE

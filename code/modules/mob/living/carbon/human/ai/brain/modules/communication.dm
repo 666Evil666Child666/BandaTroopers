@@ -170,9 +170,10 @@
 	emit_ai_voiceline(pick(grenade_thrown_lines))
 
 /datum/human_ai_module/communication/proc/say_reload_line(chance = reload_line_chance)
-	if(!length(reload_lines) || !prob(chance) || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT) || !brain.inventory.primary_weapon)
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	if(!length(reload_lines) || !prob(chance) || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT) || !primary_weapon)
 		return
-	if(istype(brain.inventory.primary_weapon.current_mag, /obj/item/ammo_magazine/internal))
+	if(istype(primary_weapon.current_mag, /obj/item/ammo_magazine/internal))
 		emit_ai_voiceline(pick(reload_internal_mag_lines))
 	else
 		emit_ai_voiceline(pick(reload_lines))

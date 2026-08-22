@@ -6,8 +6,18 @@
 	/// Generic cooldown for things like shotgun pumping, bolt racking, etc. This stops us from firing for however long specified
 	COOLDOWN_DECLARE(stop_fire_cooldown)
 
+/datum/human_ai_module/guns/proc/has_tried_reload()
+	return tried_reload
+
+/datum/human_ai_module/guns/proc/mark_tried_reload()
+	tried_reload = TRUE
+
+/datum/human_ai_module/guns/proc/clear_tried_reload()
+	tried_reload = FALSE
+
 /datum/human_ai_module/guns/proc/should_reload()
-	if(!brain.inventory.primary_weapon)
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	if(!primary_weapon)
 		return FALSE
 
 	// if(primary_weapon.in_chamber)
@@ -21,4 +31,4 @@
 
 	// return TRUE
 
-	return !brain.inventory.primary_weapon.has_ammunition()	// SS220 EDIT
+	return !primary_weapon.has_ammunition()	// SS220 EDIT

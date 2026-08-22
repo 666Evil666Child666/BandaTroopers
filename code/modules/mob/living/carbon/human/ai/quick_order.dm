@@ -94,7 +94,7 @@
 			brain.orders.set_quick_approach(get_turf(object))
 		else
 			brain.orders.clear_quick_approach()
-			brain.targeting.target_turf = get_turf(object)
+			brain.targeting.set_target_turf_direct(get_turf(object))
 
 	to_chat(holder, SPAN_BOLDNOTICE("Order sent."))
 

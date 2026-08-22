@@ -93,7 +93,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	combat.reset_combat()
 	grenade.reset_grenade()
-	targeting.target_turf = null
+	targeting.clear_target_turf()
 	inventory.reset_inventory()
 	targeting.lose_target()
 	health.lose_injured_ally()
@@ -135,7 +135,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			tied_human.set_lying_down() // SS220 EDIT: crit-resting AI can keep a stale standing transform unless prone is re-asserted through the shared helper
 		perception.suspend() // SS220 EDIT: prone hardcrit AI should not keep live projectile listeners or continue active combat movement
 		action_runtime.clear_actions()
-		inventory.to_pickup.Cut() // SS220 EDIT: lying crit AI must drop stale pickup goals so it does not keep chasing far-away weapons after forced prone
+		inventory.clear_pickup_queue() // SS220 EDIT: lying crit AI must drop stale pickup goals so it does not keep chasing far-away weapons after forced prone
 		inventory.invalidate_nearby_item_search()
 		return
 	else if((tied_human.stat == CONSCIOUS) && tied_human.resting && !HAS_TRAIT(tied_human, TRAIT_FLOORED))
@@ -148,10 +148,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(tied_human.buckled)
 		tied_human.set_buckled(FALSE) // AI never buckle themselves into chairs at the moment, change if this becomes the case
 
-	if(!targeting.current_target)
+	if(!targeting.has_current_target())
 		targeting.set_target(targeting.get_target())
 
-	if(targeting.current_target)
+	if(targeting.has_current_target())
 		combat.enter_combat()
 
 	if(!iszombie(tied_human) && inventory.should_run_nearby_item_search())
@@ -183,9 +183,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/proc/on_species_change(datum/source, new_species)
 	SIGNAL_HANDLER
 	if((new_species == SPECIES_YAUTJA) || (new_species == SPECIES_ZOMBIE))
-		inventory.ignore_looting = TRUE
+		inventory.set_looting_disabled(TRUE)
 	else
-		inventory.ignore_looting = FALSE
+		inventory.set_looting_disabled(FALSE)
 
 /datum/human_ai_brain/proc/on_body_position_change(datum/source, new_position, old_position)
 	SIGNAL_HANDLER
@@ -196,7 +196,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	inventory.invalidate_nearby_item_search() // SS220 EDIT: wake-up should immediately invalidate idle pickup/grenade scan throttles
-	if(targeting.current_target)
+	if(targeting.has_current_target())
 		targeting.update_target_pos() // SS220 EDIT: refresh transient combat targeting state after knockdown recovery
 
 	if((last_process_tick == world.time) || (wake_rethink_queued_at == world.time))
@@ -226,7 +226,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	perception.setup_detection_radius()
 
-	if(cover.in_cover && (get_dist(tied_human, cover.current_cover) > inventory.gun_data?.minimum_range))
+	if(cover.is_in_cover() && (get_dist(tied_human, cover.get_current_cover()) > inventory.get_gun_data()?.minimum_range))
 		cover.end_cover()
 
 	targeting.update_target_pos()

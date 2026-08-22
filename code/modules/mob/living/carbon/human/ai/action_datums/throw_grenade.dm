@@ -11,20 +11,20 @@
 	var/throw_range_override = null
 
 /datum/ai_action/throw_grenade/get_weight(datum/human_ai_brain/brain)
-	if(!brain.grenade.grenading_allowed)
+	if(!brain.grenade.can_throw_grenades())
 		return 0
 
 	if(!brain.combat.in_combat)
 		return 0
 
-	var/turf/target_turf = brain.targeting.target_turf
+	var/turf/target_turf = brain.targeting.get_target_turf()
 	if(!target_turf)
 		return 0
 
-	if(!length(brain.inventory.equipment_map[HUMAN_AI_GRENADES]))
+	if(!brain.inventory.has_equipment(HUMAN_AI_GRENADES))
 		return 0
 
-	if(!brain.inventory.primary_weapon)
+	if(!brain.inventory.has_primary_weapon())
 		return 10
 
 	if(locate(/turf/closed) in get_line(brain.tied_human, target_turf))
@@ -38,9 +38,9 @@
 	. += /datum/ai_action/sniper_nest
 
 /datum/ai_action/throw_grenade/Added()
-	throwing = locate() in brain.inventory.equipment_map[HUMAN_AI_GRENADES]
+	throwing = locate() in brain.inventory.get_equipment_list(HUMAN_AI_GRENADES)
 	throw_range_override = isnum(throwing?.throw_range) ? throwing.throw_range : null
-	log_game("AI GRENADE: throw action created — grenade=[throwing] ([throwing?.type]), available=[english_list(brain?.inventory?.equipment_map[HUMAN_AI_GRENADES])], throw_range=[throw_range_override], mob=[key_name(brain?.tied_human)]")
+	log_game("AI GRENADE: throw action created — grenade=[throwing] ([throwing?.type]), available=[english_list(brain?.inventory?.get_equipment_list(HUMAN_AI_GRENADES))], throw_range=[throw_range_override], mob=[key_name(brain?.tied_human)]")
 	cancel_conflicting_actions()
 
 /datum/ai_action/throw_grenade/Destroy(force, ...)
@@ -148,7 +148,7 @@
 	if(!brain || !target_turf)
 		return FALSE
 
-	for(var/mob/possible_friendly in range(brain.grenade.friendly_throw_check_range, target_turf)) // SS220 EDIT: use configurable range from grenade module
+	for(var/mob/possible_friendly in range(brain.grenade.get_friendly_throw_check_range(), target_turf)) // SS220 EDIT: use configurable range from grenade module
 		if(!brain.targeting.can_target(possible_friendly))
 			return TRUE
 
@@ -270,15 +270,16 @@
 	if(mid_throw)
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
-	var/turf/target_turf = brain.targeting.target_turf
+	var/turf/target_turf = brain.targeting.get_target_turf()
 	if(QDELETED(throwing) || !target_turf)
 		log_game("AI GRENADE: throw action aborted — grenade missing or no target, QDELETED=[QDELETED(throwing)], target=[target_turf], mob=[key_name(brain?.tied_human)]")
 		return ONGOING_ACTION_COMPLETED
 
 	var/mob/living/carbon/human/tied_human = brain.tied_human
-	if(brain.inventory.primary_weapon)
-		brain.inventory.primary_weapon.unwield(tied_human)
-		if(tied_human.get_active_hand() == brain.inventory.primary_weapon)
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	if(primary_weapon)
+		primary_weapon.unwield(tied_human)
+		if(tied_human.get_active_hand() == primary_weapon)
 			tied_human.swap_hand()
 
 	cancel_conflicting_actions() // SS220 EDIT: cancel any already-running move/fire/reload actions before the grenade is primed

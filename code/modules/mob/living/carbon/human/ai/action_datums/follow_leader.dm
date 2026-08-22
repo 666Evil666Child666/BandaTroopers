@@ -4,7 +4,7 @@
 	var/follow_distance = 1
 
 /datum/ai_action/follow_leader/get_weight(datum/human_ai_brain/brain)
-	if(brain.cover.in_cover)
+	if(brain.cover.is_in_cover())
 		return 0
 
 	if(brain.squad.is_squad_leader)
@@ -13,7 +13,7 @@
 	if(!brain.orders.can_move_for_action())
 		return 0
 
-	if(length(brain.inventory.to_pickup))
+	if(brain.inventory.has_pickup_queue())
 		return 0
 
 	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad.squad_id]"]
@@ -39,7 +39,7 @@
 /datum/ai_action/follow_leader/trigger_action()
 	. = ..()
 
-	if(brain.combat.in_combat || length(brain.inventory.to_pickup))
+	if(brain.combat.in_combat || brain.inventory.has_pickup_queue())
 		return ONGOING_ACTION_COMPLETED
 
 	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad.squad_id]"]

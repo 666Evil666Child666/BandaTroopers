@@ -3,13 +3,13 @@
 	action_flags = ACTION_USING_HANDS
 
 /datum/ai_action/select_primary/get_weight(datum/human_ai_brain/brain)
-	if(!length(brain.inventory.secondary_weapons))
+	if(!brain.inventory.has_secondary_weapons())
 		return 0
 
-	if(!brain.guns.tried_reload && brain.inventory.primary_weapon)
+	if(!brain.guns.has_tried_reload() && brain.inventory.has_primary_weapon())
 		return 0
 
-	if(brain.inventory.primary_weapon?.ai_can_use(brain.tied_human, brain))
+	if(brain.inventory.get_primary_weapon()?.ai_can_use(brain.tied_human, brain))
 		return 0
 
 	return 12
@@ -25,7 +25,7 @@
 
 	var/obj/item/weapon/gun/best_secondary
 	var/datum/firearm_appraisal/best_secondary_appraisal
-	for(var/obj/item/weapon/gun/secondary as anything in brain.inventory.secondary_weapons)
+	for(var/obj/item/weapon/gun/secondary as anything in brain.inventory.get_secondary_weapons())
 		if(!secondary.ai_can_use(tied_human, brain))
 			continue
 
@@ -43,7 +43,7 @@
 	if(!best_secondary)
 		return
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
 	if(primary_weapon && brain.tied_human.is_holding(primary_weapon))
 		var/possible_storage_loc = brain.inventory.storage_has_room(primary_weapon)
 		if((primary_weapon.flags_equip_slot & SLOT_BACK) && !tied_human.back)
@@ -55,5 +55,5 @@
 
 	brain.inventory.add_secondary_weapon(primary_weapon)
 	brain.inventory.set_primary_weapon(best_secondary)
-	brain.guns.tried_reload = FALSE
+	brain.guns.clear_tried_reload()
 	return best_secondary

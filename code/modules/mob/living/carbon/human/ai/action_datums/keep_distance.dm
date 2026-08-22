@@ -3,21 +3,21 @@
 	action_flags = ACTION_USING_LEGS
 
 /datum/ai_action/keep_distance/get_weight(datum/human_ai_brain/brain)
-	var/atom/movable/current_target = brain.targeting.current_target
+	var/atom/movable/current_target = brain.targeting.get_current_target()
 	if(!current_target)
 		return 0
 
-	if(!brain.inventory.primary_weapon || brain.guns.tried_reload || !brain.orders.can_move_for_action())
+	if(!brain.inventory.has_primary_weapon() || brain.guns.has_tried_reload() || !brain.orders.can_move_for_action())
 		return 0
 
-	var/distance = get_dist(brain.tied_human, brain.targeting.current_target)
-	var/datum/firearm_appraisal/gun_data = brain.inventory.gun_data
+	var/distance = get_dist(brain.tied_human, current_target)
+	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
 
 	if(ismob(current_target) && current_target?:is_mob_incapacitated())
 		if(distance != gun_data.minimum_range)
 			return 10
 
-	else if(brain.cover.in_cover)
+	else if(brain.cover.is_in_cover())
 		if(distance < gun_data.minimum_range)
 			return 10
 
@@ -29,60 +29,64 @@
 /datum/ai_action/keep_distance/trigger_action()
 	. = ..()
 
-	if(!brain.targeting.current_target)
+	if(!brain.targeting.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.inventory.primary_weapon)
+	if(!brain.inventory.has_primary_weapon())
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.grenade.active_grenade_found)
+	if(brain.grenade.has_active_grenade())
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.cover.current_cover && !brain.cover.in_cover)
+	if(brain.cover.has_cover() && !brain.cover.is_in_cover())
 		return ONGOING_ACTION_COMPLETED
 
 	return approach() || back_up() || ONGOING_ACTION_COMPLETED
 
 /datum/ai_action/keep_distance/proc/approach()
+	var/atom/movable/current_target = brain.targeting.get_current_target()
+	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
 	var/range
-	if(ismob(brain.targeting.current_target))
-		var/mob/current_mob_target = brain.targeting.current_target
+	if(ismob(current_target))
+		var/mob/current_mob_target = current_target
 		if(current_mob_target.is_mob_incapacitated())
-			range = brain.inventory.gun_data.minimum_range
+			range = gun_data.minimum_range
 		else
-			range = brain.inventory.gun_data.optimal_range
+			range = gun_data.optimal_range
 	else
-		range = brain.inventory.gun_data.optimal_range
+		range = gun_data.optimal_range
 
-	if(get_dist(brain.tied_human, brain.targeting.current_target) <= range)
+	if(get_dist(brain.tied_human, current_target) <= range)
 		return
 
-	if(brain.cover.in_cover)
+	if(brain.cover.is_in_cover())
 		return ONGOING_ACTION_UNFINISHED
 
-	if(!brain.navigation.move_to_next_turf(get_turf(brain.targeting.current_target)))
+	if(!brain.navigation.move_to_next_turf(get_turf(current_target)))
 		return ONGOING_ACTION_COMPLETED
 
 	return ONGOING_ACTION_UNFINISHED
 
 /datum/ai_action/keep_distance/proc/back_up()
 	var/mob/living/carbon/human/tied_human = brain.tied_human
+	var/atom/movable/current_target = brain.targeting.get_current_target()
+	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
 	var/range
 	var/is_incap = FALSE
-	if(ismob(brain.targeting.current_target))
-		var/mob/current_mob_target = brain.targeting.current_target
+	if(ismob(current_target))
+		var/mob/current_mob_target = current_target
 		is_incap = current_mob_target.is_mob_incapacitated()
 
-	if(brain.cover.in_cover || is_incap)
-		range = brain.inventory.gun_data.minimum_range
+	if(brain.cover.is_in_cover() || is_incap)
+		range = gun_data.minimum_range
 	else
-		range = brain.inventory.gun_data.optimal_range
+		range = gun_data.optimal_range
 
-	if(get_dist(brain.tied_human, brain.targeting.current_target) >= range)
+	if(get_dist(brain.tied_human, current_target) >= range)
 		return
 
 	var/moved = FALSE
-	var/relative_dir = Get_Compass_Dir(brain.targeting.current_target, tied_human)
+	var/relative_dir = Get_Compass_Dir(current_target, tied_human)
 	for(var/direction in list(relative_dir, turn(relative_dir, 90), turn(relative_dir, -90)))
 		var/turf/destination = get_step(tied_human, direction)
 		if(brain.navigation.move_to_next_turf(destination))

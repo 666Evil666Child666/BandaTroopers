@@ -10,6 +10,19 @@
 	/// The chance that the AI will leave cover when exiting combat
 	var/peek_cover_chance = 60
 
+/datum/human_ai_module/cover/proc/is_in_cover()
+	return in_cover
+
+/datum/human_ai_module/cover/proc/has_cover()
+	return !!current_cover
+
+/datum/human_ai_module/cover/proc/get_current_cover()
+	RETURN_TYPE(/turf)
+	return current_cover
+
+/datum/human_ai_module/cover/proc/enter_cover()
+	in_cover = TRUE
+
 /datum/human_ai_module/cover/proc/end_cover()
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
 	if(current_cover)
@@ -33,7 +46,7 @@
 	if(!COOLDOWN_FINISHED(src, cover_search_cooldown))
 		return
 
-	if(!(cover_without_gun || brain.inventory.primary_weapon))
+	if(!(cover_without_gun || brain.inventory.has_primary_weapon()))
 		return
 
 	COOLDOWN_START(src, cover_search_cooldown, 10 SECONDS)
@@ -126,10 +139,11 @@
 			turf_dict[scan_turf] -= 5 // even if it's our mine, we don't really want to stand on it
 
 	turf_dict[scan_turf] -= get_dist(brain.tied_human, scan_turf)
-	if(brain.targeting.current_target) // Might be smarter to hide in a different direction
-		turf_dict[scan_turf] += get_dist(brain.targeting.current_target, scan_turf) * 0.5
+	var/atom/movable/current_target = brain.targeting.get_current_target()
+	if(current_target) // Might be smarter to hide in a different direction
+		turf_dict[scan_turf] += get_dist(current_target, scan_turf) * 0.5
 
-		if(get_dir(brain.targeting.current_target, scan_turf) in get_related_directions(cover_dir))
+		if(get_dir(current_target, scan_turf) in get_related_directions(cover_dir))
 			turf_dict[scan_turf] -= 20
 
 	for(var/cardinal in shuffle(GLOB.cardinals))

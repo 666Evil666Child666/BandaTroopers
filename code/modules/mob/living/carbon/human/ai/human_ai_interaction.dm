@@ -40,13 +40,13 @@
 //       MINERAL DOOR      //
 /////////////////////////////
 /obj/structure/mineral_door/human_ai_obstacle(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain, direction, turf/target)
-	if(!brain.inventory.primary_weapon)
+	if(!brain.inventory.has_primary_weapon())
 		return INFINITY
 
 	return DOOR_PENALTY
 
 /obj/structure/mineral_door/resin/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
 	if(!primary_weapon)
 		return TRUE
 
@@ -152,7 +152,7 @@
 				a_intent = random_intent
 		return TRUE
 
-	if((body_position == LYING_DOWN) && (brain.targeting.current_target != src))
+	if((body_position == LYING_DOWN) && (brain.targeting.get_current_target() != src))
 		return TRUE
 
 	return ..()

@@ -10,7 +10,7 @@
 	if(!istype(brain.squad.current_order))
 		return 0
 
-	if(length(brain.inventory.to_pickup))
+	if(brain.inventory.has_pickup_queue())
 		return 0
 
 	if(current_order.waiting)
@@ -26,7 +26,7 @@
 	. = ..()
 
 	var/datum/ai_order/patrol/current_order = brain.squad.current_order
-	if(current_order.waiting || QDELETED(current_order) || !istype(current_order) || length(brain.inventory.to_pickup) || brain.combat.in_combat)
+	if(current_order.waiting || QDELETED(current_order) || !istype(current_order) || brain.inventory.has_pickup_queue() || brain.combat.in_combat)
 		return ONGOING_ACTION_COMPLETED
 
 	var/turf/current_waypoint = current_order.current_waypoint

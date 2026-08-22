@@ -47,6 +47,29 @@
 	target_turf = new_target_turf
 	COOLDOWN_START(src, fire_offscreen, duration)
 
+/datum/human_ai_module/targeting/proc/set_target_turf_direct(turf/new_target_turf)
+	target_turf = new_target_turf
+
+/datum/human_ai_module/targeting/proc/clear_target_turf()
+	target_turf = null
+
+/datum/human_ai_module/targeting/proc/get_target_turf()
+	RETURN_TYPE(/turf)
+	return target_turf
+
+/datum/human_ai_module/targeting/proc/has_target_turf()
+	return !!target_turf
+
+/datum/human_ai_module/targeting/proc/get_current_target()
+	RETURN_TYPE(/atom/movable)
+	return current_target
+
+/datum/human_ai_module/targeting/proc/has_current_target()
+	return !!current_target
+
+/datum/human_ai_module/targeting/proc/get_aim_target()
+	return current_target || target_turf
+
 /datum/human_ai_module/targeting/proc/lose_target()
 	if(current_target)
 		UnregisterSignal(current_target, COMSIG_PARENT_QDELETING)

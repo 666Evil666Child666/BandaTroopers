@@ -8,13 +8,13 @@
 	if(!brain.emplacement.has_sniper_home())
 		return 0
 
-	if(brain.guns.tried_reload)
+	if(brain.guns.has_tried_reload())
 		return 0
 
-	if(brain.cover.current_cover)
+	if(brain.cover.has_cover())
 		return 0
 
-	if(!brain.inventory.primary_weapon)
+	if(!brain.inventory.has_primary_weapon())
 		return 0
 
 	if(brain.health.healing_someone)
@@ -35,10 +35,10 @@
 /datum/ai_action/sniper_nest/trigger_action()
 	. = ..()
 
-	if(brain.guns.tried_reload || brain.cover.current_cover || brain.health.healing_someone)
+	if(brain.guns.has_tried_reload() || brain.cover.has_cover() || brain.health.healing_someone)
 		return ONGOING_ACTION_COMPLETED
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
+	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
 	if(!primary_weapon)
 		return ONGOING_ACTION_COMPLETED
 
