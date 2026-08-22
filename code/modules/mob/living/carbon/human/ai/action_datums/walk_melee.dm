@@ -9,7 +9,7 @@
 	if(!brain.orders.can_move_for_action())
 		return 0
 
-	if(brain.sniper_home)
+	if(brain.emplacement.has_sniper_home())
 		return 0
 
 	if(!brain.guns.tried_reload && (brain.inventory.primary_weapon || length(brain.inventory.secondary_weapons)))

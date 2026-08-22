@@ -1,7 +1,3 @@
-/datum/human_ai_brain
-	var/turf/sniper_home
-	var/sniper_dir = SOUTH
-
 /datum/ai_action/sniper_nest
 	name = "Sniper Nest"
 	action_flags = ACTION_USING_LEGS
@@ -9,7 +5,7 @@
 	var/initial_reload_line_chance
 
 /datum/ai_action/sniper_nest/get_weight(datum/human_ai_brain/brain)
-	if(!brain.sniper_home)
+	if(!brain.emplacement.has_sniper_home())
 		return 0
 
 	if(brain.guns.tried_reload)
@@ -46,7 +42,7 @@
 	if(!primary_weapon)
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/sniper_home = brain.sniper_home
+	var/turf/sniper_home = brain.emplacement.sniper_home
 	if(QDELETED(sniper_home))
 		return ONGOING_ACTION_COMPLETED
 
@@ -57,7 +53,7 @@
 
 	if(!get_dist(tied_human, sniper_home))
 		brain.profile.view_distance = 30
-		brain.tied_human.face_dir(brain.sniper_dir)
+		brain.tied_human.face_dir(brain.emplacement.sniper_dir)
 
 	if(!brain.guns.should_reload())
 		brain.inventory.unholster_primary()
@@ -137,7 +133,6 @@
 	arm_equipment(ai_human, sniper_equipment_presets[chosen_equipment_name], TRUE)
 
 	ai_human.forceMove(home_turf)
-	ai_comp.ai_brain.sniper_home = home_turf
-	ai_comp.ai_brain.sniper_dir = get_cardinal_dir(home_turf, target_turf)
+	ai_comp.ai_brain.emplacement.set_sniper_home(home_turf, get_cardinal_dir(home_turf, target_turf))
 
 	to_chat(usr, SPAN_NOTICE("Sniper has been created."))

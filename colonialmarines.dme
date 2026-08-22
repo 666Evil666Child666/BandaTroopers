@@ -2156,6 +2156,7 @@
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\conversation.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\orders.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\profile.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\modules\emplacement.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\perception.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\targeting.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\cover.dm"

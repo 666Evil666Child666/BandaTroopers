@@ -1,7 +1,3 @@
-/datum/human_ai_brain
-	var/turf/machinegunner_home
-	var/machinegunner_dir = SOUTH
-
 /datum/ai_action/machinegunner_nest
 	name = "Machinegunner Nest"
 	action_flags = ACTION_USING_LEGS
@@ -9,7 +5,7 @@
 	var/initial_reload_line_chance
 
 /datum/ai_action/machinegunner_nest/get_weight(datum/human_ai_brain/brain)
-	if(!brain.machinegunner_home)
+	if(!brain.emplacement.has_machinegunner_home())
 		return 0
 
 	if(brain.guns.tried_reload)
@@ -46,7 +42,7 @@
 	if(!primary_weapon)
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/machinegunner_home = brain.machinegunner_home
+	var/turf/machinegunner_home = brain.emplacement.machinegunner_home
 	if(QDELETED(machinegunner_home))
 		return ONGOING_ACTION_COMPLETED
 
@@ -57,7 +53,7 @@
 
 	if(!get_dist(tied_human, machinegunner_home))
 		brain.profile.view_distance = 30
-		brain.tied_human.face_dir(brain.machinegunner_dir)
+		brain.tied_human.face_dir(brain.emplacement.machinegunner_dir)
 
 	if(!brain.guns.should_reload())
 		brain.inventory.unholster_primary()
@@ -142,7 +138,6 @@
 	arm_equipment(ai_human, machinegunner_equipment_presets[chosen_equipment_name], TRUE)
 
 	ai_human.forceMove(home_turf)
-	ai_comp.ai_brain.machinegunner_home = home_turf
-	ai_comp.ai_brain.machinegunner_dir = get_cardinal_dir(home_turf, target_turf)
+	ai_comp.ai_brain.emplacement.set_machinegunner_home(home_turf, get_cardinal_dir(home_turf, target_turf))
 
 	to_chat(usr, SPAN_NOTICE("machinegunner has been created."))

@@ -20,6 +20,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/conversation/conversation
 	var/datum/human_ai_module/orders/orders
 	var/datum/human_ai_module/profile/profile
+	var/datum/human_ai_module/emplacement/emplacement
 
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
@@ -41,6 +42,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	conversation = new(src)
 	orders = new(src)
 	profile = new(src)
+	emplacement = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -76,6 +78,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(conversation)
 	QDEL_NULL(orders)
 	QDEL_NULL(profile)
+	QDEL_NULL(emplacement)
 	tied_human = null
 
 	return ..()

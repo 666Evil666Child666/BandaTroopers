@@ -58,7 +58,7 @@
 		brain.tied_human.a_intent_change(INTENT_DISARM)
 		brain.targeting.lose_target()
 		brain.communication.say_exit_combat_line()
-		if(!brain.sniper_home)
+		if(!brain.emplacement.has_sniper_home())
 			brain.inventory.holster_primary()
 		brain.inventory.holster_melee()
 
