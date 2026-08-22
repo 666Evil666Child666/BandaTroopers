@@ -2150,6 +2150,7 @@
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\human_ai_module.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\faction.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\inventory.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\modules\grenade.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\perception.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\targeting.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\cover.dm"

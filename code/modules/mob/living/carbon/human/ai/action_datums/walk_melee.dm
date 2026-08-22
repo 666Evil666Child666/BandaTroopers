@@ -23,7 +23,7 @@
 	if(!brain.targeting.current_target)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.active_grenade_found)
+	if(brain.grenade.active_grenade_found)
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.cover.current_cover && !brain.cover.in_cover)

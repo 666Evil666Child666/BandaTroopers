@@ -725,5 +725,5 @@
 
 	brain.halo_suicide_bomber = TRUE
 	brain.halo_suicide_prime_range = 5
-	brain.grenading_allowed = FALSE
+	brain.grenade.grenading_allowed = FALSE
 	brain.inventory.ignore_looting = TRUE

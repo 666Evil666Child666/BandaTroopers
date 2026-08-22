@@ -9,6 +9,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/cover/cover
 	var/datum/human_ai_module/faction/faction
 	var/datum/human_ai_module/inventory/inventory
+	var/datum/human_ai_module/grenade/grenade
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -16,12 +17,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/long_action_delay = 5 SECONDS
 	/// Global multiplier for all AI action delays
 	var/action_delay_mult = 2 // Doubled from 1, gives hAI a believable time between actions
-
-	/// If TRUE, may enter the grenade throw-back action from nearby live grenades.
-	var/can_throw_back_grenades = TRUE // SS220 EDIT: modular HALO presets can opt weak HumanAI out of grenade throw-back
-
-	/// Range in tiles for friendly proximity check when throwing grenades. Default 3. Override in HALO presets.
-	var/friendly_throw_check_range = 3 // SS220 EDIT: configurable friendly check range for grenade throws
 
 	/// List of whitelisted/blacklisted action datums
 	var/list/action_whitelist = null
@@ -45,8 +40,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	/// Ref to the last turf that the AI shot at
 	var/turf/shot_at
-	/// If TRUE, the AI will throw grenades at enemies who enter cover
-	var/grenading_allowed = TRUE
 
 	/// If TRUE, then we're actively fighting someone or saw a bullet go by or saw someone else go into combat
 	var/in_combat = FALSE
@@ -76,6 +69,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	faction = new(src)
 	targeting = new(src)
 	cover = new(src)
+	grenade = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -100,6 +94,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(cover)
 	QDEL_NULL(faction)
 	QDEL_NULL(inventory)
+	QDEL_NULL(grenade)
 	tied_human = null
 
 	return ..()
@@ -113,7 +108,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	wake_rethink_queued_at = -1 // SS220 EDIT: reset must always cancel deferred wake-up recovery before owner teardown finishes
 
 	in_combat = FALSE
-	active_grenade_found = null // SS220 EDIT: reset stale grenade threat state so AI can leave throw-back mode cleanly
+	grenade.reset_grenade()
 	targeting.target_turf = null
 	shot_at = null
 	inventory.reset_inventory()
@@ -194,20 +189,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		if(is_type_in_list(ongoing_action, allowed_actions))
 			allowed_actions -= ongoing_action.type
 
-	// SS220 EDIT START: prevent new hand-using actions from interrupting an in-progress grenade throw
-	var/grenade_throw_in_progress = FALSE
-	for(var/datum/ai_action/ongoing_action as anything in ongoing_actions)
-		if(istype(ongoing_action, /datum/ai_action/throw_grenade))
-			var/datum/ai_action/throw_grenade/tg = ongoing_action
-			if(tg.mid_throw)
-				grenade_throw_in_progress = TRUE
-				break
-		if(istype(ongoing_action, /datum/ai_action/throw_back_nade))
-			var/datum/ai_action/throw_back_nade/tbn = ongoing_action
-			if(tbn.mid_throw)
-				grenade_throw_in_progress = TRUE
-				break
-	// SS220 EDIT END
+	var/grenade_throw_in_progress = grenade.has_throw_in_progress()
 
 	// Create assoc list of selected AI actions and their weight
 	var/list/possible_actions = list()

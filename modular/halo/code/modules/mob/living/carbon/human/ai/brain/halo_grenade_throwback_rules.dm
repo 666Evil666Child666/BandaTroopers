@@ -2,11 +2,11 @@
 	var/halo_ai_can_throw_back_grenades = TRUE
 
 /datum/human_ai_brain/proc/halo_disable_grenade_throwback()
-	can_throw_back_grenades = FALSE
-	active_grenade_found = null
+	grenade.can_throw_back_grenades = FALSE
+	grenade.active_grenade_found = null
 
 /datum/human_ai_brain/proc/halo_enable_grenade_throwback()
-	can_throw_back_grenades = TRUE
+	grenade.can_throw_back_grenades = TRUE
 
 /datum/equipment_preset/proc/modular_apply_human_ai_brain_capabilities(datum/human_ai_brain/brain, mob/living/carbon/human/new_human)
 	if(!brain)

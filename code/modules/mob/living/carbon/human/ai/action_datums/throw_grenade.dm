@@ -11,7 +11,7 @@
 	var/throw_range_override = null
 
 /datum/ai_action/throw_grenade/get_weight(datum/human_ai_brain/brain)
-	if(!brain.grenading_allowed)
+	if(!brain.grenade.grenading_allowed)
 		return 0
 
 	if(!brain.in_combat)
@@ -148,7 +148,7 @@
 	if(!brain || !target_turf)
 		return FALSE
 
-	for(var/mob/possible_friendly in range(brain.friendly_throw_check_range, target_turf)) // SS220 EDIT: use configurable range from brain
+	for(var/mob/possible_friendly in range(brain.grenade.friendly_throw_check_range, target_turf)) // SS220 EDIT: use configurable range from grenade module
 		if(!brain.targeting.can_target(possible_friendly))
 			return TRUE
 

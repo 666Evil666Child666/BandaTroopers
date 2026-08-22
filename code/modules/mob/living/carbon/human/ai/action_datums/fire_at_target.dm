@@ -78,7 +78,7 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon
-	if(!primary_weapon || brain.active_grenade_found || !COOLDOWN_FINISHED(brain, stop_fire_cooldown))
+	if(!primary_weapon || brain.grenade.active_grenade_found || !COOLDOWN_FINISHED(brain, stop_fire_cooldown))
 		return ONGOING_ACTION_COMPLETED
 
 	var/should_fire_offscreen = (brain.targeting.target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))

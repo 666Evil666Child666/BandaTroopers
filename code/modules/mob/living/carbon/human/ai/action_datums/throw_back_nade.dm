@@ -1,7 +1,3 @@
-/datum/human_ai_brain
-	/// A nearby found active grenade which AI will try and toss back
-	var/obj/item/explosive/grenade/active_grenade_found
-
 /datum/ai_action/throw_back_nade
 	name = "Throw Back Grenade"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
@@ -11,19 +7,19 @@
 	var/throw_finished = FALSE // SS220 EDIT: transient async state completes the action on the next scheduler tick
 
 /datum/ai_action/throw_back_nade/get_weight(datum/human_ai_brain/brain)
-	if(!brain.can_throw_back_grenades) // SS220 EDIT: modular HALO weak AI presets must not enter throw-back mode
+	if(!brain.grenade.can_throw_back_grenades) // SS220 EDIT: modular HALO weak AI presets must not enter throw-back mode
 		return 0
 
-	if(QDELETED(brain.active_grenade_found))
+	if(QDELETED(brain.grenade.active_grenade_found))
 		return 0
 
-	if(get_dist(brain.tied_human, brain.active_grenade_found) > 4)
+	if(get_dist(brain.tied_human, brain.grenade.active_grenade_found) > 4)
 		return 0
 
 	return 50
 
 /datum/ai_action/throw_back_nade/Destroy(force, ...)
-	brain.active_grenade_found = null // Mr. Grenade is not our friend now
+	brain.grenade.active_grenade_found = null // Mr. Grenade is not our friend now
 	throw_ready_time = 0
 	mid_throw = FALSE // SS220 EDIT: drop transient async throw state when the action is torn down
 	throw_finished = FALSE // SS220 EDIT: drop transient async throw state when the action is torn down
@@ -82,7 +78,7 @@
 							continue dir_loop
 
 				var/has_friendly = FALSE
-				for(var/mob/possible_friendly in range(brain.friendly_throw_check_range, location)) // SS220 EDIT: use configurable range from brain
+				for(var/mob/possible_friendly in range(brain.grenade.friendly_throw_check_range, location)) // SS220 EDIT: use configurable range from grenade module
 					if(!brain.targeting.can_target(possible_friendly))
 						has_friendly = TRUE
 						break
@@ -100,16 +96,16 @@
 	if(mid_throw)
 		return ONGOING_ACTION_UNFINISHED
 
-	if(!brain.can_throw_back_grenades) // SS220 EDIT: abort stale throw-back actions after preset capability changes
+	if(!brain.grenade.can_throw_back_grenades) // SS220 EDIT: abort stale throw-back actions after preset capability changes
 		log_game("AI GRENADE: throw-back aborted — capability disabled, mob=[key_name(brain?.tied_human)]")
-		brain.active_grenade_found = null
+		brain.grenade.active_grenade_found = null
 		throw_ready_time = 0
 		return ONGOING_ACTION_COMPLETED
 
-	var/obj/item/explosive/grenade/active_grenade_found = brain.active_grenade_found
+	var/obj/item/explosive/grenade/active_grenade_found = brain.grenade.active_grenade_found
 	if(QDELETED(active_grenade_found) || !active_grenade_found.active || (!isturf(active_grenade_found.loc) && active_grenade_found.loc != brain.tied_human))
 		log_game("AI GRENADE: throw-back aborted — grenade stale or spent, grenade=[active_grenade_found], mob=[key_name(brain?.tied_human)]")
-		brain.active_grenade_found = null // SS220 EDIT: stale or spent grenades must not keep the AI in throw-back mode
+		brain.grenade.active_grenade_found = null // SS220 EDIT: stale or spent grenades must not keep the AI in throw-back mode
 		throw_ready_time = 0
 		return ONGOING_ACTION_COMPLETED
 
@@ -125,7 +121,7 @@
 
 		if(!try_hold_grenade(tied_human, active_grenade_found))
 			log_game("AI GRENADE: throw-back aborted — could not pick up grenade, grenade=[active_grenade_found], mob=[key_name(tied_human)]")
-			brain.active_grenade_found = null
+			brain.grenade.active_grenade_found = null
 			throw_ready_time = 0
 			return ONGOING_ACTION_COMPLETED
 
@@ -169,19 +165,19 @@
 			msg_admin_attack("[key_name(tied_human)] (AI) dropped a live [active_grenade_found] on the floor during throw-back — no safe throw target at [AREACOORD(tied_human)].")
 			if(tied_human.get_active_hand() == active_grenade_found || tied_human.get_inactive_hand() == active_grenade_found)
 				tied_human.drop_inv_item_on_ground(active_grenade_found)
-			brain.active_grenade_found = null
+			brain.grenade.active_grenade_found = null
 			throw_ready_time = 0
 			return ONGOING_ACTION_COMPLETED
 
 	if(!try_hold_grenade_ensure_primary(tied_human, active_grenade_found)) // SS220 EDIT: only continue once the live grenade is actually in-hand
 		log_game("AI GRENADE: throw-back aborted — final hold failed, grenade=[active_grenade_found], mob=[key_name(tied_human)]")
-		brain.active_grenade_found = null
+		brain.grenade.active_grenade_found = null
 		throw_ready_time = 0
 		return ONGOING_ACTION_COMPLETED
 
 	if(QDELETED(active_grenade_found) || (active_grenade_found.loc != tied_human) || !active_grenade_found.active)
 		log_game("AI GRENADE: throw-back aborted — grenade lost before throw, grenade=[active_grenade_found], mob=[key_name(tied_human)]")
-		brain.active_grenade_found = null // SS220 EDIT: grenade throw-back must abort cleanly if the primed grenade left our hands before scheduling
+		brain.grenade.active_grenade_found = null // SS220 EDIT: grenade throw-back must abort cleanly if the primed grenade left our hands before scheduling
 		throw_ready_time = 0
 		return ONGOING_ACTION_COMPLETED
 
@@ -190,7 +186,7 @@
 
 	tied_human.face_atom(place_to_throw)
 	log_game("AI GRENADE: throw-back proceeding to async throw — grenade=[active_grenade_found], target=[place_to_throw], mob=[key_name(tied_human)]")
-	brain.active_grenade_found = null // SS220 EDIT: the grenade is already under this AI's control, stop blocking the rest of its combat state
+	brain.grenade.active_grenade_found = null // SS220 EDIT: the grenade is already under this AI's control, stop blocking the rest of its combat state
 	brain.inventory.to_pickup -= active_grenade_found // Do NOT play fetch. Please.
 	throw_ready_time = 0
 	mid_throw = TRUE // SS220 EDIT: actual throw runs asynchronously so trigger_action() stays no-sleep for DreamChecker

@@ -9,7 +9,7 @@
 	if(!brain.halo_sangheili_runtime)
 		return 0
 
-	if(!brain.in_combat || brain.hold_position || brain.active_grenade_found)
+	if(!brain.in_combat || brain.hold_position || brain.grenade.active_grenade_found)
 		return 0
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()

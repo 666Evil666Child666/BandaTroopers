@@ -192,8 +192,8 @@
 
 	UnregisterSignal(source, COMSIG_PARENT_QDELETING)
 	to_pickup -= source
-	if(source == brain.active_grenade_found) // SS220 EDIT: purge deleted grenade threat refs immediately
-		brain.active_grenade_found = null
+	if(source == brain.grenade.active_grenade_found) // SS220 EDIT: purge deleted grenade threat refs immediately
+		brain.grenade.active_grenade_found = null
 	invalidate_nearby_item_search()
 	brain.invalidate_halo_runtime_caches() //halo code is not in our work zone
 	equipped_items_original_loc -= source // SS220 EDIT: deleted held items must not keep stale original-slot tracking
@@ -452,15 +452,15 @@
 		set_primary_weapon(picked_up)
 
 	to_pickup -= picked_up
-	if(picked_up == brain.active_grenade_found) // SS220 EDIT: once someone holds the grenade, stop floor-threat gating — unless throw-back is active
+	if(picked_up == brain.grenade.active_grenade_found) // SS220 EDIT: once someone holds the grenade, stop floor-threat gating — unless throw-back is active
 		if(!brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
 			addtimer(CALLBACK(src, PROC_REF(clear_active_grenade_if_stale), picked_up), 1 SECONDS) // SS220 EDIT: delay reset so throw-back action has time to spawn on next scheduler tick
 	invalidate_nearby_item_search()
 
 /// SS220 EDIT: delayed reset of active_grenade_found — gives throw-back action one scheduler tick to spawn before clearing
 /datum/human_ai_module/inventory/proc/clear_active_grenade_if_stale(obj/item/explosive/grenade/grenade)
-	if(brain.active_grenade_found == grenade && !brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
-		brain.active_grenade_found = null
+	if(brain.grenade.active_grenade_found == grenade && !brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
+		brain.grenade.active_grenade_found = null
 
 /datum/human_ai_module/inventory/proc/on_item_drop(datum/source, obj/item/dropped)
 	SIGNAL_HANDLER
@@ -533,9 +533,9 @@
 /datum/human_ai_module/inventory/proc/item_search(list/things_around)
 	// SS220 EDIT - START: grenade threat must come only from the current local scan, not from stale refs.
 	// Preserve active_grenade_found across ticks if it is already the currently held, still-active timed grenade.
-	if(!brain.active_grenade_found || QDELETED(brain.active_grenade_found) || !brain.active_grenade_found.active || (brain.active_grenade_found.fuse_type != TIMED_FUSE) || (brain.active_grenade_found.loc != brain.tied_human))
-		brain.active_grenade_found = null
-	var/can_handle_live_grenade = brain.can_throw_back_grenades && !((brain.tied_human.l_hand?.flags_item & NODROP) && (brain.tied_human.r_hand?.flags_item & NODROP))
+	if(!brain.grenade.active_grenade_found || QDELETED(brain.grenade.active_grenade_found) || !brain.grenade.active_grenade_found.active || (brain.grenade.active_grenade_found.fuse_type != TIMED_FUSE) || (brain.grenade.active_grenade_found.loc != brain.tied_human))
+		brain.grenade.active_grenade_found = null
+	var/can_handle_live_grenade = brain.grenade.can_throw_back_grenades && !((brain.tied_human.l_hand?.flags_item & NODROP) && (brain.tied_human.r_hand?.flags_item & NODROP))
 	// SS220 EDIT - END
 	search_loop:
 		for(var/obj/item/thing in things_around)
@@ -550,7 +550,7 @@
 				if(nade.active && (nade.fuse_type == IMPACT_FUSE))
 					return
 				else if(nade.active && (nade.fuse_type == TIMED_FUSE) && can_handle_live_grenade) // SS220 EDIT: only enter throw-back mode if we can actually manipulate the grenade
-					brain.active_grenade_found = thing
+					brain.grenade.active_grenade_found = thing
 					continue
 
 			// SS220 EDIT - START: ignore_looting must also suppress pickup candidates, not only the Item Pickup action.
