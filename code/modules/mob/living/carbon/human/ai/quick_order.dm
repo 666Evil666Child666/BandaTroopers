@@ -89,11 +89,11 @@
 /datum/human_ai_quick_order/approach/do_order(mob/user, params, atom/object)
 	var/list/modifiers = params2list(params)
 	for(var/datum/human_ai_brain/brain as anything in ai_humans_selected)
-		brain.hold_position = FALSE
+		brain.orders.set_hold_position(FALSE)
 		if(LAZYACCESS(modifiers, ALT_CLICK))
-			brain.quick_approach = get_turf(object)
+			brain.orders.set_quick_approach(get_turf(object))
 		else
-			brain.quick_approach = null
+			brain.orders.clear_quick_approach()
 			brain.targeting.target_turf = get_turf(object)
 
 	to_chat(holder, SPAN_BOLDNOTICE("Order sent."))
@@ -121,9 +121,9 @@
 	var/list/modifiers = params2list(params)
 	for(var/datum/human_ai_brain/brain as anything in ai_humans_selected)
 		if(LAZYACCESS(modifiers, ALT_CLICK))
-			brain.hold_position = TRUE
+			brain.orders.set_hold_position(TRUE)
 		else
-			brain.hold_position = FALSE
+			brain.orders.set_hold_position(FALSE)
 
 	if(LAZYACCESS(modifiers, ALT_CLICK))
 		to_chat(holder, SPAN_BOLDNOTICE("Selected AI now holding position."))

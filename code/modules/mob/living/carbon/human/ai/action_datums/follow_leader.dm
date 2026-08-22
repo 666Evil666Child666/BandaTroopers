@@ -10,7 +10,7 @@
 	if(brain.squad.is_squad_leader)
 		return 0
 
-	if(brain.hold_position)
+	if(!brain.orders.can_move_for_action())
 		return 0
 
 	if(length(brain.inventory.to_pickup))

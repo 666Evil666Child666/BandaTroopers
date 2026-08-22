@@ -9,7 +9,7 @@
 	if(!brain.cover.current_cover)
 		return 0
 
-	if(brain.hold_position)
+	if(!brain.orders.can_move_for_action())
 		return 0
 
 	if(brain.cover.in_cover && !(get_dist(brain.tied_human, brain.targeting.current_target) > brain?.inventory?.gun_data?.minimum_range))

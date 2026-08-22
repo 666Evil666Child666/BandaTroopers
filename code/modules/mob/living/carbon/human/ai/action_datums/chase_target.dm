@@ -12,7 +12,7 @@
 	if(brain.targeting.current_target)
 		return 0
 
-	if(brain.hold_position)
+	if(!brain.orders.can_move_for_action())
 		return 0
 
 	if(get_dist(brain.targeting.target_turf, brain.tied_human) > 20)

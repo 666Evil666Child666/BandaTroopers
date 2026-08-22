@@ -6,7 +6,7 @@
 	if(!brain.halo_unggoy_runtime)
 		return 0
 
-	if(!brain.combat.in_combat || brain.hold_position)
+	if(!brain.combat.in_combat || !brain.orders.can_move_for_action())
 		return 0
 
 	if(!brain.halo_unggoy_should_retreat())

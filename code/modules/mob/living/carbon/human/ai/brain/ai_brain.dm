@@ -18,6 +18,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/action_runtime/action_runtime
 	var/datum/human_ai_module/combat/combat
 	var/datum/human_ai_module/conversation/conversation
+	var/datum/human_ai_module/orders/orders
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -32,12 +33,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/shoot_to_kill = TRUE
 	/// Should we limit our FOV in case view_distance is more than 7
 	var/scope_vision = TRUE
-
-	/// A targeted turf that we should quickly approach
-	var/turf/quick_approach
-
-	/// If TRUE, the AI will not move at all
-	var/hold_position = FALSE
 
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
@@ -57,6 +52,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	action_runtime = new(src)
 	combat = new(src)
 	conversation = new(src)
+	orders = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -90,6 +86,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(action_runtime)
 	QDEL_NULL(combat)
 	QDEL_NULL(conversation)
+	QDEL_NULL(orders)
 	tied_human = null
 
 	return ..()
