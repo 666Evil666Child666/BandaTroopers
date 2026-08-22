@@ -55,7 +55,7 @@
 		return
 
 	var/list/conflicts = get_conflicts(brain)
-	for(var/datum/ai_action/conflicting_action as anything in brain.ongoing_actions)
+	for(var/datum/ai_action/conflicting_action as anything in brain.action_runtime.ongoing_actions)
 		if((conflicting_action != src) && (conflicting_action.type in conflicts))
 			qdel(conflicting_action)
 

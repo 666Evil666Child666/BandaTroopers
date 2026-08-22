@@ -15,6 +15,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/guns/guns
 	var/datum/human_ai_module/navigation/navigation
 	var/datum/human_ai_module/squad/squad
+	var/datum/human_ai_module/action_runtime/action_runtime
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -23,19 +24,12 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// Global multiplier for all AI action delays
 	var/action_delay_mult = 2 // Doubled from 1, gives hAI a believable time between actions
 
-	/// List of whitelisted/blacklisted action datums
-	var/list/action_whitelist = null
-	var/list/action_blacklist = null
-
 	/// Distance for view checks
 	var/view_distance = 6
 	/// If TRUE, shoots until the target is dead. Else, stops when downed
 	var/shoot_to_kill = TRUE
 	/// Should we limit our FOV in case view_distance is more than 7
 	var/scope_vision = TRUE
-
-	/// List of current action datums
-	var/list/ongoing_actions = list()
 
 	/// A targeted turf that we should quickly approach
 	var/turf/quick_approach
@@ -68,6 +62,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	guns = new(src)
 	navigation = new(src)
 	squad = new(src)
+	action_runtime = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -98,6 +93,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(guns)
 	QDEL_NULL(navigation)
 	QDEL_NULL(squad)
+	QDEL_NULL(action_runtime)
 	tied_human = null
 
 	return ..()
@@ -118,10 +114,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	targeting.lose_target()
 	health.lose_injured_ally()
 
-	for(var/action in ongoing_actions)
-		qdel(action)
-
-	ongoing_actions.Cut()
+	action_runtime.clear_actions()
 
 /datum/human_ai_brain/process(delta_time)
 	last_process_tick = world.time // SS220 EDIT: track scheduler entry to guard same-tick wake rethinks
@@ -133,9 +126,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(tied_human.stat == DEAD) // SS220 EDIT: dead HALO AI must never remain in the wake-up recovery path
 		perception.suspend()
 		wake_rethink_queued_at = -1 // SS220 EDIT: death fallback must kill any queued wake rethink that survived until process()
-		for(var/action in ongoing_actions)
-			qdel(action)
-		ongoing_actions.Cut()
+		action_runtime.clear_actions()
 		targeting.lose_target()
 		if(!tied_human.resting)
 			tied_human.set_resting(TRUE, TRUE)
@@ -145,9 +136,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	if(tied_human.is_mob_incapacitated())
 		perception.suspend() // SS220 EDIT: stunned or dead AI should not keep turf-enter listeners alive
-		for(var/action in ongoing_actions)
-			qdel(action)
-		ongoing_actions.Cut()
+		action_runtime.clear_actions()
 		targeting.lose_target()
 		return
 
@@ -161,9 +150,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		else
 			tied_human.set_lying_down() // SS220 EDIT: crit-resting AI can keep a stale standing transform unless prone is re-asserted through the shared helper
 		perception.suspend() // SS220 EDIT: prone hardcrit AI should not keep live projectile listeners or continue active combat movement
-		for(var/action in ongoing_actions)
-			qdel(action)
-		ongoing_actions.Cut()
+		action_runtime.clear_actions()
 		inventory.to_pickup.Cut() // SS220 EDIT: lying crit AI must drop stale pickup goals so it does not keep chasing far-away weapons after forced prone
 		inventory.invalidate_nearby_item_search()
 		return
@@ -186,56 +173,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!iszombie(tied_human) && inventory.should_run_nearby_item_search())
 		inventory.item_search(range(2, tied_human))
 
-	// List all allowed action types for AI to consider
-	var/list/allowed_actions = action_whitelist || (GLOB.AI_actions.Copy() - action_blacklist)
-	for(var/datum/ongoing_action as anything in ongoing_actions)
-		if(is_type_in_list(ongoing_action, allowed_actions))
-			allowed_actions -= ongoing_action.type
-
-	var/grenade_throw_in_progress = grenade.has_throw_in_progress()
-
-	// Create assoc list of selected AI actions and their weight
-	var/list/possible_actions = list()
-	for(var/action_type in shuffle(allowed_actions))
-		var/datum/ai_action/glob_ref = GLOB.AI_actions[action_type]
-		// SS220 EDIT: skip hand-using actions while a grenade throw is in async flight
-		if(grenade_throw_in_progress && (glob_ref.action_flags & ACTION_USING_HANDS))
-			continue
-		var/weight = glob_ref.get_weight(src)
-		if(weight) // No weight means we shouldn't consider this action at all
-			possible_actions[action_type] = weight
-
-	// Sorts all allowed actions by their weight
-	var/list/sorted_actions = sortTim(possible_actions, GLOBAL_PROC_REF(cmp_numeric_dsc), TRUE)
-
-	// Choose what actions to start in current process() iteration
-	for(var/action_type as anything in sorted_actions)
-		var/datum/ai_action/possible_action = GLOB.AI_actions[action_type]
-
-		var/list/conflicting_actions = possible_action.get_conflicts(src)
-		for(var/datum/ai_action/ongoing_action as anything in ongoing_actions)
-			if(ongoing_action.type in conflicting_actions)
-				possible_action = null
-				break
-
-		if(!possible_action)
-			continue
-
-		ongoing_actions += new action_type(src)
-#if defined(TESTING) && defined(HUMAN_AI_TESTING)
-		message_admins("action of type [action_type] was added to [tied_human.real_name]")
-#endif
-
-	for(var/datum/ai_action/action as anything in ongoing_actions)
-		// SS220 EDIT: suppress hand-using actions while a grenade throw is in async flight
-		if(grenade_throw_in_progress && (action.action_flags & ACTION_USING_HANDS))
-			continue
-		var/retval = action.trigger_action()
-		switch(retval)
-			if(ONGOING_ACTION_UNFINISHED_BLOCK)
-				return
-			if(ONGOING_ACTION_COMPLETED)
-				qdel(action)
+	if(action_runtime.process_actions(delta_time))
+		return
 
 /datum/human_ai_brain/proc/on_human_delete(datum/source, force)
 	SIGNAL_HANDLER

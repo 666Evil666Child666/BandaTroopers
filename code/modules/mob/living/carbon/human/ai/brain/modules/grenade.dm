@@ -15,7 +15,7 @@
 	if(!brain)
 		return FALSE
 
-	for(var/datum/ai_action/ongoing_action as anything in brain.ongoing_actions)
+	for(var/datum/ai_action/ongoing_action as anything in brain.action_runtime.ongoing_actions)
 		if(istype(ongoing_action, /datum/ai_action/throw_grenade))
 			var/datum/ai_action/throw_grenade/throw_grenade_action = ongoing_action
 			if(throw_grenade_action.mid_throw)

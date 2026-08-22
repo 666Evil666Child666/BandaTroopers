@@ -13,17 +13,6 @@
 
 	out_brain += src
 
-/// Returns if this AI has a given action, based on path
-/datum/human_ai_brain/proc/has_ongoing_action(path)
-	if(!ispath(path))
-		return FALSE
-
-	for(var/datum/ai_action/action as anything in ongoing_actions)
-		if(istype(action, path))
-			return TRUE
-
-	return FALSE
-
 /// Announces whenever an AI is handcuffed so that GMs can force someone in or take over themselves
 /datum/human_ai_brain/proc/on_handcuffed(datum/source)
 	SIGNAL_HANDLER

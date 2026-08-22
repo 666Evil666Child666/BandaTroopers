@@ -429,7 +429,7 @@
 
 /datum/human_ai_brain/proc/halo_sangheili_cancel_committed_actions()
 	var/list/commit_action_blacklist = halo_sangheili_get_commit_action_blacklist()
-	for(var/datum/ai_action/action as anything in ongoing_actions)
+	for(var/datum/ai_action/action as anything in action_runtime.ongoing_actions)
 		if(action.type in commit_action_blacklist)
 			qdel(action)
 
@@ -462,12 +462,12 @@
 	guns.tried_reload = TRUE
 	inventory.ignore_looting = TRUE
 
-	if(!action_blacklist)
-		action_blacklist = list()
+	if(!action_runtime.action_blacklist)
+		action_runtime.action_blacklist = list()
 
 	var/list/commit_action_blacklist = halo_sangheili_get_commit_action_blacklist()
 	for(var/action_type as anything in commit_action_blacklist)
-		action_blacklist |= action_type
+		action_runtime.action_blacklist |= action_type
 
 	halo_sangheili_cancel_committed_actions()
 	return TRUE
@@ -503,11 +503,11 @@
 	invalidate_halo_runtime_caches()
 
 	var/list/commit_action_blacklist = halo_sangheili_get_commit_action_blacklist()
-	if(action_blacklist)
+	if(action_runtime.action_blacklist)
 		for(var/action_type as anything in commit_action_blacklist)
-			action_blacklist -= action_type
-		if(!length(action_blacklist))
-			action_blacklist = null
+			action_runtime.action_blacklist -= action_type
+		if(!length(action_runtime.action_blacklist))
+			action_runtime.action_blacklist = null
 
 	guns.tried_reload = committed_tried_reload
 	inventory.ignore_looting = committed_ignore_looting

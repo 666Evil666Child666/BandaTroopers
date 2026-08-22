@@ -453,13 +453,13 @@
 
 	to_pickup -= picked_up
 	if(picked_up == brain.grenade.active_grenade_found) // SS220 EDIT: once someone holds the grenade, stop floor-threat gating — unless throw-back is active
-		if(!brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
+		if(!brain.action_runtime.has_ongoing_action(/datum/ai_action/throw_back_nade))
 			addtimer(CALLBACK(src, PROC_REF(clear_active_grenade_if_stale), picked_up), 1 SECONDS) // SS220 EDIT: delay reset so throw-back action has time to spawn on next scheduler tick
 	invalidate_nearby_item_search()
 
 /// SS220 EDIT: delayed reset of active_grenade_found — gives throw-back action one scheduler tick to spawn before clearing
 /datum/human_ai_module/inventory/proc/clear_active_grenade_if_stale(obj/item/explosive/grenade/grenade)
-	if(brain.grenade.active_grenade_found == grenade && !brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
+	if(brain.grenade.active_grenade_found == grenade && !brain.action_runtime.has_ongoing_action(/datum/ai_action/throw_back_nade))
 		brain.grenade.active_grenade_found = null
 
 /datum/human_ai_module/inventory/proc/on_item_drop(datum/source, obj/item/dropped)
