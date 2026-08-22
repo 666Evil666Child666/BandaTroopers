@@ -37,8 +37,8 @@
 			"ref" = REF(brain.tied_human),
 			"brain_ref" = REF(brain),
 			"in_combat" = brain.in_combat,
-			"squad_id" = brain.squad_id,
-			"can_assign_squad" = brain.can_assign_squad,
+			"squad_id" = brain.squad.squad_id,
+			"can_assign_squad" = brain.squad.can_assign_squad,
 		))
 
 	data["squads"] = list()
@@ -108,10 +108,10 @@
 				return
 
 			var/datum/human_ai_brain/brain = locate(params["ai"])
-			if(!brain.can_assign_squad)
+			if(!brain.squad.can_assign_squad)
 				return TRUE
 
-			brain.add_to_squad(params["squad"])
+			brain.squad.add_to_squad(params["squad"])
 			return TRUE
 
 		if("assign_order")

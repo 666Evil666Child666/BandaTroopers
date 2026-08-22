@@ -14,6 +14,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/communication/communication
 	var/datum/human_ai_module/guns/guns
 	var/datum/human_ai_module/navigation/navigation
+	var/datum/human_ai_module/squad/squad
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -36,9 +37,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	/// List of current action datums
 	var/list/ongoing_actions = list()
 
-	/// Semi-permanent "order" datum. Does not expire
-	var/datum/ai_order/current_order
-
 	/// A targeted turf that we should quickly approach
 	var/turf/quick_approach
 
@@ -52,11 +50,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/combat_decay_time_min = 15 SECONDS
 	/// The maximum amount of time that can pass before this AI can leave combat
 	var/combat_decay_time_max = 30 SECONDS
-	/// If FALSE, cannot be assigned to a squad
-	var/can_assign_squad = TRUE
-
-
-
 	/// If TRUE, the AI will not move at all
 	var/hold_position = FALSE
 
@@ -74,6 +67,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	communication = new(src)
 	guns = new(src)
 	navigation = new(src)
+	squad = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -103,6 +97,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(communication)
 	QDEL_NULL(guns)
 	QDEL_NULL(navigation)
+	QDEL_NULL(squad)
 	tied_human = null
 
 	return ..()
@@ -318,9 +313,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!has_valid_tied_human())
 		return
 
-	if(squad_id) // call for help
-		var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[squad_id]"]
-		for(var/datum/human_ai_brain/squaddie as anything in squad.ai_in_squad)
+	if(squad.squad_id) // call for help
+		var/datum/human_ai_squad/squad_datum = SShuman_ai.squad_id_dict["[squad.squad_id]"]
+		for(var/datum/human_ai_brain/squaddie as anything in squad_datum.ai_in_squad)
 			if(!squaddie.has_valid_tied_human())
 				continue
 			if(squaddie.targeting.target_turf)

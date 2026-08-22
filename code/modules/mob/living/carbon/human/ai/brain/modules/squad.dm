@@ -24,22 +24,22 @@
 	return ..()
 
 /datum/human_ai_squad/proc/add_to_squad(datum/human_ai_brain/adding)
-	if(adding.squad_id && (adding.squad_id in SShuman_ai.squad_id_dict))
-		var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict[adding.squad_id]
+	if(adding.squad.squad_id && (adding.squad.squad_id in SShuman_ai.squad_id_dict))
+		var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict[adding.squad.squad_id]
 		squad.remove_from_squad(adding)
-	adding.squad_id = id
+	adding.squad.squad_id = id
 	ai_in_squad += adding
 
-	adding.set_current_order(current_order)
+	adding.squad.set_current_order(current_order)
 	RegisterSignal(adding.tied_human, COMSIG_MOB_DEATH, PROC_REF(on_squad_member_death))
 	RegisterSignal(adding, COMSIG_PARENT_QDELETING, PROC_REF(on_squad_member_delete))
 
 /datum/human_ai_squad/proc/remove_from_squad(datum/human_ai_brain/removing)
 	if(removing == squad_leader)
 		set_squad_leader(null)
-	removing.remove_current_order()
-	removing.squad_id = null
-	removing.is_squad_leader = FALSE
+	removing.squad.remove_current_order()
+	removing.squad.squad_id = null
+	removing.squad.is_squad_leader = FALSE
 	ai_in_squad -= removing
 	if(removing.tied_human)
 		UnregisterSignal(removing.tied_human, COMSIG_MOB_DEATH)
@@ -49,20 +49,20 @@
 	current_order = order
 	RegisterSignal(order, COMSIG_PARENT_QDELETING, PROC_REF(on_order_delete))
 	for(var/datum/human_ai_brain/brain as anything in ai_in_squad)
-		brain.set_current_order(order)
+		brain.squad.set_current_order(order)
 
 /datum/human_ai_squad/proc/remove_current_order()
 	UnregisterSignal(current_order, COMSIG_PARENT_QDELETING)
 	current_order = null
 	for(var/datum/human_ai_brain/brain as anything in ai_in_squad)
-		brain.remove_current_order()
+		brain.squad.remove_current_order()
 
 /datum/human_ai_squad/proc/set_squad_leader(datum/human_ai_brain/new_leader)
 	if(squad_leader)
-		squad_leader.is_squad_leader = FALSE
+		squad_leader.squad.is_squad_leader = FALSE
 	squad_leader = new_leader
 	if(squad_leader)
-		new_leader.is_squad_leader = TRUE
+		new_leader.squad.is_squad_leader = TRUE
 
 /datum/human_ai_squad/proc/on_squad_member_death(mob/living/carbon/human/dead_mob)
 	SIGNAL_HANDLER
@@ -89,12 +89,16 @@
 	SIGNAL_HANDLER
 	remove_current_order()
 
-/datum/human_ai_brain
+/datum/human_ai_module/squad
 	/// Numeric ID of the squad this AI is in, if any
 	var/squad_id
 	var/is_squad_leader = FALSE
+	/// If FALSE, cannot be assigned to a squad
+	var/can_assign_squad = TRUE
+	/// Semi-permanent "order" datum. Does not expire
+	var/datum/ai_order/current_order
 
-/datum/human_ai_brain/proc/add_to_squad(new_id)
+/datum/human_ai_module/squad/proc/add_to_squad(new_id)
 	if(isnull(new_id) || (new_id == squad_id))
 		return
 
@@ -102,4 +106,16 @@
 		return
 
 	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[new_id]"]
-	squad.add_to_squad(src)
+	squad.add_to_squad(brain)
+
+/datum/human_ai_module/squad/proc/set_current_order(datum/ai_order/ref)
+	if(!ref)
+		return
+
+	current_order = ref
+	current_order.brains += brain
+
+/datum/human_ai_module/squad/proc/remove_current_order()
+	if(current_order)
+		current_order.brains -= brain
+	current_order = null

@@ -74,10 +74,10 @@
 
 /// If an AI decides to go into cover, any squadmates in their view range will process on the same view dictionary so as to help with performance
 /datum/human_ai_module/cover/proc/squad_cover_processing(list/turf_dict)
-	if(!brain.squad_id)
+	if(!brain.squad.squad_id)
 		return
 
-	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad_id]"]
+	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad.squad_id]"]
 	if(!squad)
 		return
 

@@ -24,20 +24,6 @@
 
 	return FALSE
 
-/// Given an order reference, sets it as this AI's current order
-/datum/human_ai_brain/proc/set_current_order(datum/ai_order/ref)
-	if(!ref)
-		return
-
-	current_order = ref
-	current_order.brains += src
-
-/// Nulls out this AI's current order
-/datum/human_ai_brain/proc/remove_current_order()
-	if(current_order)
-		current_order.brains -= src
-	current_order = null
-
 /// Announces whenever an AI is handcuffed so that GMs can force someone in or take over themselves
 /datum/human_ai_brain/proc/on_handcuffed(datum/source)
 	SIGNAL_HANDLER

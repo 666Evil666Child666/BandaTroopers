@@ -147,9 +147,9 @@
 	return FALSE
 
 /datum/human_ai_brain/proc/halo_unggoy_get_squad()
-	if(!squad_id)
+	if(!squad.squad_id)
 		return null
-	return SShuman_ai.squad_id_dict["[squad_id]"]
+	return SShuman_ai.squad_id_dict["[squad.squad_id]"]
 
 /datum/human_ai_brain/proc/halo_unggoy_get_squad_leader()
 	var/datum/human_ai_squad/squad = halo_unggoy_get_squad()
@@ -230,7 +230,7 @@
 	if((halo_unggoy_panic_health_pct > 0) && (halo_unggoy_get_health_pct() <= halo_unggoy_panic_health_pct))
 		return TRUE
 
-	if(!halo_unggoy_panics_without_leader || !squad_id || is_squad_leader)
+	if(!halo_unggoy_panics_without_leader || !squad.squad_id || squad.is_squad_leader)
 		return FALSE
 
 	return !halo_unggoy_has_active_squad_leader()
