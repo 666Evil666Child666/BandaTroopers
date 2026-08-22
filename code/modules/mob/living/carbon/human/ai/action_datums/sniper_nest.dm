@@ -21,7 +21,7 @@
 	if(!brain.inventory.primary_weapon)
 		return 0
 
-	if(brain.healing_someone)
+	if(brain.health.healing_someone)
 		return 0
 
 	return 12
@@ -39,7 +39,7 @@
 /datum/ai_action/sniper_nest/trigger_action()
 	. = ..()
 
-	if(brain.tried_reload || brain.cover.current_cover || brain.healing_someone)
+	if(brain.tried_reload || brain.cover.current_cover || brain.health.healing_someone)
 		return ONGOING_ACTION_COMPLETED
 
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.primary_weapon

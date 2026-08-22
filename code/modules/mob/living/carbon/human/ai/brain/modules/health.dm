@@ -1,4 +1,4 @@
-/datum/human_ai_brain
+/datum/human_ai_module/health
 	/// What items the AI considers when trying to heal brute damage
 	var/static/list/brute_heal_items = list(
 		/obj/item/stack/medical/advanced/bruise_pack,
@@ -80,7 +80,11 @@
 	/// How many stacks are required to stop this AI from recieving treatment
 	var/treatment_stack_threshold = 10
 
-/datum/human_ai_brain/proc/set_injured_ally(mob/living/new_target)
+/datum/human_ai_module/health/Destroy(force, ...)
+	lose_injured_ally()
+	return ..()
+
+/datum/human_ai_module/health/proc/set_injured_ally(mob/living/new_target)
 	if(!new_target)
 		return
 
@@ -88,32 +92,32 @@
 	RegisterSignal(new_target, COMSIG_MOB_DEATH, PROC_REF(lose_injured_ally), TRUE)
 	found_injured_ally = new_target
 
-/datum/human_ai_brain/proc/lose_injured_ally()
+/datum/human_ai_module/health/proc/lose_injured_ally()
 	if(found_injured_ally)
 		UnregisterSignal(found_injured_ally, COMSIG_PARENT_QDELETING)
 		UnregisterSignal(found_injured_ally, COMSIG_MOB_DEATH)
 	found_injured_ally = null
 
-/datum/human_ai_brain/proc/get_injured_ally()
+/datum/human_ai_module/health/proc/get_injured_ally()
 	var/list/viable_targets = list()
 	var/atom/movable/closest_target
 	var/smallest_distance = INFINITY
 
 	for(var/mob/living/carbon/human/possible_buddy as anything in GLOB.alive_human_list)
-		if(possible_buddy == tied_human)
+		if(possible_buddy == brain.tied_human)
 			continue
 
-		if(tied_human.z != possible_buddy.z)
+		if(brain.tied_human.z != possible_buddy.z)
 			continue
 
-		if(!faction.faction_check(possible_buddy))
+		if(!brain.faction.faction_check(possible_buddy))
 			continue
 
-		if(!(tied_human in viewers(view_distance, possible_buddy)))
+		if(!(brain.tied_human in viewers(brain.view_distance, possible_buddy)))
 			continue
 
-		var/distance = get_dist(tied_human, possible_buddy)
-		if(distance > view_distance)
+		var/distance = get_dist(brain.tied_human, possible_buddy)
+		if(distance > brain.view_distance)
 			continue
 
 		if(!healing_start_check(possible_buddy))
@@ -132,17 +136,17 @@
 
 	return closest_target
 
-/datum/human_ai_brain/proc/healing_start_check(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/healing_start_check(mob/living/carbon/human/target)
 	return ((target.health / target.maxHealth) <= healing_start_threshold) || target.is_bleeding() || target.has_broken_limbs()
 
-/datum/human_ai_brain/proc/increment_treatment_stacks()
+/datum/human_ai_module/health/proc/increment_treatment_stacks()
 	cant_be_treated_stacks++
 	addtimer(CALLBACK(src, PROC_REF(clear_treatment_stacks)), 5 SECONDS, TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
 
-/datum/human_ai_brain/proc/clear_treatment_stacks()
+/datum/human_ai_module/health/proc/clear_treatment_stacks()
 	cant_be_treated_stacks = 0
 
-/datum/human_ai_brain/proc/start_healing(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/start_healing(mob/living/carbon/human/target)
 	set waitfor = FALSE
 
 	healing_someone = TRUE
@@ -181,221 +185,221 @@
 
 	healing_someone = FALSE
 
-/datum/human_ai_brain/proc/brute_heal(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/brute_heal(mob/living/carbon/human/target)
 	. = FALSE
 	var/obj/item/brute_heal
-	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
-		if(is_type_in_list(heal_item, brute_heal_items) && heal_item.ai_can_use(tied_human, src, target))
+	for(var/obj/item/heal_item as anything in brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
+		if(is_type_in_list(heal_item, brute_heal_items) && heal_item.ai_can_use(brain.tied_human, brain, target))
 			brute_heal = heal_item
 			break
 
 	if(!brute_heal)
 		return
 
-	inventory.clear_main_hand()
-	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, brute_heal))
+	brain.inventory.clear_main_hand()
+	if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, brute_heal))
 		healing_someone = FALSE
 		return
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(short_action_delay * action_delay_mult)
-	brute_heal.ai_use(tied_human, src, target)
+	sleep(brain.short_action_delay * brain.action_delay_mult)
+	brute_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(brute_heal))
 		return
 
-	var/storage_slot = inventory.storage_has_room(brute_heal)
+	var/storage_slot = brain.inventory.storage_has_room(brute_heal)
 	if(storage_slot)
-		inventory.store_item(brute_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		brain.inventory.store_item(brute_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
-		tied_human.drop_held_item(brute_heal)
+		brain.tied_human.drop_held_item(brute_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
-	to_chat(world, "[tied_human.name] healed brute damage of [target.name] using [brute_heal].")
+	to_chat(world, "[brain.tied_human.name] healed brute damage of [target.name] using [brute_heal].")
 #endif
 
-/datum/human_ai_brain/proc/bleed_heal(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/bleed_heal(mob/living/carbon/human/target)
 	var/obj/item/bleed_heal
-	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
-		if(is_type_in_list(heal_item, bleed_heal_items) && heal_item.ai_can_use(tied_human, src, target))
+	for(var/obj/item/heal_item as anything in brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
+		if(is_type_in_list(heal_item, bleed_heal_items) && heal_item.ai_can_use(brain.tied_human, brain, target))
 			bleed_heal = heal_item
 			break
 
 	if(!bleed_heal)
 		return
 
-	inventory.clear_main_hand()
-	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, bleed_heal))
+	brain.inventory.clear_main_hand()
+	if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, bleed_heal))
 		healing_someone = FALSE
 		return
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(short_action_delay * action_delay_mult)
-	bleed_heal.ai_use(tied_human, src, target)
+	sleep(brain.short_action_delay * brain.action_delay_mult)
+	bleed_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(bleed_heal))
 		return
 
-	var/storage_slot = inventory.storage_has_room(bleed_heal)
+	var/storage_slot = brain.inventory.storage_has_room(bleed_heal)
 	if(storage_slot)
-		inventory.store_item(bleed_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		brain.inventory.store_item(bleed_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
-		tied_human.drop_held_item(bleed_heal)
+		brain.tied_human.drop_held_item(bleed_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
-	to_chat(world, "[tied_human.name] fixed bleeding of [target.name] using [bleed_heal].")
+	to_chat(world, "[brain.tied_human.name] fixed bleeding of [target.name] using [bleed_heal].")
 #endif
 
-/datum/human_ai_brain/proc/bone_heal(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/bone_heal(mob/living/carbon/human/target)
 	var/obj/item/bone_heal
-	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
-		if(is_type_in_list(heal_item, bonebreak_heal_items) && heal_item.ai_can_use(tied_human, src, target))
+	for(var/obj/item/heal_item as anything in brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
+		if(is_type_in_list(heal_item, bonebreak_heal_items) && heal_item.ai_can_use(brain.tied_human, brain, target))
 			bone_heal = heal_item
 			break
 
 	if(!bone_heal)
 		return
 
-	inventory.clear_main_hand()
-	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, bone_heal))
+	brain.inventory.clear_main_hand()
+	if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, bone_heal))
 		healing_someone = FALSE
 		return
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(short_action_delay * action_delay_mult)
-	bone_heal.ai_use(tied_human, src, target)
+	sleep(brain.short_action_delay * brain.action_delay_mult)
+	bone_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(bone_heal))
 		return
 
-	var/storage_slot = inventory.storage_has_room(bone_heal)
+	var/storage_slot = brain.inventory.storage_has_room(bone_heal)
 	if(storage_slot)
-		inventory.store_item(bone_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		brain.inventory.store_item(bone_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
-		tied_human.drop_held_item(bone_heal)
+		brain.tied_human.drop_held_item(bone_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
-	to_chat(world, "[tied_human.name] splinted a fracture of [target.name] using [bone_heal].")
+	to_chat(world, "[brain.tied_human.name] splinted a fracture of [target.name] using [bone_heal].")
 #endif
 
-/datum/human_ai_brain/proc/burn_heal(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/burn_heal(mob/living/carbon/human/target)
 	var/obj/item/burn_heal
-	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
-		if(is_type_in_list(heal_item, burn_heal_items) && heal_item.ai_can_use(tied_human, src, target))
+	for(var/obj/item/heal_item as anything in brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
+		if(is_type_in_list(heal_item, burn_heal_items) && heal_item.ai_can_use(brain.tied_human, brain, target))
 			burn_heal = heal_item
 			break
 
 	if(!burn_heal)
 		return
 
-	inventory.clear_main_hand()
-	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, burn_heal))
+	brain.inventory.clear_main_hand()
+	if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, burn_heal))
 		healing_someone = FALSE
 		return
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(short_action_delay * action_delay_mult)
-	burn_heal.ai_use(tied_human, src, target)
+	sleep(brain.short_action_delay * brain.action_delay_mult)
+	burn_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(burn_heal))
 		return
 
-	var/storage_slot = inventory.storage_has_room(burn_heal)
+	var/storage_slot = brain.inventory.storage_has_room(burn_heal)
 	if(storage_slot)
-		inventory.store_item(burn_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		brain.inventory.store_item(burn_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
-		tied_human.drop_held_item(burn_heal)
+		brain.tied_human.drop_held_item(burn_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
-	to_chat(world, "[tied_human.name] healed burn damage of [target.name] using [burn_heal].")
+	to_chat(world, "[brain.tied_human.name] healed burn damage of [target.name] using [burn_heal].")
 #endif
 
-/datum/human_ai_brain/proc/pain_heal(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/pain_heal(mob/living/carbon/human/target)
 	var/obj/item/painkiller
-	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
-		if(is_type_in_list(heal_item, painkiller_items) && heal_item.ai_can_use(tied_human, src, target))
+	for(var/obj/item/heal_item as anything in brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
+		if(is_type_in_list(heal_item, painkiller_items) && heal_item.ai_can_use(brain.tied_human, brain, target))
 			painkiller = heal_item
 			break
 
 	if(!painkiller)
 		return
 
-	inventory.clear_main_hand()
-	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, painkiller))
+	brain.inventory.clear_main_hand()
+	if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, painkiller))
 		healing_someone = FALSE
 		return
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(short_action_delay * action_delay_mult)
-	painkiller.ai_use(tied_human, src, target)
+	sleep(brain.short_action_delay * brain.action_delay_mult)
+	painkiller.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(painkiller))
 		return
 
-	var/storage_slot = inventory.storage_has_room(painkiller)
+	var/storage_slot = brain.inventory.storage_has_room(painkiller)
 	if(storage_slot)
-		inventory.store_item(painkiller, storage_slot, HUMAN_AI_HEALTHITEMS)
+		brain.inventory.store_item(painkiller, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
-		tied_human.drop_held_item(painkiller)
+		brain.tied_human.drop_held_item(painkiller)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
-	to_chat(world, "[tied_human.name] healed pain of [target.name] using [painkiller].")
+	to_chat(world, "[brain.tied_human.name] healed pain of [target.name] using [painkiller].")
 #endif
 
-/datum/human_ai_brain/proc/tox_heal(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/tox_heal(mob/living/carbon/human/target)
 	var/obj/item/tox_heal
-	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
-		if(is_type_in_list(heal_item, tox_heal_items) && heal_item.ai_can_use(tied_human, src, target))
+	for(var/obj/item/heal_item as anything in brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
+		if(is_type_in_list(heal_item, tox_heal_items) && heal_item.ai_can_use(brain.tied_human, brain, target))
 			tox_heal = heal_item
 			break
 
 	if(!tox_heal)
 		return
 
-	inventory.clear_main_hand()
-	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, tox_heal))
+	brain.inventory.clear_main_hand()
+	if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, tox_heal))
 		healing_someone = FALSE
 		return
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(short_action_delay * action_delay_mult)
-	tox_heal.ai_use(tied_human, src, target)
+	sleep(brain.short_action_delay * brain.action_delay_mult)
+	tox_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(tox_heal))
 		return
 
-	var/storage_slot = inventory.storage_has_room(tox_heal)
+	var/storage_slot = brain.inventory.storage_has_room(tox_heal)
 	if(storage_slot)
-		inventory.store_item(tox_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		brain.inventory.store_item(tox_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
-		tied_human.drop_held_item(tox_heal)
+		brain.tied_human.drop_held_item(tox_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
-	to_chat(world, "[tied_human.name] healed tox damage of [target.name] using [tox_heal].")
+	to_chat(world, "[brain.tied_human.name] healed tox damage of [target.name] using [tox_heal].")
 #endif
 
-/datum/human_ai_brain/proc/oxy_heal(mob/living/carbon/human/target)
+/datum/human_ai_module/health/proc/oxy_heal(mob/living/carbon/human/target)
 	var/obj/item/oxy_heal
-	for(var/obj/item/heal_item as anything in inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
-		if(is_type_in_list(heal_item, oxy_heal_items) && heal_item.ai_can_use(tied_human, src, target))
+	for(var/obj/item/heal_item as anything in brain.inventory.equipment_map[HUMAN_AI_HEALTHITEMS])
+		if(is_type_in_list(heal_item, oxy_heal_items) && heal_item.ai_can_use(brain.tied_human, brain, target))
 			oxy_heal = heal_item
 
 	if(!oxy_heal)
 		healing_someone = FALSE
 		return
 
-	inventory.clear_main_hand()
-	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, oxy_heal))
+	brain.inventory.clear_main_hand()
+	if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, oxy_heal))
 		healing_someone = FALSE
 		return
 
 	. = TRUE
 	healing_someone = TRUE
-	sleep(short_action_delay * action_delay_mult)
-	oxy_heal.ai_use(tied_human, src, target)
+	sleep(brain.short_action_delay * brain.action_delay_mult)
+	oxy_heal.ai_use(brain.tied_human, brain, target)
 	if(QDELETED(oxy_heal))
 		healing_someone = FALSE
 		return
 
-	var/storage_slot = inventory.storage_has_room(oxy_heal)
+	var/storage_slot = brain.inventory.storage_has_room(oxy_heal)
 	if(storage_slot)
-		inventory.store_item(oxy_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
+		brain.inventory.store_item(oxy_heal, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
-		tied_human.drop_held_item(oxy_heal)
+		brain.tied_human.drop_held_item(oxy_heal)
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
-	to_chat(world, "[tied_human.name] healed oxygen damage of [target.name] using [oxy_heal].")
+	to_chat(world, "[brain.tied_human.name] healed oxygen damage of [target.name] using [oxy_heal].")
 #endif

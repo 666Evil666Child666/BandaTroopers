@@ -966,7 +966,7 @@
 	if(issynth(target))
 		return FALSE
 
-	if(!length(contents) || !COOLDOWN_FINISHED(ai_brain, pill_use_cooldown))
+	if(!length(contents) || !COOLDOWN_FINISHED(ai_brain.health, pill_use_cooldown))
 		return FALSE
 
 	var/obj/item/reagent_container/pill/pill = contents[1]
@@ -986,7 +986,7 @@
 	if(user.put_in_active_hand(pill))
 		remove_from_storage(pill, user)
 		pill.attack(target, user)
-		COOLDOWN_START(ai_brain, pill_use_cooldown, 5 SECONDS)
+		COOLDOWN_START(ai_brain.health, pill_use_cooldown, 5 SECONDS)
 		sleep(ai_brain.medium_action_delay * ai_brain.action_delay_mult)
 
 	ai_brain.inventory.appraise_inventory() // For some reason it removes pill bottles from equipment_map after usage

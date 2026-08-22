@@ -10,6 +10,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/faction/faction
 	var/datum/human_ai_module/inventory/inventory
 	var/datum/human_ai_module/grenade/grenade
+	var/datum/human_ai_module/health/health
 
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
@@ -70,6 +71,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	targeting = new(src)
 	cover = new(src)
 	grenade = new(src)
+	health = new(src)
 	perception = new(src)
 	perception.register_signals()
 	perception.setup_detection_radius()
@@ -95,6 +97,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(faction)
 	QDEL_NULL(inventory)
 	QDEL_NULL(grenade)
+	QDEL_NULL(health)
 	tied_human = null
 
 	return ..()
@@ -113,12 +116,12 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	shot_at = null
 	inventory.reset_inventory()
 	targeting.lose_target()
+	health.lose_injured_ally()
 
 	for(var/action in ongoing_actions)
 		qdel(action)
 
 	ongoing_actions.Cut()
-	lose_injured_ally()
 
 /datum/human_ai_brain/process(delta_time)
 	last_process_tick = world.time // SS220 EDIT: track scheduler entry to guard same-tick wake rethinks
