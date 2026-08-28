@@ -3,7 +3,7 @@
 	action_flags = ACTION_USING_HANDS
 
 /datum/ai_action/treat_self/get_weight(datum/human_ai_brain/brain)
-	if(iszombie(brain.tied_human))
+	if(brain.tied_controller.is_zombie())
 		return 0
 
 	if(brain.health.healing_someone)
@@ -22,7 +22,7 @@
 	if(brain.health.cant_be_treated_stacks >= brain.health.treatment_stack_threshold)
 		return 0
 
-	if(!brain.health.healing_start_check(brain.tied_human))
+	if(!brain.tied_controller.healing_start_check_self())
 		return 0
 
 	return 4
@@ -40,15 +40,14 @@
 	if(!brain.inventory.has_equipment(HUMAN_AI_HEALTHITEMS))
 		return ONGOING_ACTION_COMPLETED
 
-	var/mob/living/carbon/human/tied_human = brain.tied_human
-	if(tied_human.on_fire)
+	if(brain.tied_controller.is_on_fire())
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.health.healing_someone)
 		return ONGOING_ACTION_UNFINISHED
 
-	if(brain.health.healing_start_check(tied_human))
-		if(!brain.health.start_healing(tied_human))
+	if(brain.tied_controller.healing_start_check_self())
+		if(!brain.tied_controller.start_healing_self())
 			brain.health.cant_be_treated_stacks++
 		return ONGOING_ACTION_UNFINISHED
 

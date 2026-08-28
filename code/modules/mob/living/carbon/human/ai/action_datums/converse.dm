@@ -14,7 +14,7 @@
 		return .
 
 	var/list/ai_nearby = list()
-	for(var/mob/living/carbon/human/nearby_human in view(2, brain.tied_human))
+	for(var/mob/living/carbon/human/nearby_human in brain.tied_controller.get_view(2))
 		var/datum/human_ai_brain/other_brain = nearby_human.get_ai_brain()
 		if(!other_brain || !other_brain.conversation.can_participate())
 			continue

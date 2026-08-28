@@ -60,7 +60,7 @@
 
 		ongoing_actions += new action_type(brain)
 #if defined(TESTING) && defined(HUMAN_AI_TESTING)
-		message_admins("action of type [action_type] was added to [brain.tied_human.real_name]")
+		message_admins("action of type [action_type] was added to [brain.tied_controller.get_real_name()]")
 #endif
 
 	for(var/datum/ai_action/action as anything in ongoing_actions)

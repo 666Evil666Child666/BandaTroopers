@@ -26,15 +26,15 @@
 
 	data["ai_humans"] = list()
 	for(var/datum/human_ai_brain/brain as anything in GLOB.human_ai_brains)
-		if(!brain.tied_human || brain.tied_human.stat == DEAD)
+		if(!brain.tied_controller || brain.tied_controller.is_dead())
 			continue
 
 		data["ai_humans"] += list(list(
-			"name" = brain.tied_human.real_name,
-			"health" = FLOOR((brain.tied_human.health / brain.tied_human.maxHealth * 100), 1),
-			"loc" = list(brain.tied_human.x, brain.tied_human.y, brain.tied_human.z),
-			"faction" = brain.tied_human.faction,
-			"ref" = REF(brain.tied_human),
+			"name" = brain.tied_controller.get_real_name(),
+			"health" = FLOOR((brain.tied_controller.get_health_ratio() * 100), 1),
+			"loc" = list(brain.tied_controller.get_x(), brain.tied_controller.get_y(), brain.tied_controller.get_z()),
+			"faction" = brain.tied_controller.get_faction(),
+			"ref" = brain.tied_controller.get_ref(),
 			"brain_ref" = REF(brain),
 			"in_combat" = brain.combat.in_combat,
 			"squad_id" = brain.squad.squad_id,
@@ -45,14 +45,14 @@
 	for(var/datum/human_ai_squad/squad as anything in SShuman_ai.squads)
 		var/list/name_list = list()
 		for(var/datum/human_ai_brain/brain as anything in squad.ai_in_squad)
-			name_list += brain.tied_human?.real_name
+			name_list += brain.tied_controller?.get_real_name()
 		data["squads"] += list(list(
 			"id" = squad.id,
 			"name" = squad.name,
 			"members" = english_list(name_list),
 			"order" = squad.current_order?.name,
 			"ref" = REF(squad),
-			"squad_leader" = squad.squad_leader?.tied_human?.real_name,
+			"squad_leader" = squad.squad_leader?.tied_controller?.get_real_name(),
 		))
 
 	return data
@@ -171,9 +171,10 @@
 		qdel(ai_human)
 		return
 
-	ai_human.face_dir(mob.dir)
-	ai_human.forceMove(get_turf(mob))
-	ai_human.get_ai_brain().inventory.appraise_inventory(armor = TRUE)
+	var/datum/human_ai_brain/ai_brain = ai_human.get_ai_brain()
+	ai_brain.tied_controller.face_dir(mob.dir)
+	ai_brain.tied_controller.forceMove(get_turf(mob))
+	ai_brain.inventory.appraise_inventory(armor = TRUE)
 
 /client/proc/make_human_ai(mob/living/carbon/human/mob in GLOB.human_mob_list)
 	set name = "Make AI"

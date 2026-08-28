@@ -27,7 +27,7 @@
 	if(hascall(ai_brain, "modular_finalize_human_ai_brain"))
 		call(ai_brain, "modular_finalize_human_ai_brain")(ai_human)
 	GLOB.ai_humans += ai_human
-	ai_human.mob_flags |= AI_CONTROLLED
+	ai_brain.tied_controller.mark_ai_controlled()
 
 /datum/component/human_ai/Destroy(force, silent)
 	handle_qdel()
@@ -48,11 +48,11 @@
 	SIGNAL_HANDLER
 
 	GLOB.ai_humans -= ai_human
-	ai_brain?.tied_human = null
+	ai_brain?.tied_controller?.detach()
 	QDEL_NULL(ai_brain)
 	ai_human = null
 
 /datum/component/human_ai/proc/on_species_set(datum/source, new_species)
 	SIGNAL_HANDLER
 
-	ai_human.mob_flags |= AI_CONTROLLED
+	ai_brain?.tied_controller?.mark_ai_controlled()

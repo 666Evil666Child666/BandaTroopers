@@ -9,7 +9,7 @@
 	if(!brain.guns.has_tried_reload() && brain.inventory.has_primary_weapon())
 		return 0
 
-	if(brain.inventory.get_primary_weapon()?.ai_can_use(brain.tied_human, brain))
+	if(brain.tied_controller.can_use_item(brain.inventory.get_primary_weapon()))
 		return 0
 
 	return 12
@@ -20,13 +20,12 @@
 	return ONGOING_ACTION_COMPLETED
 
 /datum/ai_action/select_primary/proc/decide_primary_weapon()
-	var/mob/living/carbon/human/tied_human = brain.tied_human
 	var/static/datum/firearm_appraisal/default_appraisal = new() // SS220 EDIT - HALO GUN FIX
 
 	var/obj/item/weapon/gun/best_secondary
 	var/datum/firearm_appraisal/best_secondary_appraisal
 	for(var/obj/item/weapon/gun/secondary as anything in brain.inventory.get_secondary_weapons())
-		if(!secondary.ai_can_use(tied_human, brain))
+		if(!brain.tied_controller.can_use_item(secondary))
 			continue
 
 		if(!best_secondary)
@@ -35,7 +34,7 @@
 			continue
 
 		var/datum/firearm_appraisal/this_appraisal = get_firearm_appraisal(secondary) || default_appraisal // SS220 EDIT - HALO GUN FIX
-		if(this_appraisal.get_primary_weight(tied_human) > best_secondary_appraisal.get_primary_weight(tied_human)) // SS220 EDIT: allow modular firearm appraisals to bias primary selection
+		if(brain.tied_controller.get_firearm_primary_weight(this_appraisal) > brain.tied_controller.get_firearm_primary_weight(best_secondary_appraisal)) // SS220 EDIT: allow modular firearm appraisals to bias primary selection
 			best_secondary = secondary
 			best_secondary_appraisal = this_appraisal
 			continue
@@ -44,12 +43,12 @@
 		return
 
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
-	if(primary_weapon && brain.tied_human.is_holding(primary_weapon))
+	if(primary_weapon && brain.tied_controller.is_holding(primary_weapon))
 		var/possible_storage_loc = brain.inventory.storage_has_room(primary_weapon)
-		if((primary_weapon.flags_equip_slot & SLOT_BACK) && !tied_human.back)
-			tied_human.equip_to_slot(primary_weapon, WEAR_BACK, TRUE)
-		else if(!tied_human.s_store && tied_human.wear_suit && ((primary_weapon.flags_equip_slot & SLOT_SUIT_STORE) || is_type_in_list(primary_weapon, tied_human.wear_suit.allowed)))
-			tied_human.equip_to_slot(primary_weapon, WEAR_J_STORE, TRUE)
+		if((primary_weapon.flags_equip_slot & SLOT_BACK) && !brain.tied_controller.get_back())
+			brain.tied_controller.equip_to_slot(primary_weapon, WEAR_BACK, TRUE)
+		else if(!brain.tied_controller.get_s_store() && brain.tied_controller.get_wear_suit() && ((primary_weapon.flags_equip_slot & SLOT_SUIT_STORE) || is_type_in_list(primary_weapon, brain.tied_controller.get_wear_suit().allowed)))
+			brain.tied_controller.equip_to_slot(primary_weapon, WEAR_J_STORE, TRUE)
 		else if(possible_storage_loc)
 			brain.inventory.store_item(primary_weapon, possible_storage_loc)
 

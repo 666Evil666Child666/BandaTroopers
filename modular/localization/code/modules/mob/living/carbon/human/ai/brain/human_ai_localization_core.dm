@@ -77,6 +77,12 @@
 		existing_lines += pack_lines
 		target.vars[key] = existing_lines
 
+/datum/modpack/localization/proc/halo_ai_apply_brain_line_pack(datum/human_ai_brain/brain, list/pack, append = FALSE)
+	if(!brain?.communication)
+		return
+
+	halo_ai_apply_line_pack(brain.communication, pack, append)
+
 /datum/modpack/localization/proc/halo_ai_get_faction_localization_pack(faction_name)
 	var/list/general_pack = halo_ai_get_general_faction_localization_pack(faction_name)
 	if(islist(general_pack))
@@ -102,15 +108,17 @@
 		return
 
 	var/datum/human_ai_faction/faction_datum
-	if(SShuman_ai && brain.tied_human?.faction)
-		faction_datum = SShuman_ai.human_ai_factions[brain.tied_human.faction]
+	var/faction = brain.tied_controller?.get_faction()
+	if(SShuman_ai && faction)
+		faction_datum = SShuman_ai.human_ai_factions[faction]
 
 	var/list/default_pack = halo_ai_get_default_fallback_pack()
 	for(var/key in halo_ai_line_pack_keys())
 		if(length(faction_datum?.vars[key]))
 			continue
 		var/list/default_lines = default_pack[key]
-		brain.vars[key] = default_lines.Copy()
+		if(islist(default_lines))
+			brain.communication.vars[key] = default_lines.Copy()
 
 /datum/human_ai_brain/proc/modular_finalize_human_ai_brain(mob/living/carbon/human/new_human)
 	var/datum/modpack/localization/localization_pack

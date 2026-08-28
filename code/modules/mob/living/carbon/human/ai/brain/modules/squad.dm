@@ -31,7 +31,7 @@
 	ai_in_squad += adding
 
 	adding.squad.set_current_order(current_order)
-	RegisterSignal(adding.tied_human, COMSIG_MOB_DEATH, PROC_REF(on_squad_member_death))
+	adding.tied_controller.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_squad_member_death))
 	RegisterSignal(adding, COMSIG_PARENT_QDELETING, PROC_REF(on_squad_member_delete))
 
 /datum/human_ai_squad/proc/remove_from_squad(datum/human_ai_brain/removing)
@@ -41,8 +41,8 @@
 	removing.squad.squad_id = null
 	removing.squad.is_squad_leader = FALSE
 	ai_in_squad -= removing
-	if(removing.tied_human)
-		UnregisterSignal(removing.tied_human, COMSIG_MOB_DEATH)
+	if(removing.tied_controller)
+		removing.tied_controller.unregister_signal_for(src, COMSIG_MOB_DEATH)
 	UnregisterSignal(removing, COMSIG_PARENT_QDELETING)
 
 /datum/human_ai_squad/proc/set_current_order(datum/ai_order/order)
@@ -72,10 +72,10 @@
 		set_squad_leader(null)
 
 	for(var/datum/human_ai_brain/squaddie as anything in ai_in_squad)
-		if(squaddie?.tied_human.client)
+		if(squaddie?.tied_controller.can_player_takeover_block_ai())
 			continue
 
-		if(squaddie.tied_human.is_mob_incapacitated())
+		if(squaddie.tied_controller.is_incapacitated())
 			continue
 
 		squaddie.communication.on_squad_member_death(dead_mob)

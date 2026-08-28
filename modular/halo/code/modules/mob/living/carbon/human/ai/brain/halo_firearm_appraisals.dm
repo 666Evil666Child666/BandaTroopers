@@ -60,9 +60,9 @@
 		return
 	var/vent_decision = 0
 	if(AI.targeting.current_target)
-		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_DIRECT_COMBAT * get_dist(AI.tied_human, AI.targeting.current_target)))
+		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_DIRECT_COMBAT * AI.tied_controller.get_distance_to(AI.targeting.current_target)))
 	else if(AI.targeting.target_turf)
-		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_INDIRECT_COMBAT * get_dist(AI.tied_human, AI.targeting.target_turf)))
+		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_INDIRECT_COMBAT * AI.tied_controller.get_distance_to(AI.targeting.target_turf)))
 	vent_decision += max(0, firearm.heat - 65)
 	if(prob(max(0, vent_decision)))
 		AI.inventory.unholster_primary()
@@ -75,6 +75,42 @@
 		sleep(AI.profile.micro_action_delay * AI.profile.action_delay_mult)
 		user.swap_hand()
 		AI.inventory.wield_primary_sleep()
+
+/datum/firearm_appraisal/covenant/plasma/can_queue_fire(obj/item/weapon/gun/energy/plasma/firearm, datum/human_ai_brain/AI)
+	if(!..())
+		return FALSE
+	return !firearm.dispersing
+
+/datum/firearm_appraisal/covenant/plasma/handle_after_fire(obj/item/weapon/gun/energy/plasma/firearm, datum/human_ai_brain/AI, atom/movable/current_target, turf/target_turf)
+	if(!firearm || !AI?.has_valid_tied_human())
+		return null
+	if(firearm.heat < 60)
+		return ..()
+
+	var/vent_decision = 0
+	if(current_target)
+		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_DIRECT_COMBAT * AI.tied_controller.get_distance_to(current_target)))
+	else if(target_turf)
+		vent_decision = max(0, -20 + (PLASMA_VENT_CHANCE_INDIRECT_COMBAT * AI.tied_controller.get_distance_to(target_turf)))
+
+	vent_decision += max(0, firearm.heat - 65)
+	var/datum/human_ai_fire_after_fire_result/result
+	if(prob(max(0, vent_decision)))
+		result = new()
+		result.handled = TRUE
+		result.currently_firing = FALSE
+		AI.inventory.unholster_primary()
+		AI.inventory.ensure_primary_hand(firearm)
+		AI.tied_controller.unload_weapon(firearm)
+		return result
+	else if(firearm.heat >= 100)
+		result = ..()
+		if(!result)
+			result = new()
+		result.currently_firing = FALSE
+		return result
+
+	return ..()
 
 #undef PLASMA_VENT_CHANCE_DIRECT_COMBAT
 #undef PLASMA_VENT_CHANCE_INDIRECT_COMBAT

@@ -112,7 +112,7 @@
 		return
 
 	if(current_target)
-		if(brain.tied_human in viewers(brain.profile.view_distance, current_target))
+		if(brain.tied_controller.is_in_view_of(current_target, brain.profile.view_distance))
 			target_turf = get_turf(current_target)
 		else
 			COOLDOWN_START(src, fire_offscreen, 2 SECONDS)
@@ -130,14 +130,14 @@
 	var/rear_view_penalty = 0
 
 	if(brain.profile.scope_vision)
-		dir_cone = reverse_nearby_direction(reverse_direction(brain.tied_human.dir))
+		dir_cone = brain.tied_controller.get_reverse_dir_cone()
 		rear_view_penalty = brain.profile.view_distance / 7 - 1
 
-	for(var/atom/movable/potential_target in view(brain.profile.view_distance, brain.tied_human))
-		if(potential_target == brain.tied_human)
+	for(var/atom/movable/potential_target in brain.tied_controller.get_view(brain.profile.view_distance))
+		if(brain.tied_controller.is_puppet(potential_target))
 			continue
 
-		var/distance = get_dist(brain.tied_human, potential_target)
+		var/distance = brain.tied_controller.get_distance_to(potential_target)
 
 		if(!can_acquire_from_direction(potential_target, distance, dir_cone, rear_view_penalty))
 			continue
@@ -183,11 +183,11 @@
 	if(!brain.profile.scope_vision)
 		return TRUE
 
-	if((distance > 7) && !(get_dir(brain.tied_human, target) in dir_cone))
+	if((distance > 7) && !(brain.tied_controller.get_direction_to(target) in dir_cone))
 		return FALSE
 
 	if(istype(target, /mob/living))
-		var/rear_view_check = (get_dir(brain.tied_human, target) in reverse_nearby_direction(brain.tied_human.dir))
+		var/rear_view_check = (brain.tied_controller.get_direction_to(target) in brain.tied_controller.get_reverse_dir_cone())
 		if(rear_view_check && (distance > brain.profile.view_distance - rear_view_penalty))
 			return FALSE
 
@@ -218,7 +218,7 @@
 	if(defense.stat & DEFENSE_DESTROYED)
 		return FALSE
 
-	if(brain.tied_human.faction in defense.faction_group)
+	if(brain.tied_controller.faction_in(defense.faction_group))
 		return FALSE
 
 	return path_check(defense)
@@ -248,12 +248,12 @@
 	if(brain.faction.faction_check(target))
 		return FALSE
 
-	var/distance = get_dist(brain.tied_human, target)
+	var/distance = brain.tied_controller.get_distance_to(target)
 
 	if(!brain.inventory.has_nightvision && distance > 1 && !can_detect_living_target(target))
 		return FALSE
 
-	if(HAS_TRAIT(target, TRAIT_CLOAKED) && get_dist(brain.tied_human, target) > cloak_visible_range)
+	if(HAS_TRAIT(target, TRAIT_CLOAKED) && brain.tied_controller.get_distance_to(target) > cloak_visible_range)
 		return FALSE
 
 	if(!path_check(target))
@@ -275,7 +275,7 @@
 	if(!is_valid_target_ref(target))
 		return FALSE
 
-	var/turf/source_turf = get_turf(brain.tied_human)
+	var/turf/source_turf = brain.tied_controller.get_current_turf()
 	var/turf/target_turf = get_turf(target)
 	if(!source_turf || !target_turf)
 		return FALSE
@@ -286,7 +286,7 @@
 		if(tile.density)
 			return FALSE
 		for(var/atom/movable/obstacle in tile)
-			if(obstacle.density && obstacle != target && obstacle != brain.tied_human && !istype(obstacle, /mob))
+			if(obstacle.density && obstacle != target && !brain.tied_controller.is_puppet(obstacle) && !istype(obstacle, /mob))
 				if(istype(obstacle, /obj/structure/window) || istype(obstacle, /obj/structure/grille) || istype(obstacle, /obj/structure/barricade))
 					continue
 				return FALSE

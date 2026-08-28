@@ -55,38 +55,8 @@
 /datum/human_tied_controller/proc/can_access(atom/door)
 	return can_ignore_access() || can_access_with_active_hand(door) || can_access_with_id(door)
 
-// Raw item interaction primitives
-
-/datum/human_tied_controller/proc/can_use_item(obj/item/item, atom/target)
-	if(!can_directly_control() || !item)
-		return FALSE
-	if(target)
-		return item.ai_can_use(tied_human, brain, target)
-	return item.ai_can_use(tied_human, brain)
-
-/datum/human_tied_controller/proc/ai_use(obj/item/item, atom/target)
-	if(!can_directly_control() || !item)
-		return FALSE
-	if(target)
-		return item.ai_use(tied_human, brain, target)
-	return item.ai_use(tied_human, brain)
-
-// Raw communication/action primitives
-
 /datum/human_tied_controller/proc/resist()
 	if(!can_directly_control())
 		return FALSE
 	INVOKE_ASYNC(tied_human, TYPE_VERB_REF(/mob/living, resist))
-	return TRUE
-
-/datum/human_tied_controller/proc/say(message)
-	if(!can_mutate_puppet() || !message)
-		return FALSE
-	tied_human.say(message)
-	return TRUE
-
-/datum/human_tied_controller/proc/turn_to_conversation_partner(mob/living/carbon/human/partner)
-	if(!can_directly_control() || !partner)
-		return FALSE
-	tied_human.setDir(get_cardinal_dir(tied_human, partner))
 	return TRUE

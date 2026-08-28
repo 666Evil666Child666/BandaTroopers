@@ -1,6 +1,4 @@
 /datum/human_ai_module/navigation
-	/// Delay timer for when the AI can next move, based on the tied human's move delay
-	var/ai_move_delay = 0
 	/// The list of turfs that the AI is trying to move through
 	var/list/current_path
 	/// The next turf in current_path that the AI is moving to
@@ -29,17 +27,7 @@
 	COOLDOWN_DECLARE(no_path_found_cooldown)
 
 /datum/human_ai_module/navigation/proc/can_move_and_apply_move_delay()
-	// Unable to move, try next time.
-	if(ai_move_delay > world.time || !(brain.tied_human.mobility_flags & MOBILITY_MOVE) || brain.tied_human.is_mob_incapacitated(TRUE) || (brain.tied_human.body_position != STANDING_UP && !brain.tied_human.can_crawl) || brain.tied_human.anchored)
-		return FALSE
-
-	ai_move_delay = world.time + brain.tied_human.move_delay
-	if(brain.tied_human.recalculate_move_delay)
-		ai_move_delay = world.time + brain.tied_human.movement_delay()
-	if(brain.tied_human.next_move_slowdown)
-		ai_move_delay += brain.tied_human.next_move_slowdown
-		brain.tied_human.next_move_slowdown = 0
-	return TRUE
+	return brain.tied_controller?.can_move_and_apply_move_delay()
 
 /datum/human_ai_module/navigation/proc/clear_navigation_path()
 	current_path = null
@@ -66,24 +54,23 @@
 	return TRUE
 
 /datum/human_ai_module/navigation/proc/has_reached_navigation_destination(turf/destination)
-	return brain.tied_human && destination && (get_dist(destination, brain.tied_human) <= 0)
+	return destination && (brain.tied_controller.get_distance_from(destination) <= 0)
 
 /datum/human_ai_module/navigation/proc/get_adjacent_move_interactions(turf/next_turf)
-	if(!brain.tied_human || !next_turf || get_dist(next_turf, brain.tied_human) != 1)
+	if(!brain.tied_controller.has_valid_tied_human() || !next_turf || brain.tied_controller.get_distance_from(next_turf) != 1)
 		return null
 
-	var/list/L = LinkBlocked(brain.tied_human, brain.tied_human.loc, next_turf, list(brain.tied_human), TRUE)
-	L += SSpathfinding.check_special_blockers(brain.tied_human, next_turf)
-	var/direction = get_dir(brain.tied_human.loc, next_turf)
+	var/list/L = brain.tied_controller.get_move_blockers(next_turf)
+	var/direction = brain.tied_controller.get_direction_to(next_turf)
 	for(var/a in L)
 		var/atom/A = a
-		if(A.human_ai_obstacle(brain.tied_human, brain, direction) == INFINITY)
+		if(brain.tied_controller.get_obstacle_cost(A, direction, next_turf) == INFINITY)
 			return null
 
 	return L
 
 /datum/human_ai_module/navigation/proc/complete_adjacent_move_to_turf(turf/next_turf, clear_navigation_state = TRUE, list/interactions)
-	if(!brain.tied_human || !next_turf || get_dist(next_turf, brain.tied_human) != 1)
+	if(!brain.tied_controller.has_valid_tied_human() || !next_turf || brain.tied_controller.get_distance_from(next_turf) != 1)
 		return FALSE
 
 	if(isnull(interactions))
@@ -94,11 +81,9 @@
 	if(!can_move_and_apply_move_delay())
 		return TRUE
 
-	for(var/a in interactions)
-		var/atom/A = a
-		INVOKE_ASYNC(A, TYPE_PROC_REF(/atom, human_ai_act), brain.tied_human, brain)
+	brain.tied_controller.act_on_blockers(interactions)
 
-	var/successful_move = brain.tied_human.Move(next_turf, get_dir(brain.tied_human, next_turf))
+	var/successful_move = brain.tied_controller.Move(next_turf, brain.tied_controller.get_direction_to(next_turf))
 	if(successful_move)
 		on_navigation_success(clear_navigation_state)
 
@@ -108,20 +93,20 @@
 	return complete_adjacent_move_to_turf(next_turf, clear_navigation_state)
 
 /datum/human_ai_module/navigation/proc/try_short_step_towards_turf(turf/destination, clear_navigation_state = TRUE)
-	if(!brain.tied_human || !destination || short_step_pathing_range <= 1)
+	if(!brain.tied_controller.has_valid_tied_human() || !destination || short_step_pathing_range <= 1)
 		return FALSE
 
-	var/current_distance = get_dist(destination, brain.tied_human)
+	var/current_distance = brain.tied_controller.get_distance_from(destination)
 	if(current_distance <= 1 || current_distance > short_step_pathing_range)
 		return FALSE
 
-	var/preferred_direction = get_dir(brain.tied_human, destination)
+	var/preferred_direction = brain.tied_controller.get_direction_to(destination)
 	var/turf/best_destination
 	var/list/best_interactions
 	var/best_score = INFINITY
 
 	for(var/direction in GLOB.cardinals)
-		var/turf/next_turf = get_step(brain.tied_human, direction)
+		var/turf/next_turf = brain.tied_controller.get_step_in_dir(direction)
 		if(!next_turf)
 			continue
 
@@ -148,20 +133,20 @@
 	return complete_adjacent_move_to_turf(best_destination, clear_navigation_state, best_interactions)
 
 /datum/human_ai_module/navigation/proc/try_local_detour_towards_turf(turf/destination, turf/blocked_turf = null, clear_navigation_state = TRUE)
-	if(!brain.tied_human || !destination)
+	if(!brain.tied_controller.has_valid_tied_human() || !destination)
 		return FALSE
 
-	var/current_distance = get_dist(destination, brain.tied_human)
+	var/current_distance = brain.tied_controller.get_distance_from(destination)
 	if(current_distance <= 0)
 		return FALSE
 
-	var/preferred_direction = get_dir(brain.tied_human, blocked_turf || destination)
+	var/preferred_direction = brain.tied_controller.get_direction_to(blocked_turf || destination)
 	var/turf/best_destination
 	var/list/best_interactions
 	var/best_score = INFINITY
 
 	for(var/direction in GLOB.cardinals)
-		var/turf/next_turf = get_step(brain.tied_human, direction)
+		var/turf/next_turf = brain.tied_controller.get_step_in_dir(direction)
 		if(!next_turf || next_turf == blocked_turf)
 			continue
 
@@ -202,16 +187,16 @@
 	return get_dist(current_path_target, destination) > path_target_retarget_slack
 
 /datum/human_ai_module/navigation/proc/queue_navigation_path_to_turf(turf/destination, max_range = max_travel_distance, refresh_path_target = path_target_needs_refresh(destination))
-	if(!brain.tied_human || !destination)
+	if(!brain.tied_controller.has_valid_tied_human() || !destination)
 		return FALSE
 
-	if(CALCULATING_PATH(brain.tied_human) && !refresh_path_target)
+	if(brain.tied_controller.is_calculating_path() && !refresh_path_target)
 		return FALSE
 
 	// SS220 EDIT: modular brains may observe or meter path requests without forking shared navigation flow
 	if(hascall(brain, "modular_on_navigation_path_queued"))
 		call(brain, "modular_on_navigation_path_queued")(destination, max_range)
-	SSpathfinding.calculate_path(brain.tied_human, destination, max_range, brain.tied_human, CALLBACK(src, PROC_REF(set_path)), list(brain.tied_human, brain.targeting.get_current_target()))
+	brain.tied_controller.calculate_path_to(destination, max_range, CALLBACK(src, PROC_REF(set_path)), list(brain.targeting.get_current_target()))
 	current_path_target = destination
 	next_path_generation = world.time + path_update_period
 	return TRUE
@@ -227,7 +212,7 @@
 		current_path.len--
 
 /datum/human_ai_module/navigation/proc/follow_current_path_to_turf(turf/destination)
-	if(!brain.tied_human || !destination)
+	if(!brain.tied_controller.has_valid_tied_human() || !destination)
 		return FALSE
 
 	// No possible path to target.
@@ -241,7 +226,7 @@
 
 	var/turf/next_turf = current_path[length(current_path)]
 	// We've somehow deviated from our current path. Generate next path whenever possible.
-	if(get_dist(next_turf, brain.tied_human) > 1)
+	if(brain.tied_controller.get_distance_from(next_turf) > 1)
 		clear_navigation_path()
 		return TRUE
 
@@ -256,7 +241,7 @@
 	return TRUE
 
 /datum/human_ai_module/navigation/proc/move_to_next_turf(turf/T, max_range = max_travel_distance)
-	if(!brain.tied_human || !T)
+	if(!brain.tied_controller.has_valid_tied_human() || !T)
 		return FALSE
 
 	// SS220 EDIT - START: adjacent destinations do not need a full SSpathfinding round-trip
@@ -267,7 +252,7 @@
 	if(try_adjacent_move_to_turf(T))
 		return TRUE
 
-	if(get_dist(T, brain.tied_human) == 1)
+	if(brain.tied_controller.get_distance_from(T) == 1)
 		return FALSE
 	// SS220 EDIT - END
 
@@ -284,7 +269,7 @@
 	if(should_queue_navigation_path(T, refresh_path_target))
 		queue_navigation_path_to_turf(T, max_range, refresh_path_target)
 
-	if(CALCULATING_PATH(brain.tied_human))
+	if(brain.tied_controller.is_calculating_path())
 		return TRUE
 
 	return follow_current_path_to_turf(T)

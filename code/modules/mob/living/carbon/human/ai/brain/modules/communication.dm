@@ -139,39 +139,38 @@
 	COOLDOWN_DECLARE(combat_voiceline_cooldown)
 
 /datum/human_ai_module/communication/proc/emit_ai_voiceline(line)
-	if(!brain.tied_human || !line)
+	if(!brain.tied_controller.can_read_puppet() || !line)
 		return FALSE
 
 	if(!COOLDOWN_FINISHED(src, combat_voiceline_cooldown))
 		return FALSE
 
 	COOLDOWN_START(src, combat_voiceline_cooldown, combat_voiceline_cooldown_time)
-	brain.tied_human.say(line)
-	return TRUE
+	return brain.tied_controller.say(line)
 
 /datum/human_ai_module/communication/proc/say_in_combat_line(chance = in_combat_line_chance)
-	if(!length(enter_combat_lines) || !prob(chance) || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	if(!length(enter_combat_lines) || !prob(chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return
 	emit_ai_voiceline(pick(enter_combat_lines))
 
 /datum/human_ai_module/communication/proc/say_exit_combat_line(chance = exit_combat_line_chance)
-	if(!length(exit_combat_lines) || !prob(chance) || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	if(!length(exit_combat_lines) || !prob(chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return
 	emit_ai_voiceline(pick(exit_combat_lines))
 
 /datum/human_ai_module/communication/proc/on_squad_member_death(mob/living/carbon/human/dead_member)
-	if(!length(squad_member_death_lines) || !prob(squad_member_death_line_chance) || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	if(!length(squad_member_death_lines) || !prob(squad_member_death_line_chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return
 	emit_ai_voiceline(pick(squad_member_death_lines))
 
 /datum/human_ai_module/communication/proc/say_grenade_thrown_line(chance = grenade_thrown_line_chance)
-	if(!length(grenade_thrown_lines) || !prob(chance) || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	if(!length(grenade_thrown_lines) || !prob(chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return
 	emit_ai_voiceline(pick(grenade_thrown_lines))
 
 /datum/human_ai_module/communication/proc/say_reload_line(chance = reload_line_chance)
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
-	if(!length(reload_lines) || !prob(chance) || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT) || !primary_weapon)
+	if(!length(reload_lines) || !prob(chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT) || !primary_weapon)
 		return
 	if(istype(primary_weapon.current_mag, /obj/item/ammo_magazine/internal))
 		emit_ai_voiceline(pick(reload_internal_mag_lines))
@@ -179,6 +178,6 @@
 		emit_ai_voiceline(pick(reload_lines))
 
 /datum/human_ai_module/communication/proc/say_need_healing_line(chance = need_healing_line_chance)
-	if(!length(need_healing_lines) || !prob(chance) || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	if(!length(need_healing_lines) || !prob(chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return
 	emit_ai_voiceline(pick(need_healing_lines))

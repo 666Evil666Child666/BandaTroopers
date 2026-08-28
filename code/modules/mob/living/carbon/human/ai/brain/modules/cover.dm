@@ -56,7 +56,7 @@
 	var/list/turf_dict = list()
 	var/cover_dir = reverse_direction(angle2dir4ai(angle))
 
-	recursive_turf_cover_scan(get_turf(brain.tied_human), turf_dict, cover_dir)
+	recursive_turf_cover_scan(brain.tied_controller.get_current_turf(), turf_dict, cover_dir)
 
 #ifdef TESTING
 	addtimer(CALLBACK(src, PROC_REF(clear_cover_value_debug), turf_dict.Copy()), 60 SECONDS)
@@ -77,7 +77,7 @@
 			most_weight = weight
 			best_cover = T
 
-	if(best_cover && best_cover != get_turf(brain.tied_human))
+	if(best_cover && best_cover != brain.tied_controller.get_current_turf())
 		turf_dict -= best_cover
 		// insert cover atom deletion/move comsigs here
 		current_cover = best_cover
@@ -101,10 +101,10 @@
 		if(!squaddie.has_valid_tied_human())
 			continue
 
-		if(get_dist(brain.tied_human, squaddie.tied_human) > brain.profile.view_distance)
+		if(brain.tied_controller.get_distance_to(squaddie.tied_controller.get_current_turf()) > brain.profile.view_distance)
 			continue
 
-		if(squaddie.tied_human.is_mob_incapacitated())
+		if(squaddie.tied_controller.is_incapacitated())
 			continue
 
 		COOLDOWN_START(squaddie.cover, cover_search_cooldown, 15 SECONDS)
@@ -138,7 +138,7 @@
 		else
 			turf_dict[scan_turf] -= 5 // even if it's our mine, we don't really want to stand on it
 
-	turf_dict[scan_turf] -= get_dist(brain.tied_human, scan_turf)
+	turf_dict[scan_turf] -= brain.tied_controller.get_distance_to(scan_turf)
 	var/atom/movable/current_target = brain.targeting.get_current_target()
 	if(current_target) // Might be smarter to hide in a different direction
 		turf_dict[scan_turf] += get_dist(current_target, scan_turf) * 0.5

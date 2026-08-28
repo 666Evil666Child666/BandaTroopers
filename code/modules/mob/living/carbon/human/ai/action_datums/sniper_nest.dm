@@ -46,14 +46,13 @@
 	if(QDELETED(sniper_home))
 		return ONGOING_ACTION_COMPLETED
 
-	var/mob/living/carbon/tied_human = brain.tied_human
-	if(get_dist(tied_human, sniper_home) > 0)
+	if(brain.tied_controller.get_distance_to(sniper_home) > 0)
 		if(!brain.navigation.move_to_next_turf(sniper_home))
 			return ONGOING_ACTION_COMPLETED
 
-	if(!get_dist(tied_human, sniper_home))
+	if(!brain.tied_controller.get_distance_to(sniper_home))
 		brain.profile.view_distance = 30
-		brain.tied_human.face_dir(brain.emplacement.sniper_dir)
+		brain.tied_controller.face_dir(brain.emplacement.sniper_dir)
 
 	if(!brain.guns.should_reload())
 		brain.inventory.unholster_primary()
@@ -132,7 +131,7 @@
 		return
 	arm_equipment(ai_human, sniper_equipment_presets[chosen_equipment_name], TRUE)
 
-	ai_human.forceMove(home_turf)
+	ai_comp.ai_brain.tied_controller.forceMove(home_turf)
 	ai_comp.ai_brain.emplacement.set_sniper_home(home_turf, get_cardinal_dir(home_turf, target_turf))
 
 	to_chat(usr, SPAN_NOTICE("Sniper has been created."))

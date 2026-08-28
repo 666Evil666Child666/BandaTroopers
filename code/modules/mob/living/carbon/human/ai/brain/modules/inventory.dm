@@ -56,10 +56,10 @@
 	if(!brain.has_valid_tied_human())
 		return
 
-	RegisterSignal(brain.tied_human, COMSIG_HUMAN_EQUIPPED_ITEM, PROC_REF(on_item_equip))
-	RegisterSignal(brain.tied_human, COMSIG_HUMAN_UNEQUIPPED_ITEM, PROC_REF(on_item_unequip))
-	RegisterSignal(brain.tied_human, COMSIG_MOB_PICKUP_ITEM, PROC_REF(on_item_pickup))
-	RegisterSignal(brain.tied_human, COMSIG_MOB_DROP_ITEM, PROC_REF(on_item_drop))
+	brain.tied_controller.register_signal_for(src, COMSIG_HUMAN_EQUIPPED_ITEM, PROC_REF(on_item_equip))
+	brain.tied_controller.register_signal_for(src, COMSIG_HUMAN_UNEQUIPPED_ITEM, PROC_REF(on_item_unequip))
+	brain.tied_controller.register_signal_for(src, COMSIG_MOB_PICKUP_ITEM, PROC_REF(on_item_pickup))
+	brain.tied_controller.register_signal_for(src, COMSIG_MOB_DROP_ITEM, PROC_REF(on_item_drop))
 
 /datum/human_ai_module/inventory/proc/reset_inventory()
 	drawn_melee_weapon = null
@@ -140,25 +140,7 @@
 /datum/human_ai_module/inventory/proc/get_object_from_loc(object_loc)
 	RETURN_TYPE(/obj/item/storage)
 
-	var/obj/item/storage/storage_object
-	switch(object_loc)
-		if("belt")
-			storage_object = brain.tied_human.belt
-		if("backpack")
-			storage_object = brain.tied_human.back
-		if("left_pocket")
-			storage_object = brain.tied_human.l_store
-		if("right_pocket")
-			storage_object = brain.tied_human.r_store
-		if("armor")
-			if(istype(brain.tied_human.wear_suit, /obj/item/clothing/suit/storage))
-				var/obj/item/clothing/suit/storage/storage_suit = brain.tied_human.wear_suit
-				storage_object = storage_suit.pockets
-		if("uniform")
-			if(isclothing(brain.tied_human.w_uniform))
-				var/obj/item/clothing/accessory/storage/storage_accessory = locate(/obj/item/clothing/accessory/storage) in brain.tied_human.w_uniform.accessories
-				storage_object = storage_accessory.hold
-	return storage_object
+	return brain.tied_controller.get_storage_from_loc(object_loc)
 
 /// Given a location and a reference, puts a referenced object into the AI's hand if possible
 /datum/human_ai_module/inventory/proc/equip_item_from_equipment_map(object_type, obj/item/object_ref)
@@ -167,10 +149,10 @@
 
 	var/object_loc = equipment_map[object_type][object_ref]
 	var/obj/item/storage/storage_object = get_object_from_loc(object_loc)
-	if(object_ref.loc == brain.tied_human)
+	if(brain.tied_controller.is_item_equipped_or_held(object_ref))
 		equipped_items_original_loc[object_ref] = object_loc
 		RegisterSignal(object_ref, COMSIG_ITEM_DROPPED, PROC_REF(on_equipment_dropped), override = TRUE)
-		return brain.tied_human.put_in_active_hand(object_ref)
+		return brain.tied_controller.put_in_active_hand(object_ref)
 
 	if(!storage_object)
 		equipment_map[object_type] -= object_ref
@@ -182,11 +164,11 @@
 		equipped_items_original_loc -= object_ref
 		return
 
-	storage_object.remove_from_storage(object_ref, brain.tied_human)
+	brain.tied_controller.remove_from_storage(storage_object, object_ref)
 	equipped_items_original_loc[object_ref] = object_loc
 	RegisterSignal(object_ref, COMSIG_ITEM_DROPPED, PROC_REF(on_equipment_dropped), override = TRUE)
 
-	return brain.tied_human.put_in_active_hand(object_ref)
+	return brain.tied_controller.put_in_active_hand(object_ref)
 
 /datum/human_ai_module/inventory/proc/on_equipment_dropped(obj/item/source, mob/dropper)
 	SIGNAL_HANDLER
@@ -208,7 +190,7 @@
 			equipment_map[slot_type] -= object_ref
 		return FALSE
 
-	if(object_ref.loc != brain.tied_human)
+	if(!brain.tied_controller.is_item_equipped_or_held(object_ref))
 		to_pickup -= object_ref
 		equipped_items_original_loc -= object_ref
 		if(slot_type)
@@ -225,11 +207,11 @@
 	else if(storage_loc) // we assume that we've already checked if something will fit or not
 		storage_object = container_refs[storage_loc]
 
-	if(!storage_object || !storage_object.attempt_item_insertion(object_ref, FALSE, brain.tied_human))
+	if(!storage_object || !brain.tied_controller.attempt_item_insertion(storage_object, object_ref, FALSE))
 		if(slot_type)
 			equipment_map[slot_type] -= object_ref
-		if(brain.tied_human.is_holding(object_ref))
-			brain.tied_human.drop_held_item(object_ref)
+		if(brain.tied_controller.is_holding(object_ref))
+			brain.tied_controller.drop_held_item(object_ref)
 		to_pickup -= object_ref
 		return FALSE
 
@@ -297,38 +279,38 @@
 /// Reappraises what storage items the AI has
 /datum/human_ai_module/inventory/proc/recalculate_containers()
 	container_refs = list()
-	if(isstorage(brain.tied_human.belt))
-		container_refs["belt"] = brain.tied_human.belt
-	if(isstorage(brain.tied_human.back))
-		container_refs["backpack"] = brain.tied_human.back
-	if(isstorage(brain.tied_human.l_store))
-		container_refs["left_pocket"] = brain.tied_human.l_store
-	if(isstorage(brain.tied_human.r_store))
-		container_refs["right_pocket"] = brain.tied_human.r_store
-	if(istype(brain.tied_human.wear_suit, /obj/item/clothing/suit/storage))
-		var/obj/item/clothing/suit/storage/storage_suit = brain.tied_human.wear_suit
+	if(isstorage(brain.tied_controller.get_belt()))
+		container_refs["belt"] = brain.tied_controller.get_belt()
+	if(isstorage(brain.tied_controller.get_back()))
+		container_refs["backpack"] = brain.tied_controller.get_back()
+	if(isstorage(brain.tied_controller.get_l_store()))
+		container_refs["left_pocket"] = brain.tied_controller.get_l_store()
+	if(isstorage(brain.tied_controller.get_r_store()))
+		container_refs["right_pocket"] = brain.tied_controller.get_r_store()
+	if(istype(brain.tied_controller.get_wear_suit(), /obj/item/clothing/suit/storage))
+		var/obj/item/clothing/suit/storage/storage_suit = brain.tied_controller.get_wear_suit()
 		container_refs["armor"] = storage_suit.pockets
-	if(isclothing(brain.tied_human.w_uniform))
-		var/obj/item/clothing/accessory/storage/storage_accessory = locate(/obj/item/clothing/accessory/storage) in brain.tied_human.w_uniform.accessories
+	if(isclothing(brain.tied_controller.get_w_uniform()))
+		var/obj/item/clothing/accessory/storage/storage_accessory = locate(/obj/item/clothing/accessory/storage) in brain.tied_controller.get_w_uniform().accessories
 		if(storage_accessory)
 			container_refs["uniform"] = storage_accessory.hold
 
 /// Currently doesn't support recursive storage
 /// Used to determine what the AI has in their inventory
 /datum/human_ai_module/inventory/proc/appraise_inventory(belt = TRUE, back = TRUE, pocket_l = TRUE, pocket_r = TRUE, armor = TRUE, uniform = TRUE)
-	if(brain.faction.previous_faction != brain.tied_human.faction)
-		brain.faction.previous_faction = brain.tied_human.faction
-		var/datum/human_ai_faction/our_faction = SShuman_ai.human_ai_factions[brain.tied_human.faction]
+	if(brain.faction.previous_faction != brain.tied_controller.get_faction())
+		brain.faction.previous_faction = brain.tied_controller.get_faction()
+		var/datum/human_ai_faction/our_faction = SShuman_ai.human_ai_factions[brain.tied_controller.get_faction()]
 		our_faction?.apply_faction_data(brain)
 
-	/*if(tied_human.shoes && !primary_melee) // snowflake bootknife check
-		var/obj/item/weapon/knife = locate() in tied_human.shoes
+	/*if(puppet.shoes && !primary_melee) // snowflake bootknife check
+		var/obj/item/weapon/knife = locate() in puppet.shoes
 		if(knife)
 			set_primary_melee(knife)*/
 
 	// snowflake secondary weapon in suit storage check
-	if(isgun(brain.tied_human.s_store) && (brain.tied_human.s_store != primary_weapon))
-		add_secondary_weapon(brain.tied_human.s_store)
+	if(isgun(brain.tied_controller.get_s_store()) && (brain.tied_controller.get_s_store() != primary_weapon))
+		add_secondary_weapon(brain.tied_controller.get_s_store())
 
 	brain.guns.clear_tried_reload() // We don't really need to do this in a smart way
 	if(belt)
@@ -346,15 +328,15 @@
 	if(armor)
 		appraise_armor()
 
-	if(uniform && isclothing(brain.tied_human.w_uniform))
+	if(uniform && isclothing(brain.tied_controller.get_w_uniform()))
 		appraise_uniform()
 
 /datum/human_ai_module/inventory/proc/appraise_belt()
-	if(isgun(brain.tied_human.belt) && (brain.tied_human.belt != primary_weapon))
-		add_secondary_weapon(brain.tied_human.belt)
+	if(isgun(brain.tied_controller.get_belt()) && (brain.tied_controller.get_belt() != primary_weapon))
+		add_secondary_weapon(brain.tied_controller.get_belt())
 		return
 
-	if(!istype(brain.tied_human.belt, /obj/item/storage)) // belts can be backpacks, don't ask
+	if(!istype(brain.tied_controller.get_belt(), /obj/item/storage)) // belts can be backpacks, don't ask
 		return
 
 	for(var/id in equipment_map)
@@ -364,17 +346,17 @@
 
 			equipment_map[id] -= item
 
-	RegisterSignal(brain.tied_human.belt, COMSIG_PARENT_QDELETING, PROC_REF(on_item_delete), TRUE)
-	item_slot_appraisal_loop(brain.tied_human.belt, "belt")
+	RegisterSignal(brain.tied_controller.get_belt(), COMSIG_PARENT_QDELETING, PROC_REF(on_item_delete), TRUE)
+	item_slot_appraisal_loop(brain.tied_controller.get_belt(), "belt")
 
 /datum/human_ai_module/inventory/proc/appraise_back()
-	if(isgun(brain.tied_human.back) && (brain.tied_human.back != primary_weapon))
-		add_secondary_weapon(brain.tied_human.back)
+	if(isgun(brain.tied_controller.get_back()) && (brain.tied_controller.get_back() != primary_weapon))
+		add_secondary_weapon(brain.tied_controller.get_back())
 		return
 
 	// SS220 EDIT - START: HALO transport rigs such as the SPNKr pack sit on the back slot as storage,
 	// but they are not guaranteed to inherit backpack. AI still needs to appraise their contents.
-	if(!istype(brain.tied_human.back, /obj/item/storage))
+	if(!istype(brain.tied_controller.get_back(), /obj/item/storage))
 		return
 	// SS220 EDIT - END
 
@@ -385,11 +367,11 @@
 
 			equipment_map[id] -= item
 
-	RegisterSignal(brain.tied_human.back, COMSIG_PARENT_QDELETING, PROC_REF(on_item_delete), TRUE)
-	item_slot_appraisal_loop(brain.tied_human.back, "backpack")
+	RegisterSignal(brain.tied_controller.get_back(), COMSIG_PARENT_QDELETING, PROC_REF(on_item_delete), TRUE)
+	item_slot_appraisal_loop(brain.tied_controller.get_back(), "backpack")
 
 /datum/human_ai_module/inventory/proc/appraise_left_pocket()
-	if(!istype(brain.tied_human.l_store, /obj/item/storage/pouch))
+	if(!istype(brain.tied_controller.get_l_store(), /obj/item/storage/pouch))
 		return
 
 	for(var/id in equipment_map)
@@ -399,11 +381,11 @@
 
 			equipment_map[id] -= item
 
-	RegisterSignal(brain.tied_human.l_store, COMSIG_PARENT_QDELETING, PROC_REF(on_item_delete), TRUE)
-	item_slot_appraisal_loop(brain.tied_human.l_store, "left_pocket")
+	RegisterSignal(brain.tied_controller.get_l_store(), COMSIG_PARENT_QDELETING, PROC_REF(on_item_delete), TRUE)
+	item_slot_appraisal_loop(brain.tied_controller.get_l_store(), "left_pocket")
 
 /datum/human_ai_module/inventory/proc/appraise_right_pocket()
-	if(!istype(brain.tied_human.r_store, /obj/item/storage/pouch))
+	if(!istype(brain.tied_controller.get_r_store(), /obj/item/storage/pouch))
 		return
 
 	for(var/id in equipment_map)
@@ -413,21 +395,21 @@
 
 			equipment_map[id] -= item
 
-	RegisterSignal(brain.tied_human.r_store, COMSIG_PARENT_QDELETING, PROC_REF(on_item_delete), TRUE)
-	item_slot_appraisal_loop(brain.tied_human.r_store, "right_pocket")
+	RegisterSignal(brain.tied_controller.get_r_store(), COMSIG_PARENT_QDELETING, PROC_REF(on_item_delete), TRUE)
+	item_slot_appraisal_loop(brain.tied_controller.get_r_store(), "right_pocket")
 
 /datum/human_ai_module/inventory/proc/appraise_armor()
-	if(!istype(brain.tied_human.wear_suit, /obj/item/clothing/suit))
+	if(!istype(brain.tied_controller.get_wear_suit(), /obj/item/clothing/suit))
 		return
 
-	if(istype(brain.tied_human.wear_suit, /obj/item/clothing/suit) && brain.tied_human.loc) // being in nullspace makes lights play weirdly
-		var/obj/item/clothing/suit/worn_armor = brain.tied_human.wear_suit
+	if(istype(brain.tied_controller.get_wear_suit(), /obj/item/clothing/suit) && brain.tied_controller.get_loc()) // being in nullspace makes lights play weirdly
+		var/obj/item/clothing/suit/worn_armor = brain.tied_controller.get_wear_suit()
 		if(!worn_armor.has_light)
 			return
 		else if(!worn_armor.light_on)
-			worn_armor.turn_light(brain.tied_human, TRUE)
+			brain.tied_controller.turn_suit_light(worn_armor, TRUE)
 
-	var/obj/item/clothing/suit/storage/storage_suit = brain.tied_human.wear_suit
+	var/obj/item/clothing/suit/storage/storage_suit = brain.tied_controller.get_wear_suit()
 	for(var/id in equipment_map)
 		for(var/obj/item/item as anything in equipment_map[id])
 			if(equipment_map[id][item] != "armor")
@@ -443,7 +425,7 @@
 		item_slot_appraisal_loop(storage_suit.pockets, "armor")
 
 /datum/human_ai_module/inventory/proc/appraise_uniform()
-	var/obj/item/clothing/accessory/storage/located_storage = locate(/obj/item/clothing/accessory/storage) in brain.tied_human.w_uniform.accessories
+	var/obj/item/clothing/accessory/storage/located_storage = locate(/obj/item/clothing/accessory/storage) in brain.tied_controller.get_w_uniform().accessories
 	if(!located_storage)
 		return
 
@@ -475,18 +457,18 @@
 		//	set_primary_melee(inv_item)
 
 /datum/human_ai_module/inventory/proc/clear_main_hand()
-	var/obj/item/active_hand = brain.tied_human.get_active_hand()
+	var/obj/item/active_hand = brain.tied_controller.get_active_hand()
 	if(!active_hand)
 		return
 
 	if(primary_weapon == active_hand)
 		if(!holster_primary())
-			brain.tied_human.drop_held_item(active_hand)
+			brain.tied_controller.drop_held_item(active_hand)
 		return
 
 	var/storage_id = storage_has_room(active_hand)
 	if(!storage_id)
-		brain.tied_human.drop_held_item(active_hand)
+		brain.tied_controller.drop_held_item(active_hand)
 		return
 
 	store_item(active_hand, storage_id)
@@ -494,7 +476,7 @@
 /datum/human_ai_module/inventory/proc/storage_has_room(obj/item/inserting)
 	for(var/container_id in container_refs)
 		var/obj/item/storage/container = container_refs[container_id]
-		if(container?.can_be_inserted(inserting, brain.tied_human, TRUE))
+		if(brain.tied_controller.can_be_inserted(container, inserting, TRUE))
 			return container_id
 
 /datum/human_ai_module/inventory/proc/on_item_pickup(datum/source, obj/item/picked_up)
@@ -520,12 +502,12 @@
 	SIGNAL_HANDLER
 	invalidate_nearby_item_search()
 	brain.invalidate_halo_runtime_caches()
-	if(iszombie(brain.tied_human))
+	if(brain.tied_controller.is_zombie())
 		return
 
 	if(dropped == primary_weapon)
 		var/datum/firearm_appraisal/current_gun_data = gun_data
-		if(!(current_gun_data?.disposable && !primary_weapon.ai_can_use(brain.tied_human, brain)))
+		if(!(current_gun_data?.disposable && !brain.tied_controller.can_use_item(primary_weapon)))
 			to_pickup |= dropped
 		set_primary_weapon(null)
 
@@ -588,9 +570,9 @@
 	// SS220 EDIT - START: grenade threat must come only from the current local scan, not from stale refs.
 	// Preserve active_grenade_found across ticks if it is already the currently held, still-active timed grenade.
 	var/obj/item/explosive/grenade/active_grenade = brain.grenade.get_active_grenade()
-	if(!active_grenade || QDELETED(active_grenade) || !active_grenade.active || (active_grenade.fuse_type != TIMED_FUSE) || (active_grenade.loc != brain.tied_human))
+	if(!active_grenade || QDELETED(active_grenade) || !active_grenade.active || (active_grenade.fuse_type != TIMED_FUSE) || !brain.tied_controller.is_item_equipped_or_held(active_grenade))
 		brain.grenade.clear_active_grenade()
-	var/can_handle_live_grenade = brain.grenade.can_throw_back() && !((brain.tied_human.l_hand?.flags_item & NODROP) && (brain.tied_human.r_hand?.flags_item & NODROP))
+	var/can_handle_live_grenade = brain.grenade.can_throw_back() && !((brain.tied_controller.get_l_hand()?.flags_item & NODROP) && (brain.tied_controller.get_r_hand()?.flags_item & NODROP))
 	// SS220 EDIT - END
 	search_loop:
 		for(var/obj/item/thing in things_around)
@@ -637,7 +619,7 @@
 				add_to_pickup(thing)
 
 			var/storage_spot = storage_has_room(thing)
-			if(!storage_spot || !thing.ai_can_use(brain.tied_human, brain, brain.tied_human))
+			if(!storage_spot || !brain.tied_controller.can_use_item_on_self(thing))
 				continue
 
 			if(thing.flags_human_ai & HEALING_ITEM)
@@ -683,7 +665,7 @@
 
 /datum/human_ai_module/inventory/proc/weapon_ammo_search(obj/item/weapon/gun/weapon)
 	for(var/obj/item/ammo_magazine/mag as anything in equipment_map[HUMAN_AI_AMMUNITION])
-		if(istype(weapon, mag.gun_type) && mag.ai_can_use(brain.tied_human, brain))
+		if(istype(weapon, mag.gun_type) && brain.tied_controller.can_use_item(mag))
 			return mag
 
 /datum/human_ai_module/inventory/proc/invalidate_nearby_item_search()
@@ -692,15 +674,15 @@
 
 /// Unholsters the AI's primary weapon, dropping anything that might obstruct it.
 /datum/human_ai_module/inventory/proc/unholster_primary()
-	if(!primary_weapon || brain.tied_human.l_hand == primary_weapon || brain.tied_human.r_hand == primary_weapon)
+	if(!primary_weapon || brain.tied_controller.get_l_hand() == primary_weapon || brain.tied_controller.get_r_hand() == primary_weapon)
 		return
 
-	var/cur_hand = brain.tied_human.get_active_hand()
+	var/cur_hand = brain.tied_controller.get_active_hand()
 	if(cur_hand)
-		brain.tied_human.drop_held_item(cur_hand)
+		brain.tied_controller.drop_held_item(cur_hand)
 
-	brain.tied_human.u_equip(primary_weapon)
-	brain.tied_human.put_in_active_hand(primary_weapon)
+	brain.tied_controller.u_equip(primary_weapon)
+	brain.tied_controller.put_in_active_hand(primary_weapon)
 
 	primary_weapon.guaranteed_delay_time = world.time
 	primary_weapon.wield_time = world.time
@@ -708,7 +690,7 @@
 
 /// Tells the AI to wield their primary weapon, can be called if they aren't holding it or if they are already wielding it
 /datum/human_ai_module/inventory/proc/wield_primary()
-	primary_weapon?.wield(brain.tied_human)
+	brain.tied_controller.wield(primary_weapon)
 
 /// wield_primary() with a delay inbuilt
 /datum/human_ai_module/inventory/proc/wield_primary_sleep()
@@ -717,24 +699,24 @@
 
 /// Tells the AI to unwield *something*, prioritizing melee
 /datum/human_ai_module/inventory/proc/unholster_any_weapon()
-	if(iszombie(brain.tied_human))
-		var/cur_hand = brain.tied_human.get_active_hand()
+	if(brain.tied_controller.is_zombie())
+		var/cur_hand = brain.tied_controller.get_active_hand()
 		if(isnull(cur_hand)) //Check if we have a hand. If not try the other one? Claws are stuck to hands so if this is null we've lost the hand
-			var/obj/limb/hand/r_hand/right_hand	= brain.tied_human.get_limb("r_hand")
-			var/obj/limb/hand/l_hand/left_hand = brain.tied_human.get_limb("l_hand")
+			var/obj/limb/hand/r_hand/right_hand	= brain.tied_controller.get_limb("r_hand")
+			var/obj/limb/hand/l_hand/left_hand = brain.tied_controller.get_limb("l_hand")
 			if(!(left_hand.status & LIMB_DESTROYED) || !(right_hand.status & LIMB_DESTROYED)) //We have hands?
-				brain.tied_human.swap_hand()
-				cur_hand = brain.tied_human.get_active_hand()
+				brain.tied_controller.swap_hand()
+				cur_hand = brain.tied_controller.get_active_hand()
 			else
 				return FALSE
 	if(unholster_melee())
-		brain.tied_human.a_intent_change(INTENT_GRAB)
+		brain.tied_controller.set_grab_intent()
 		return TRUE
 	if(primary_weapon)
 		unholster_primary()
 		ensure_primary_hand(primary_weapon)
 		wield_primary()
-		brain.tied_human.a_intent_change(INTENT_GRAB)
+		brain.tied_controller.set_grab_intent()
 		return TRUE
 	// insert any viable weapon slot macros in here
 
@@ -743,14 +725,14 @@
 	if(!drawn_melee_weapon)
 		return TRUE
 
-	if(drawn_melee_weapon.loc != brain.tied_human)
+	if(!brain.tied_controller.is_item_equipped_or_held(drawn_melee_weapon))
 		on_melee_dropped()
 		return TRUE
 
-	if(brain.tied_human.shoes && brain.tied_human.shoes.can_be_inserted(drawn_melee_weapon))
-		return brain.tied_human.shoes.attempt_insert_item(brain.tied_human, drawn_melee_weapon)
+	if(brain.tied_controller.can_insert_into_shoes(drawn_melee_weapon))
+		return brain.tied_controller.attempt_insert_into_shoes(drawn_melee_weapon)
 
-	brain.tied_human.drop_held_item(drawn_melee_weapon)
+	brain.tied_controller.drop_held_item(drawn_melee_weapon)
 	return FALSE
 
 /// Signal for if a melee weapon is dropped
@@ -763,15 +745,15 @@
 
 /// Melee system currently only supports bootknives.
 /datum/human_ai_module/inventory/proc/unholster_melee()
-	if(istype(brain.tied_human.l_hand, /obj/item) || istype(brain.tied_human.r_hand, /obj/item))
+	if(brain.tied_controller.has_item_in_hands())
 		return TRUE
 
-	var/cur_hand = brain.tied_human.get_active_hand()
+	var/cur_hand = brain.tied_controller.get_active_hand()
 	if(cur_hand)
-		brain.tied_human.drop_held_item(cur_hand)
+		brain.tied_controller.drop_held_item(cur_hand)
 
-	if(brain.tied_human.shoes)
-		var/obj/item/melee_weapon = brain.tied_human.shoes.remove_item(brain.tied_human)
+	if(brain.tied_controller.get_shoes())
+		var/obj/item/melee_weapon = brain.tied_controller.remove_item_from_shoes()
 		drawn_melee_weapon = melee_weapon
 		RegisterSignal(drawn_melee_weapon, COMSIG_ITEM_DROPPED, PROC_REF(on_melee_dropped))
 		return melee_weapon
@@ -779,12 +761,12 @@
 
 /// Holsters the AI's primary weapon if possible
 /datum/human_ai_module/inventory/proc/holster_primary()
-	if(brain.tied_human.s_store || (brain.tied_human.l_hand != primary_weapon && brain.tied_human.r_hand != primary_weapon))
+	if(brain.tied_controller.get_s_store() || (brain.tied_controller.get_l_hand() != primary_weapon && brain.tied_controller.get_r_hand() != primary_weapon))
 		return FALSE
 
-	return brain.tied_human.equip_to_slot_if_possible(primary_weapon, WEAR_J_STORE, TRUE)
+	return brain.tied_controller.equip_to_slot_if_possible(primary_weapon, WEAR_J_STORE, TRUE)
 
 /// Assuming an item is in the AI's hands, this ensures it is their actively selected hand
 /datum/human_ai_module/inventory/proc/ensure_primary_hand(obj/item/held_item)
-	if(brain.tied_human.get_inactive_hand() == held_item)
-		brain.tied_human.swap_hand()
+	if(brain.tied_controller.get_inactive_hand() == held_item)
+		brain.tied_controller.swap_hand()

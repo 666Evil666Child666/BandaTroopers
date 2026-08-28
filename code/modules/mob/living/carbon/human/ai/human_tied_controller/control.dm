@@ -53,7 +53,7 @@
 	return can_mutate_puppet()
 
 /datum/human_tied_controller/proc/can_force_setup()
-	return can_mutate_puppet()
+	return has_tied_human() && !can_player_takeover_block_ai()
 
 /datum/human_tied_controller/proc/can_setup_puppet()
 	return can_force_setup()
@@ -78,12 +78,101 @@
 /datum/human_tied_controller/proc/is_conscious_available()
 	return can_mutate_puppet() && !tied_human.buckled && (tied_human.stat == CONSCIOUS) && !tied_human.is_mob_incapacitated()
 
-/datum/human_tied_controller/proc/get_turf()
+/datum/human_tied_controller/proc/get_current_turf()
 	RETURN_TYPE(/turf)
 	return get_turf(tied_human)
 
+/datum/human_tied_controller/proc/get_loc()
+	if(!can_read_puppet())
+		return null
+	return tied_human.loc
+
+/datum/human_tied_controller/proc/get_x()
+	return tied_human?.x
+
+/datum/human_tied_controller/proc/get_y()
+	return tied_human?.y
+
+/datum/human_tied_controller/proc/get_z()
+	return tied_human?.z
+
+/datum/human_tied_controller/proc/get_current_dir()
+	return tied_human?.dir
+
+/datum/human_tied_controller/proc/get_real_name()
+	return tied_human?.real_name
+
+/datum/human_tied_controller/proc/get_name()
+	return tied_human?.name
+
+/datum/human_tied_controller/proc/get_key_name()
+	if(!can_read_puppet())
+		return null
+	return key_name(tied_human)
+
+/datum/human_tied_controller/proc/get_area_coords()
+	if(!can_read_puppet())
+		return null
+	return AREACOORD(tied_human)
+
+// Debug/admin helper only; external AI behavior should not locate this ref to bypass the controller API.
+/datum/human_tied_controller/proc/get_ref()
+	if(!can_read_puppet())
+		return null
+	return REF(tied_human)
+
 /datum/human_tied_controller/proc/get_faction()
 	return tied_human?.faction
+
+/datum/human_tied_controller/proc/has_faction()
+	return !!get_faction()
+
+/datum/human_tied_controller/proc/faction_matches(faction)
+	return tied_human?.faction == faction
+
+/datum/human_tied_controller/proc/faction_in(list/factions)
+	return tied_human?.faction in factions
+
+/datum/human_tied_controller/proc/get_health()
+	return tied_human?.health
+
+/datum/human_tied_controller/proc/is_health_below(threshold)
+	return !can_read_puppet() || (tied_human.health < threshold)
+
+/datum/human_tied_controller/proc/get_stat()
+	return tied_human?.stat
+
+/datum/human_tied_controller/proc/is_stat_at_least(stat_threshold)
+	return !can_read_puppet() || (tied_human.stat >= stat_threshold)
+
+/datum/human_tied_controller/proc/has_effect(datum/effect_type)
+	if(!can_read_puppet())
+		return FALSE
+	return !!(locate(effect_type) in tied_human.effects_list)
+
+/datum/human_tied_controller/proc/has_status_flag(flag)
+	return !!(tied_human?.status_flags & flag)
+
+/datum/human_tied_controller/proc/is_zombie()
+	return can_read_puppet() && iszombie(tied_human)
+
+/datum/human_tied_controller/proc/is_resting()
+	return !!tied_human?.resting
+
+/datum/human_tied_controller/proc/is_buckled()
+	return !!tied_human?.buckled
+
+/datum/human_tied_controller/proc/is_body_position(body_position)
+	return tied_human?.body_position == body_position
+
+/datum/human_tied_controller/proc/has_trait(trait)
+	return can_read_puppet() && HAS_TRAIT(tied_human, trait)
+
+/datum/human_tied_controller/proc/has_trait_from(trait, source)
+	return can_read_puppet() && HAS_TRAIT_FROM(tied_human, trait, source)
+
+/datum/human_tied_controller/proc/is_on_fire()
+	return !!tied_human?.on_fire
 
 // Puppet mutation primitives
 

@@ -20,11 +20,11 @@
 	if(!squad)
 		return 0
 
-	var/mob/squad_leader = squad.squad_leader?.tied_human
-	if(!squad_leader)
+	var/datum/human_tied_controller/squad_leader_controller = squad.squad_leader?.tied_controller
+	if(!squad_leader_controller?.has_valid_tied_human())
 		return 0
 
-	if(get_dist(brain.tied_human, squad_leader) <= (1 + length(squad.ai_in_squad) / 2))
+	if(brain.tied_controller.get_distance_to_controller(squad_leader_controller) <= (1 + length(squad.ai_in_squad) / 2))
 		return 0
 
 	return 5
@@ -43,14 +43,13 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad.squad_id]"]
-	var/mob/squad_leader = squad.squad_leader?.tied_human
+	var/datum/human_tied_controller/squad_leader_controller = squad.squad_leader?.tied_controller
 
-	var/mob/tied_human = brain.tied_human
-	if(get_dist(tied_human, squad_leader) > follow_distance)
-		if(!brain.navigation.move_to_next_turf(get_turf(squad_leader)))
+	if(brain.tied_controller.get_distance_to_controller(squad_leader_controller) > follow_distance)
+		if(!brain.navigation.move_to_next_turf(squad_leader_controller.get_current_turf()))
 			return ONGOING_ACTION_COMPLETED
 
-		if(get_dist(tied_human, squad_leader) > follow_distance)
+		if(brain.tied_controller.get_distance_to_controller(squad_leader_controller) > follow_distance)
 			return ONGOING_ACTION_UNFINISHED
 
 	return ONGOING_ACTION_COMPLETED

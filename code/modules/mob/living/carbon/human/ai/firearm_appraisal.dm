@@ -1,5 +1,14 @@
 GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firearm_appraisal_list())
 
+/datum/human_ai_fire_after_fire_result
+	var/handled = FALSE
+	var/currently_firing
+	var/stop_firing = FALSE
+	var/delete_action = FALSE
+	var/cooldown = 0
+	var/datum/callback/callback
+	var/callback_delay = 0
+
 // SS220 EDIT - START: keep subtype-specific appraisals ahead of generic bases so modular HALO guns resolve correctly
 /proc/get_firearm_appraisal_specificity(datum/firearm_appraisal/appraisal)
 	var/max_specificity = 0
@@ -45,6 +54,9 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	return primary_weight
 // SS220 EDIT - END
 
+/datum/firearm_appraisal/proc/can_queue_fire(obj/item/weapon/gun/firearm, datum/human_ai_brain/AI)
+	return firearm && AI?.has_valid_tied_human()
+
 /// List of things we do before beginning to spray bullets based off weapon type
 /datum/firearm_appraisal/proc/before_fire(obj/item/weapon/gun/firearm, mob/living/carbon/user, datum/human_ai_brain/AI)
 	SHOULD_CALL_PARENT(TRUE) // Every weapon may be twohanded or have safety
@@ -70,7 +82,7 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 		return
 	if(!(firearm?.flags_gun_features & GUN_INTERNAL_MAG) && firearm?.current_mag)
 		firearm?.unload(user, FALSE, TRUE, FALSE)
-	user.swap_hand()
+	AI.tied_controller.swap_hand()
 	sleep(AI.profile.micro_action_delay * AI.profile.action_delay_mult)
 	if(QDELETED(firearm) || QDELETED(mag) || QDELETED(user) || !AI.has_valid_tied_human())
 		return
@@ -89,14 +101,34 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 			if(storage_slot)
 				AI.inventory.store_item(mag, storage_slot, HUMAN_AI_AMMUNITION)
 			else
-				user.drop_held_item(mag)
+				AI.tied_controller.drop_held_item(mag)
 	else
 		firearm?.attackby(mag, user)
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
 	if(QDELETED(user) || !AI.has_valid_tied_human())
 		return
-	user.swap_hand()
+	AI.tied_controller.swap_hand()
 	AI.inventory.wield_primary_sleep()
+
+/datum/firearm_appraisal/proc/handle_after_fire(obj/item/weapon/gun/firearm, datum/human_ai_brain/AI, atom/movable/current_target, turf/target_turf)
+	RETURN_TYPE(/datum/human_ai_fire_after_fire_result)
+	if(!firearm || !AI?.has_valid_tied_human())
+		return null
+
+	var/datum/callback/followup_fire_callback = AI.tied_controller.get_ai_followup_fire_callback(firearm, current_target)
+	if(!followup_fire_callback)
+		return null
+
+	var/datum/human_ai_fire_after_fire_result/result = new()
+	result.handled = TRUE
+	result.currently_firing = FALSE
+	result.stop_firing = TRUE
+	result.delete_action = TRUE
+	result.callback = followup_fire_callback
+	result.callback_delay = AI.tied_controller.get_ai_followup_fire_delay(firearm, current_target)
+	var/followup_fire_cooldown = AI.tied_controller.get_ai_followup_fire_cooldown(firearm, current_target)
+	result.cooldown = max(followup_fire_cooldown, result.callback_delay)
+	return result
 
 /datum/firearm_appraisal/sniper
 	optimal_range = 7
@@ -123,6 +155,18 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 		return
 	firearm.unique_action(user)
 
+/datum/firearm_appraisal/xm51/handle_after_fire(obj/item/weapon/gun/rifle/xm51/firearm, datum/human_ai_brain/AI, atom/movable/current_target, turf/target_turf)
+	if(!firearm || !AI?.has_valid_tied_human())
+		return null
+	var/datum/human_ai_fire_after_fire_result/result = new()
+	result.handled = TRUE
+	result.currently_firing = FALSE
+	result.stop_firing = TRUE
+	result.delete_action = TRUE
+	AI.tied_controller.start_weapon_unique_action(firearm, firearm.pump_delay)
+	result.cooldown = max(firearm.pump_delay, firearm.get_fire_delay()) + 1
+	return result
+
 /datum/firearm_appraisal/rifle
 	burst_amount_max = 8
 	gun_types = list(
@@ -142,13 +186,13 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	AI.inventory.unholster_primary()
 	AI.inventory.ensure_primary_hand(firearm)
 	firearm.unwield(user)
-	user.swap_hand()
+	AI.tied_controller.swap_hand()
 	firearm.clicked(user, list("alt" = TRUE))
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
-	user.swap_hand()
+	AI.tied_controller.swap_hand()
 	if(!(firearm?.flags_gun_features & GUN_INTERNAL_MAG) && firearm?.current_mag)
 		firearm?.unload(user, FALSE, TRUE, FALSE)
-	user.swap_hand()
+	AI.tied_controller.swap_hand()
 	sleep(AI.profile.micro_action_delay * AI.profile.action_delay_mult)
 	AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, mag)
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
@@ -156,7 +200,7 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
 	firearm.clicked(user, list("alt" = TRUE))
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
-	user.swap_hand()
+	AI.tied_controller.swap_hand()
 	AI.inventory.wield_primary_sleep()
 
 /datum/firearm_appraisal/smg
@@ -183,7 +227,7 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	AI.inventory.ensure_primary_hand(firearm)
 	firearm.unwield(user)
 	firearm.unique_action()
-	user.swap_hand()
+	AI.tied_controller.swap_hand()
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
 	AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, mag)
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
@@ -196,7 +240,7 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 			sleep(AI.profile.micro_action_delay * AI.profile.action_delay_mult)
 			AI.inventory.store_item(mag, storage_spot, HUMAN_AI_AMMUNITION)
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
-	user.swap_hand()
+	AI.tied_controller.swap_hand()
 	firearm.unique_action()
 	AI.inventory.wield_primary_sleep()
 
@@ -216,6 +260,23 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 		return
 	firearm.unique_action(user)
 
+/datum/firearm_appraisal/shotgun/handle_after_fire(obj/item/weapon/gun/shotgun/firearm, datum/human_ai_brain/AI, atom/movable/current_target, turf/target_turf)
+	if(!firearm || !AI?.has_valid_tied_human())
+		return null
+	var/datum/human_ai_fire_after_fire_result/result = new()
+	result.handled = TRUE
+	result.currently_firing = FALSE
+	result.stop_firing = TRUE
+	result.delete_action = TRUE
+	if(istype(firearm, /obj/item/weapon/gun/shotgun/pump))
+		var/obj/item/weapon/gun/shotgun/pump/pump_shotgun = firearm
+		AI.tied_controller.start_weapon_unique_action(pump_shotgun, pump_shotgun.pump_delay)
+		result.cooldown = max(pump_shotgun.pump_delay, pump_shotgun.get_fire_delay()) + 1
+		return result
+	AI.tied_controller.start_weapon_fire(firearm, firearm.get_fire_delay()*3)
+	result.cooldown = max(firearm.get_fire_delay()) + 3
+	return result
+
 /datum/firearm_appraisal/boltaction
 	optimal_range = 7
 	maximum_range = 30
@@ -233,6 +294,19 @@ GLOBAL_LIST_INIT_TYPED(firearm_appraisals, /datum/firearm_appraisal, build_firea
 	firearm.recent_cycle = world.time - firearm.bolt_delay
 	firearm.unique_action(user)
 	firearm.recent_cycle = world.time - firearm.bolt_delay
+
+/datum/firearm_appraisal/boltaction/handle_after_fire(obj/item/weapon/gun/boltaction/firearm, datum/human_ai_brain/AI, atom/movable/current_target, turf/target_turf)
+	if(!firearm || !AI?.has_valid_tied_human())
+		return null
+	var/datum/human_ai_fire_after_fire_result/result = new()
+	result.handled = TRUE
+	result.currently_firing = FALSE
+	result.stop_firing = TRUE
+	result.delete_action = TRUE
+	AI.tied_controller.start_weapon_unique_action(firearm, 1)
+	AI.tied_controller.start_weapon_unique_action(firearm, firearm.bolt_delay + 1)
+	result.cooldown = max(firearm.bolt_delay * 2, firearm.get_fire_delay()) + 1
+	return result
 
 /datum/firearm_appraisal/flamer
 	burst_amount_max = 1

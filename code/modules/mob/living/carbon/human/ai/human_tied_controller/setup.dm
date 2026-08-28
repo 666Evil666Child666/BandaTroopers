@@ -29,3 +29,9 @@
 		return FALSE
 	tied_human.paradrop()
 	return TRUE
+
+/datum/human_tied_controller/proc/force_setup_move(turf/target_turf)
+	if(!can_setup_puppet() || !target_turf)
+		return FALSE
+	tied_human.forceMove(target_turf)
+	return TRUE

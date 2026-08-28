@@ -10,7 +10,7 @@
 	if(!brain.inventory.has_primary_weapon() || brain.guns.has_tried_reload() || !brain.orders.can_move_for_action())
 		return 0
 
-	var/distance = get_dist(brain.tied_human, current_target)
+	var/distance = brain.tied_controller.get_distance_to(current_target)
 	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
 
 	if(ismob(current_target) && current_target?:is_mob_incapacitated())
@@ -56,7 +56,7 @@
 	else
 		range = gun_data.optimal_range
 
-	if(get_dist(brain.tied_human, current_target) <= range)
+	if(brain.tied_controller.get_distance_to(current_target) <= range)
 		return
 
 	if(brain.cover.is_in_cover())
@@ -68,7 +68,6 @@
 	return ONGOING_ACTION_UNFINISHED
 
 /datum/ai_action/keep_distance/proc/back_up()
-	var/mob/living/carbon/human/tied_human = brain.tied_human
 	var/atom/movable/current_target = brain.targeting.get_current_target()
 	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
 	var/range
@@ -82,13 +81,13 @@
 	else
 		range = gun_data.optimal_range
 
-	if(get_dist(brain.tied_human, current_target) >= range)
+	if(brain.tied_controller.get_distance_to(current_target) >= range)
 		return
 
 	var/moved = FALSE
-	var/relative_dir = Get_Compass_Dir(current_target, tied_human)
+	var/relative_dir = brain.tied_controller.get_compass_dir_from(current_target)
 	for(var/direction in list(relative_dir, turn(relative_dir, 90), turn(relative_dir, -90)))
-		var/turf/destination = get_step(tied_human, direction)
+		var/turf/destination = brain.tied_controller.get_step_in_dir(direction)
 		if(brain.navigation.move_to_next_turf(destination))
 			moved = TRUE
 			break

@@ -25,7 +25,7 @@
 	if(!brain.has_valid_tied_human())
 		return FALSE
 
-	if(brain.combat.in_combat || in_conversation || brain.tied_human.client || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	if(brain.combat.in_combat || in_conversation || brain.tied_controller.can_player_takeover_block_ai() || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return FALSE
 
 	return TRUE

@@ -8,10 +8,10 @@
 
 /// Removes neutral faction status from a given faction
 /datum/human_ai_module/faction/proc/on_neutral_faction_betray(faction)
-	if(!brain.tied_human.faction)
+	if(!brain.tied_controller.has_faction())
 		return
 
-	var/datum/human_ai_faction/our_faction = SShuman_ai.human_ai_factions[brain.tied_human.faction]
+	var/datum/human_ai_faction/our_faction = SShuman_ai.human_ai_factions[brain.tied_controller.get_faction()]
 	if(!our_faction)
 		return
 
@@ -21,7 +21,7 @@
 /// Returns TRUE if the target is friendly/neutral to us
 /// This is THE hottest proc that Human AI invokes, so please be careful in adding more to it
 /datum/human_ai_module/faction/proc/faction_check(atom/target)
-	var/my_faction = brain.tied_human.faction
+	var/my_faction = brain.tied_controller.get_faction()
 	var/target_faction
 
 	if(ismob(target))

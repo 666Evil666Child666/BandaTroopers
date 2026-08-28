@@ -8,10 +8,9 @@
 		return FALSE
 
 	if(!brain.inventory.unholster_any_weapon())
-		ai_human.a_intent_change(INTENT_HARM)
+		brain.tied_controller.set_combat_intent()
 
-	ai_human.do_click(src, "", list())
-	ai_human.face_atom(src)
+	brain.tied_controller.click_atom(src)
 	return TRUE
 
 
@@ -90,7 +89,7 @@
 	brain.inventory.holster_primary()
 	var/obj/item/crowbar = brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR)
 	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
-	ai_human.do_click(src, "", list())
+	brain.tied_controller.do_click(src)
 	brain.inventory.store_item(crowbar, brain.inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
 
 /////////////////////////////
@@ -104,7 +103,7 @@
 	if(locked || welded || (isElectrified() && !iszombie(ai_human)) || !arePowerSystemsOn() || panel_open)
 		return LOCKED_DOOR_PENALTY
 
-	if(!check_access(ai_human.get_active_hand()) && !check_access(ai_human.wear_id) && !iszombie(ai_human))
+	if(!brain.tied_controller.can_access(src))
 		return LOCKED_DOOR_PENALTY
 
 	return DOOR_PENALTY
@@ -120,14 +119,14 @@
 		return
 
 	if(iszombie(ai_human))
-		ai_human.a_intent_change(INTENT_DISARM)
-		ai_human.do_click(src, "", list())
+		brain.tied_controller.set_safe_intent()
+		brain.tied_controller.do_click(src)
 		return
 
 	brain.inventory.holster_primary()
 	var/obj/item/crowbar = brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR)
 	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
-	ai_human.do_click(src, "", list())
+	brain.tied_controller.do_click(src)
 	brain.inventory.store_item(crowbar, brain.inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
 
 /////////////////////////////
@@ -147,7 +146,7 @@
 	if(brain.faction.faction_check(src))
 		if(!iszombie(ai_human))
 			var/random_intent = pick(INTENT_DISARM, INTENT_HARM, INTENT_HELP, INTENT_DISARM, INTENT_HARM) // lower chance of help intent
-			ai_human.a_intent = random_intent
+			brain.tied_controller.set_raw_intent(random_intent)
 			if(get_ai_brain())
 				a_intent = random_intent
 		return TRUE
@@ -216,7 +215,7 @@
 	if(iszombie(ai_human))
 		return ..()
 	if(!closed) // this means it's closed
-		ai_human.do_click(src, "", list())
+		brain.tied_controller.do_click(src)
 	else
 		. = ..()
 	if(!closed)

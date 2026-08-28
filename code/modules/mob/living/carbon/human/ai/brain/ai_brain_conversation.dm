@@ -50,9 +50,9 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 				for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
 					if(brain == other_brain)
 						continue
-					other_brain.tied_human.setDir(get_cardinal_dir(other_brain.tied_human, brain.tied_human))
+					other_brain.tied_controller.turn_to_conversation_partner(brain.tied_controller)
 
-				brain.tied_human.say(pick(splittext(copytext(string, 4), "||")))
+				brain.tied_controller.say(pick(splittext(copytext(string, 4), "||")))
 
 			if("D")
 				sleep(text2num(copytext(string, 3)))
@@ -62,7 +62,7 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 
 /// Simple check to see if a conversation should stop at a given line
 /datum/human_ai_conversation/proc/should_interrupt_conversation(datum/human_ai_brain/brain)
-	return (brain.combat.in_combat || !brain.conversation.in_conversation || (brain.tied_human.health < HEALTH_THRESHOLD_CRIT))
+	return (brain.combat.in_combat || !brain.conversation.in_conversation || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 
 /// Check to be overridden to see if an AI should be able to start a conversation
 /datum/human_ai_conversation/proc/conversation_allowed(datum/human_ai_brain/brain)
@@ -97,6 +97,6 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 	var/list/acceptable_factions
 
 /datum/human_ai_conversation/faction/conversation_allowed(datum/human_ai_brain/brain)
-	if(brain.tied_human.faction in acceptable_factions)
+	if(brain.tied_controller.faction_in(acceptable_factions))
 		return ..()
 	return FALSE

@@ -26,11 +26,11 @@
 	if(!brain?.has_valid_tied_human())
 		return
 
-	RegisterSignal(brain.tied_human, COMSIG_HUMAN_BULLET_ACT, PROC_REF(on_shot))
+	brain.tied_controller.register_signal_for(src, COMSIG_HUMAN_BULLET_ACT, PROC_REF(on_shot))
 
 /datum/human_ai_module/perception/proc/unregister_signals()
-	if(brain?.tied_human)
-		UnregisterSignal(brain.tied_human, COMSIG_HUMAN_BULLET_ACT)
+	if(brain?.tied_controller)
+		brain.tied_controller.unregister_signal_for(src, COMSIG_HUMAN_BULLET_ACT)
 
 /datum/human_ai_module/perception/proc/setup_detection_radius()
 	if(!brain?.has_valid_tied_human())
@@ -40,7 +40,7 @@
 	if(length(detection_turfs))
 		clear_detection_radius()
 
-	for(var/turf/open/floor in range(1, brain.tied_human))
+	for(var/turf/open/floor in brain.tied_controller.get_range(1))
 		RegisterSignal(floor, COMSIG_TURF_ENTERED, PROC_REF(on_detection_turf_enter))
 		detection_turfs += floor
 
@@ -61,7 +61,7 @@
 	if(!can_process_detection())
 		return
 
-	if(entering == brain.tied_human)
+	if(brain.tied_controller.is_puppet(entering))
 		return
 
 	if(!istype(entering, /obj/projectile))
@@ -101,13 +101,13 @@
 	if(brain.faction.faction_check(firer))
 		return
 
-	if(get_dist(brain.tied_human, firer) <= brain.profile.view_distance)
+	if(brain.tied_controller.get_distance_to(firer) <= brain.profile.view_distance)
 		brain.targeting.set_target(firer)
 	else
 		brain.targeting.set_target_turf(get_turf(firer), 4 SECONDS)
 
 /datum/human_ai_module/perception/proc/can_process_detection()
-	return brain?.has_valid_tied_human() && !brain.tied_human.client
+	return brain?.has_valid_tied_human() && !brain.tied_controller.can_player_takeover_block_ai()
 
 /datum/human_ai_module/perception/proc/is_projectile_debounced(obj/projectile/bullet)
 	return (last_detected_projectile == bullet) && (last_detected_projectile_time == world.time)

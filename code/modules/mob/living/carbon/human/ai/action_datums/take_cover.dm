@@ -12,7 +12,7 @@
 	if(!brain.orders.can_move_for_action())
 		return 0
 
-	if(brain.cover.is_in_cover() && !(get_dist(brain.tied_human, brain.targeting.get_current_target()) > brain?.inventory?.get_gun_data()?.minimum_range))
+	if(brain.cover.is_in_cover() && !(brain.tied_controller.get_distance_to(brain.targeting.get_current_target()) > brain?.inventory?.get_gun_data()?.minimum_range))
 		return 0
 
 	return 15
@@ -26,14 +26,12 @@
 	if(!current_cover)
 		return ONGOING_ACTION_COMPLETED
 
-	var/mob/living/carbon/human/tied_human = brain.tied_human
-
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
 	current_cover.color = "#b80505"
-	current_cover.maptext = "[tied_human.real_name] | [get_dist(current_cover, tied_human)]"
+	current_cover.maptext = "[brain.tied_controller.get_real_name()] | [brain.tied_controller.get_distance_from(current_cover)]"
 #endif
 
-	if(get_dist(current_cover, tied_human) > 0)
+	if(brain.tied_controller.get_distance_from(current_cover) > 0)
 		if(!brain.navigation.move_to_next_turf(current_cover))
 			brain.cover.end_cover()
 			return ONGOING_ACTION_COMPLETED
@@ -41,8 +39,7 @@
 		if(!brain || !brain.has_valid_tied_human())
 			return ONGOING_ACTION_COMPLETED
 
-		tied_human = brain.tied_human
-		if(get_dist(current_cover, tied_human) > 0)
+		if(brain.tied_controller.get_distance_from(current_cover) > 0)
 			return ONGOING_ACTION_UNFINISHED
 
 	brain.cover.enter_cover()

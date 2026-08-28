@@ -17,7 +17,7 @@
 /datum/human_ai_brain/proc/on_handcuffed(datum/source)
 	SIGNAL_HANDLER
 
-	if((tied_human.stat >= DEAD) || tied_human.client)
+	if(tied_controller.is_stat_at_least(DEAD) || tied_controller.can_player_takeover_block_ai())
 		return
 
-	message_admins("AI human [tied_human.real_name] has been handcuffed while alive or unconscious.", tied_human.x, tied_human.y, tied_human.z)
+	tied_controller.message_admins_for_puppet("AI human [tied_controller.get_real_name()] has been handcuffed while alive or unconscious.")

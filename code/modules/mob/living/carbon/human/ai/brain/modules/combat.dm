@@ -24,14 +24,14 @@
 				continue
 			if(squaddie.targeting.has_target_turf())
 				continue
-			if(get_dist(squaddie.tied_human, brain.tied_human) > squaddie.profile.view_distance)
+			if(squaddie.tied_controller.get_distance_to_controller(brain.tied_controller) > squaddie.profile.view_distance)
 				continue
 			var/atom/movable/current_target = brain.targeting.get_current_target()
 			if(!squaddie.targeting.can_target(current_target))
 				continue
 			squaddie.targeting.set_target_turf_direct(brain.targeting.get_target_turf())
 
-	if(brain.tied_human.client)
+	if(brain.tied_controller.can_player_takeover_block_ai())
 		return
 
 	if(!in_combat)
@@ -39,7 +39,7 @@
 
 	var/atom/movable/current_target = brain.targeting.get_current_target()
 	if(isxeno(current_target))
-		brain.cover.try_cover(Get_Angle(current_target, brain.tied_human), current_target)
+		brain.cover.try_cover(brain.tied_controller.get_angle_from(current_target), current_target)
 
 	in_combat = TRUE
 	addtimer(CALLBACK(brain, TYPE_PROC_REF(/datum/human_ai_brain, exit_combat)), rand(combat_decay_time_min, combat_decay_time_max), TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
@@ -53,11 +53,11 @@
 		in_combat = FALSE
 		return
 
-	if(brain.tied_human.client)
+	if(brain.tied_controller.can_player_takeover_block_ai())
 		return
 
 	if(in_combat)
-		brain.tied_human.a_intent_change(INTENT_DISARM)
+		brain.tied_controller.set_safe_intent()
 		brain.targeting.lose_target()
 		brain.communication.say_exit_combat_line()
 		if(!brain.emplacement.has_sniper_home())

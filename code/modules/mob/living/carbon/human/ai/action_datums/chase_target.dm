@@ -16,7 +16,7 @@
 	if(!brain.orders.can_move_for_action())
 		return 0
 
-	if(get_dist(target_turf, brain.tied_human) > 20)
+	if(brain.tied_controller.get_distance_from(target_turf) > 20)
 		return 0
 
 	return 6
@@ -32,17 +32,16 @@
 	if(QDELETED(target_turf) || brain.targeting.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
-	var/mob/tied_human = brain.tied_human
-	if(get_dist(target_turf, tied_human) > 0)
+	if(brain.tied_controller.get_distance_from(target_turf) > 0)
 		if(!brain.navigation.move_to_next_turf(target_turf))
 			return ONGOING_ACTION_COMPLETED
 
-		if(get_dist(target_turf, tied_human) > 0)
+		if(brain.tied_controller.get_distance_from(target_turf) > 0)
 			return ONGOING_ACTION_COMPLETED
 
 	// Turn around as we're seeking for the lost target
-	var/direction = turn(tied_human.dir, pick(90,-90))
-	tied_human.face_dir(direction)
+	var/direction = turn(brain.tied_controller.get_current_dir(), pick(90,-90))
+	brain.tied_controller.face_dir(direction)
 
 	// Scouted, found nothing, discard
 	brain.targeting.clear_target_turf()

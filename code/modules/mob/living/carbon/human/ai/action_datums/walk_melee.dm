@@ -33,12 +33,11 @@
 	if(!brain.guns.has_tried_reload() && (brain.inventory.has_primary_weapon() || brain.inventory.has_secondary_weapons()))
 		return ONGOING_ACTION_COMPLETED
 
-	var/mob/tied_human = brain.tied_human
-	if(get_dist(tied_human, current_target) <= 1)
-		tied_human.a_intent_change(INTENT_HARM)
+	if(brain.tied_controller.get_distance_to(current_target) <= 1)
+		brain.tied_controller.set_combat_intent()
 		brain.inventory.unholster_any_weapon()
-		INVOKE_ASYNC(tied_human, TYPE_PROC_REF(/mob, do_click), current_target, "", list())
-		tied_human.face_atom(current_target)
+		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), current_target, "", list())
+		brain.tied_controller.face_atom(current_target)
 
 	if(!brain.navigation.move_to_next_turf(get_turf(current_target)))
 		return ONGOING_ACTION_COMPLETED

@@ -3,6 +3,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain
 	/// The human that this brain ties into
 	var/mob/living/carbon/human/tied_human
+	/// API facade for reading and controlling the tied human puppet.
+	var/datum/human_tied_controller/tied_controller
 
 	var/datum/human_ai_module/targeting/targeting
 	var/datum/human_ai_module/perception/perception
@@ -28,6 +30,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/New(mob/living/carbon/human/tied_human)
 	. = ..()
 	src.tied_human = tied_human
+	tied_controller = new(src, tied_human)
 	faction = new(src)
 	targeting = new(src)
 	cover = new(src)
@@ -48,16 +51,16 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	perception.setup_detection_radius()
 	inventory = new(src)
 	inventory.register_signals()
-	RegisterSignal(tied_human, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
-	RegisterSignal(tied_human, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: HALO death guard should tear down AI and force corpses prone immediately
-	RegisterSignal(tied_human, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
-	RegisterSignal(tied_human, COMSIG_HUMAN_HANDCUFFED, PROC_REF(on_handcuffed))
-	RegisterSignal(tied_human, COMSIG_HUMAN_GET_AI_BRAIN, PROC_REF(get_ai_brain))
-	RegisterSignal(tied_human, COMSIG_HUMAN_SET_SPECIES, PROC_REF(on_species_change))
-	RegisterSignal(tied_human, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(on_body_position_change)) // SS220 EDIT: standing back up should wake shared human AI immediately
+	tied_controller.register_signal_for(src, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
+	tied_controller.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: HALO death guard should tear down AI and force corpses prone immediately
+	tied_controller.register_signal_for(src, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
+	tied_controller.register_signal_for(src, COMSIG_HUMAN_HANDCUFFED, PROC_REF(on_handcuffed))
+	tied_controller.register_signal_for(src, COMSIG_HUMAN_GET_AI_BRAIN, PROC_REF(get_ai_brain))
+	tied_controller.register_signal_for(src, COMSIG_HUMAN_SET_SPECIES, PROC_REF(on_species_change))
+	tied_controller.register_signal_for(src, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(on_body_position_change)) // SS220 EDIT: standing back up should wake shared human AI immediately
 	GLOB.human_ai_brains += src
 	inventory.appraise_inventory()
-	tied_human.a_intent_change(INTENT_DISARM)
+	tied_controller.set_safe_intent()
 
 /datum/human_ai_brain/Destroy(force, ...)
 	GLOB.human_ai_brains -= src
@@ -79,12 +82,13 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(orders)
 	QDEL_NULL(profile)
 	QDEL_NULL(emplacement)
+	QDEL_NULL(tied_controller)
 	tied_human = null
 
 	return ..()
 
 /datum/human_ai_brain/proc/has_valid_tied_human()
-	return tied_human && !QDELETED(tied_human) && !isnull(tied_human.loc)
+	return tied_controller?.has_valid_tied_human()
 
 /datum/human_ai_brain/proc/reset_ai()
 	cover.end_cover()
@@ -107,18 +111,15 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		reset_ai()
 		return
 
-	if(tied_human.stat == DEAD) // SS220 EDIT: dead HALO AI must never remain in the wake-up recovery path
+	if(tied_controller.is_dead()) // SS220 EDIT: dead HALO AI must never remain in the wake-up recovery path
 		perception.suspend()
 		wake_rethink_queued_at = -1 // SS220 EDIT: death fallback must kill any queued wake rethink that survived until process()
 		action_runtime.clear_actions()
 		targeting.lose_target()
-		if(!tied_human.resting)
-			tied_human.set_resting(TRUE, TRUE)
-		else
-			tied_human.set_lying_down()
+		tied_controller.force_prone()
 		return
 
-	if(tied_human.is_mob_incapacitated())
+	if(tied_controller.is_incapacitated())
 		perception.suspend() // SS220 EDIT: stunned or dead AI should not keep turf-enter listeners alive
 		action_runtime.clear_actions()
 		targeting.lose_target()
@@ -127,26 +128,22 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	perception.process_module(delta_time) // SS220 EDIT: restore projectile detection after recovering from incap or reset
 
 	// SS220 EDIT - START: hardcrit AIs should keep resting until the crit loop and knockdown pressure are truly gone
-	var/should_force_resting = ((locate(/datum/effects/crit) in tied_human.effects_list) && (tied_human.status_flags & CANKNOCKOUT))
+	var/should_force_resting = (tied_controller.has_effect(/datum/effects/crit) && tied_controller.has_status_flag(CANKNOCKOUT))
 	if(should_force_resting)
-		if(!tied_human.resting)
-			tied_human.set_resting(TRUE, TRUE)
-		else
-			tied_human.set_lying_down() // SS220 EDIT: crit-resting AI can keep a stale standing transform unless prone is re-asserted through the shared helper
+		tied_controller.force_prone() // SS220 EDIT: crit-resting AI can keep a stale standing transform unless prone is re-asserted through the shared helper
 		perception.suspend() // SS220 EDIT: prone hardcrit AI should not keep live projectile listeners or continue active combat movement
 		action_runtime.clear_actions()
 		inventory.clear_pickup_queue() // SS220 EDIT: lying crit AI must drop stale pickup goals so it does not keep chasing far-away weapons after forced prone
 		inventory.invalidate_nearby_item_search()
 		return
-	else if((tied_human.stat == CONSCIOUS) && tied_human.resting && !HAS_TRAIT(tied_human, TRAIT_FLOORED))
+	else if((tied_controller.get_stat() == CONSCIOUS) && tied_controller.is_resting() && !tied_controller.has_trait(TRAIT_FLOORED))
 		// SS220 EDIT - START: final stand-up gate must stay exactly aligned with the existing wake rethink eligibility rules
-		if(has_valid_tied_human() && !tied_human.client && !tied_human.buckled && (tied_human.stat == CONSCIOUS) && !tied_human.is_mob_incapacitated())
-			tied_human.set_resting(FALSE, TRUE)
+		tied_controller.try_stand_up()
 		// SS220 EDIT - END
 	// SS220 EDIT - END
 
-	if(tied_human.buckled)
-		tied_human.set_buckled(FALSE) // AI never buckle themselves into chairs at the moment, change if this becomes the case
+	if(tied_controller.is_buckled())
+		tied_controller.clear_buckle_state() // AI never buckle themselves into chairs at the moment, change if this becomes the case
 
 	if(!targeting.has_current_target())
 		targeting.set_target(targeting.get_target())
@@ -154,8 +151,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(targeting.has_current_target())
 		combat.enter_combat()
 
-	if(!iszombie(tied_human) && inventory.should_run_nearby_item_search())
-		inventory.item_search(range(2, tied_human))
+	if(!tied_controller.is_zombie() && inventory.should_run_nearby_item_search())
+		inventory.item_search(tied_controller.get_range(2))
 
 	if(action_runtime.process_actions(delta_time))
 		return
@@ -165,20 +162,18 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	perception.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
 	reset_ai()
 	wake_rethink_queued_at = -1 // SS220 EDIT: owner delete must not leave a queued wake rethink pointing at a null tied human
+	tied_controller?.set_tied_human(null)
 	tied_human = null
 
 /datum/human_ai_brain/proc/on_human_death(datum/source)
 	SIGNAL_HANDLER
 	reset_ai()
 	wake_rethink_queued_at = -1 // SS220 EDIT: death signal must immediately invalidate any deferred wake processing
-	if(!has_valid_tied_human() || (tied_human.stat != DEAD))
+	if(!has_valid_tied_human() || !tied_controller.is_dead())
 		return
-	if(tied_human.buckled) // SS220 EDIT: only the direct death path should release forced-standing buckle state
-		tied_human.buckled.unbuckle()
-	if(!tied_human.resting)
-		tied_human.set_resting(TRUE, TRUE)
-	else
-		tied_human.set_lying_down()
+	if(tied_controller.is_buckled()) // SS220 EDIT: only the direct death path should release forced-standing buckle state
+		tied_controller.unbuckle()
+	tied_controller.force_prone()
 
 /datum/human_ai_brain/proc/on_species_change(datum/source, new_species)
 	SIGNAL_HANDLER
@@ -192,7 +187,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if((new_position != STANDING_UP) || (old_position != LYING_DOWN))
 		return
 
-	if(!has_valid_tied_human() || tied_human.client || tied_human.buckled || (tied_human.stat != CONSCIOUS) || tied_human.is_mob_incapacitated())
+	if(!tied_controller.can_stand_up())
 		return
 
 	inventory.invalidate_nearby_item_search() // SS220 EDIT: wake-up should immediately invalidate idle pickup/grenade scan throttles
@@ -210,7 +205,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	wake_rethink_queued_at = -1
-	if(!has_valid_tied_human() || tied_human.client || tied_human.buckled || (tied_human.stat != CONSCIOUS) || tied_human.is_mob_incapacitated())
+	if(!tied_controller.can_stand_up())
 		return
 
 	if((last_process_tick == queued_tick) || (last_process_tick == world.time))
@@ -226,7 +221,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	perception.setup_detection_radius()
 
-	if(cover.is_in_cover() && (get_dist(tied_human, cover.get_current_cover()) > inventory.get_gun_data()?.minimum_range))
+	if(cover.is_in_cover() && (tied_controller.get_distance_to(cover.get_current_cover()) > inventory.get_gun_data()?.minimum_range))
 		cover.end_cover()
 
 	targeting.update_target_pos()

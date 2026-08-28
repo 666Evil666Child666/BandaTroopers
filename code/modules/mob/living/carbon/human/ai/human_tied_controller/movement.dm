@@ -54,6 +54,106 @@
 		return null
 	return get_dir(tied_human, target_turf)
 
+/datum/human_tied_controller/proc/get_direction_to(atom/target)
+	if(!can_read_puppet() || !target)
+		return null
+	return get_dir(tied_human, target)
+
+/datum/human_tied_controller/proc/get_direction_from(atom/source)
+	if(!can_read_puppet() || !source)
+		return null
+	return get_dir(source, tied_human)
+
+/datum/human_tied_controller/proc/get_compass_dir_from(atom/source)
+	if(!can_read_puppet() || !source)
+		return null
+	return Get_Compass_Dir(source, tied_human)
+
+/datum/human_tied_controller/proc/get_angle_from(atom/source)
+	if(!can_read_puppet() || !source)
+		return null
+	return Get_Angle(source, tied_human)
+
+/datum/human_tied_controller/proc/get_reverse_dir_cone()
+	if(!can_read_puppet())
+		return null
+	return reverse_nearby_direction(reverse_direction(tied_human.dir))
+
+/datum/human_tied_controller/proc/get_distance_to(atom/target)
+	if(!can_read_puppet() || !target)
+		return INFINITY
+	return get_dist(tied_human, target)
+
+/datum/human_tied_controller/proc/get_distance_to_controller(datum/human_tied_controller/other_controller)
+	if(!can_read_puppet() || !other_controller?.can_read_puppet())
+		return INFINITY
+	return get_dist(tied_human, other_controller.tied_human)
+
+/datum/human_tied_controller/proc/get_distance_from(atom/source)
+	if(!can_read_puppet() || !source)
+		return INFINITY
+	return get_dist(source, tied_human)
+
+/datum/human_tied_controller/proc/is_in_view_of(atom/center, distance)
+	if(!can_read_puppet() || !center)
+		return FALSE
+	return tied_human in viewers(distance, center)
+
+/datum/human_tied_controller/proc/get_view(distance)
+	if(!can_read_puppet())
+		return list()
+	return view(distance, tied_human)
+
+/datum/human_tied_controller/proc/get_range(distance)
+	if(!can_read_puppet())
+		return list()
+	return range(distance, tied_human)
+
+/datum/human_tied_controller/proc/get_line_to(atom/target, include_start = TRUE)
+	if(!can_read_puppet() || !target)
+		return list()
+	return get_line(tied_human, target, include_start)
+
+/datum/human_tied_controller/proc/get_line_from_current_turf_to(atom/target, include_start = TRUE)
+	var/turf/source_turf = get_current_turf()
+	var/turf/target_turf = get_turf(target)
+	if(!source_turf || !target_turf)
+		return list()
+	return get_line(source_turf, target_turf, include_start)
+
+/datum/human_tied_controller/proc/get_step_in_dir(direction)
+	if(!can_read_puppet() || !direction)
+		return null
+	return get_step(tied_human, direction)
+
+/datum/human_tied_controller/proc/is_calculating_path()
+	return can_read_puppet() && CALCULATING_PATH(tied_human)
+
+/datum/human_tied_controller/proc/calculate_path_to(turf/destination, max_range, datum/callback/path_callback, list/additional_exclusions)
+	if(!can_read_puppet() || !destination || !path_callback)
+		return FALSE
+	var/list/exclusions = list(tied_human)
+	if(length(additional_exclusions))
+		exclusions += additional_exclusions
+	SSpathfinding.calculate_path(tied_human, destination, max_range, tied_human, path_callback, exclusions)
+	return TRUE
+
+/datum/human_tied_controller/proc/get_ranged_target_turf(direction, distance)
+	if(!can_read_puppet() || !direction)
+		return null
+	return get_ranged_target_turf(tied_human, direction, distance)
+
+/datum/human_tied_controller/proc/is_puppet(atom/target)
+	return can_read_puppet() && (target == tied_human)
+
+/datum/human_tied_controller/proc/get_identity_ref()
+	if(!can_read_puppet())
+		return null
+	return WEAKREF(tied_human)
+
+/datum/human_tied_controller/proc/matches_identity_ref(datum/weakref/identity_ref)
+	return can_read_puppet() && identity_ref && (identity_ref.resolve() == tied_human)
+
 /datum/human_tied_controller/proc/Move(turf/target_turf, direction)
 	if(!can_directly_control() || !target_turf)
 		return FALSE

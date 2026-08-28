@@ -6,6 +6,12 @@
 	tied_human.a_intent_change(intent)
 	return TRUE
 
+/datum/human_tied_controller/proc/set_raw_intent(intent)
+	if(!can_directly_control())
+		return FALSE
+	tied_human.a_intent = intent
+	return TRUE
+
 /datum/human_tied_controller/proc/a_intent_change(intent)
 	return set_intent(intent)
 
@@ -24,6 +30,12 @@
 	if(!can_directly_control() || !weapon)
 		return FALSE
 	weapon.wield(tied_human)
+	return TRUE
+
+/datum/human_tied_controller/proc/unwield_weapon(obj/item/weapon/gun/weapon)
+	if(!can_directly_control() || !weapon)
+		return FALSE
+	weapon.unwield(tied_human)
 	return TRUE
 
 /datum/human_tied_controller/proc/do_click(atom/target, params = "", list/modifiers)
@@ -77,6 +89,12 @@
 		return FALSE
 	face_atom(target_turf)
 	tied_human.throw_item(target_turf)
+	return TRUE
+
+/datum/human_tied_controller/proc/prime_grenade(obj/item/explosive/grenade/grenade)
+	if(!can_directly_control() || !grenade)
+		return FALSE
+	grenade.attack_self(tied_human)
 	return TRUE
 
 // Grenade primitives

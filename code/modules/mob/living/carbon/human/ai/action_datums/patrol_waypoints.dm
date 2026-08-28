@@ -17,7 +17,7 @@
 		return 0
 
 	if(!brain.squad.is_squad_leader)
-		if(get_dist(brain.tied_human, current_order.current_waypoint) <= 1)
+		if(brain.tied_controller.get_distance_to(current_order.current_waypoint) <= 1)
 			return 0
 
 	return 4
@@ -38,12 +38,11 @@
 			brain.squad.remove_current_order()
 		return ONGOING_ACTION_COMPLETED
 
-	var/mob/tied_human = brain.tied_human
-	if(get_dist(current_waypoint, tied_human) > 1)
+	if(brain.tied_controller.get_distance_from(current_waypoint) > 1)
 		if(!brain.navigation.move_to_next_turf(current_waypoint))
 			return ONGOING_ACTION_COMPLETED
 
-		if(get_dist(current_waypoint, tied_human) > 1)
+		if(brain.tied_controller.get_distance_from(current_waypoint) > 1)
 			return ONGOING_ACTION_UNFINISHED
 
 	if(brain.squad.is_squad_leader)
