@@ -23,9 +23,8 @@
 	if(!brain || !brain.halo_unggoy_runtime || !brain.combat.in_combat || !brain.halo_unggoy_should_retreat())
 		return ONGOING_ACTION_COMPLETED
 
-	var/mob/living/carbon/human/tied_human = brain.tied_human
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!tied_human || !threat)
+	if(!brain.has_valid_tied_human() || !threat)
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.halo_unggoy_should_use_cover_retreat() && try_cover_retreat(threat))
@@ -41,13 +40,13 @@
 
 /datum/ai_action/unggoy_panic_retreat/proc/try_cover_retreat(atom/threat)
 	if(!brain.cover.current_cover)
-		brain.cover.try_cover(Get_Angle(threat, brain.tied_human), threat)
+		brain.cover.try_cover(brain.tied_controller.get_angle_from(threat), threat)
 
 	var/turf/cover_turf = get_turf(brain.cover.current_cover)
 	if(!cover_turf)
 		return FALSE
 
-	if(get_dist(cover_turf, brain.tied_human) > 0)
+	if(brain.tied_controller.get_distance_to(cover_turf) > 0)
 		if(!brain.navigation.move_to_next_turf(cover_turf))
 			brain.cover.end_cover()
 			return FALSE
@@ -55,13 +54,12 @@
 		return TRUE
 
 	brain.cover.in_cover = TRUE
-	brain.tied_human.face_atom(threat)
+	brain.tied_controller.face_atom(threat)
 	return TRUE
 
 /datum/ai_action/unggoy_panic_retreat/proc/step_away_from_threat(atom/threat)
-	var/mob/living/carbon/human/tied_human = brain.tied_human
 	var/turf/threat_turf = brain.halo_covenant_get_cached_threat_turf()
-	if(!tied_human || !threat_turf)
+	if(!brain.has_valid_tied_human() || !threat_turf)
 		return FALSE
 
 	var/keep_anchor = !brain.halo_unggoy_should_flee_on_overheat()
@@ -70,7 +68,7 @@
 	var/best_score = -INFINITY
 
 	for(var/direction in GLOB.cardinals)
-		var/turf/destination = get_step(tied_human, direction)
+		var/turf/destination = brain.tied_controller.get_step_in_dir(direction)
 		if(!destination || destination.density)
 			continue
 
@@ -82,7 +80,7 @@
 			best_score = score
 			best_destination = destination
 
-	if(!best_destination && anchor && (get_dist(anchor, tied_human) > 0))
+	if(!best_destination && anchor && (brain.tied_controller.get_distance_to(anchor) > 0))
 		best_destination = anchor
 
 	if(!best_destination)
@@ -91,5 +89,5 @@
 	if(!brain.navigation.move_to_next_turf(best_destination))
 		return FALSE
 
-	tied_human.face_atom(threat)
+	brain.tied_controller.face_atom(threat)
 	return TRUE

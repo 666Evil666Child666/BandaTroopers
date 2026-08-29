@@ -13,7 +13,7 @@
 		return 0
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!threat || !brain.tied_human)
+	if(!threat || !brain.has_valid_tied_human())
 		return 0
 
 	if(brain.halo_sangheili_should_sword_charge(threat))
@@ -25,7 +25,7 @@
 	if(!brain.halo_sangheili_should_overheat_response(threat) && !brain.halo_sangheili_primary_weapon_unavailable())
 		return 0
 
-	if(get_dist(brain.tied_human, threat) <= 1)
+	if(brain.tied_controller.get_distance_to(threat) <= 1)
 		return 44
 
 	return 18
@@ -37,9 +37,8 @@
 /datum/ai_action/sangheili_kick/trigger_action()
 	. = ..()
 
-	var/mob/living/carbon/human/tied_human = brain.tied_human
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!brain.halo_sangheili_runtime || !tied_human || !threat || !brain.combat.in_combat)
+	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.combat.in_combat)
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.cover.current_cover && !brain.cover.in_cover)
@@ -54,18 +53,17 @@
 	if(!brain.halo_sangheili_should_overheat_response(threat) && !brain.halo_sangheili_primary_weapon_unavailable())
 		return ONGOING_ACTION_COMPLETED
 
-	tied_human.a_intent_change(INTENT_HARM)
+	brain.tied_controller.set_combat_intent()
 	brain.cover.end_cover()
 	brain.halo_sangheili_holster_sword()
 	brain.halo_covenant_clear_hands()
 
-	if(get_dist(tied_human, threat) <= 1)
-		var/datum/action/human_action/activable/covenant/sangheili_kick/kick_action = locate(/datum/action/human_action/activable/covenant/sangheili_kick) in tied_human.actions
-		tied_human.face_atom(threat)
-		if(kick_action && prob(70))
-			INVOKE_ASYNC(kick_action, TYPE_PROC_REF(/datum/action/human_action/activable/covenant/sangheili_kick, use_ability), threat, tied_human)
+	if(brain.tied_controller.get_distance_to(threat) <= 1)
+		brain.tied_controller.face_atom(threat)
+		if(prob(70) && brain.tied_controller.halo_use_sangheili_kick(threat))
+			return ONGOING_ACTION_UNFINISHED_BLOCK
 		else
-			INVOKE_ASYNC(tied_human, TYPE_PROC_REF(/mob, do_click), threat, "", list())
+			INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), threat, "", list())
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
 	var/turf/threat_turf = brain.halo_covenant_get_cached_threat_turf()
@@ -75,5 +73,5 @@
 	if(!brain.navigation.move_to_next_turf(threat_turf))
 		return ONGOING_ACTION_COMPLETED
 
-	tied_human.face_atom(threat)
+	brain.tied_controller.face_atom(threat)
 	return ONGOING_ACTION_UNFINISHED_BLOCK

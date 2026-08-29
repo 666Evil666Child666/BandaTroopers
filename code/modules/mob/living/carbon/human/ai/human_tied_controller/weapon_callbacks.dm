@@ -33,6 +33,11 @@
 		return 0
 	return weapon.get_ai_followup_fire_cooldown(tied_human, current_target)
 
+/datum/human_tied_controller/proc/can_ai_use_weapon(obj/item/weapon/gun/weapon)
+	if(!can_read_puppet() || !weapon)
+		return FALSE
+	return weapon.ai_can_use(tied_human, brain)
+
 /datum/human_tied_controller/proc/do_reload(datum/firearm_appraisal/gun_data, obj/item/weapon/gun/weapon, obj/item/ammo_magazine/mag)
 	if(!can_directly_control() || !gun_data || !weapon || !mag)
 		return FALSE

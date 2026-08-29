@@ -31,19 +31,18 @@
 /datum/ai_action/sangheili_overheat_response/trigger_action()
 	. = ..()
 
-	var/mob/living/carbon/human/tied_human = brain.tied_human
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!brain.halo_sangheili_runtime || !tied_human || !threat || !brain.combat.in_combat || !brain.halo_sangheili_should_overheat_response(threat))
+	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.combat.in_combat || !brain.halo_sangheili_should_overheat_response(threat))
 		return ONGOING_ACTION_COMPLETED
 
-	tied_human.a_intent_change(INTENT_HARM)
+	brain.tied_controller.set_combat_intent()
 
 	if(brain.halo_sangheili_should_unarmed_commit(threat))
 		brain.cover.end_cover()
 		brain.halo_sangheili_holster_sword()
 		brain.halo_covenant_clear_hands()
-		tied_human.face_atom(threat)
-		INVOKE_ASYNC(tied_human, TYPE_PROC_REF(/mob, do_click), threat, "", list())
+		brain.tied_controller.face_atom(threat)
+		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), threat, "", list())
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
 	if(try_cover_retreat(threat))
@@ -56,13 +55,13 @@
 
 /datum/ai_action/sangheili_overheat_response/proc/try_cover_retreat(atom/threat)
 	if(!brain.cover.current_cover)
-		brain.cover.try_cover(Get_Angle(threat, brain.tied_human), threat)
+		brain.cover.try_cover(brain.tied_controller.get_angle_from(threat), threat)
 
 	var/turf/cover_turf = get_turf(brain.cover.current_cover)
 	if(!cover_turf)
 		return FALSE
 
-	if(get_dist(cover_turf, brain.tied_human) > 0)
+	if(brain.tied_controller.get_distance_to(cover_turf) > 0)
 		if(!brain.navigation.move_to_next_turf(cover_turf))
 			brain.cover.end_cover()
 			return FALSE
@@ -70,20 +69,19 @@
 		return TRUE
 
 	brain.cover.in_cover = TRUE
-	brain.tied_human.face_atom(threat)
+	brain.tied_controller.face_atom(threat)
 	return TRUE
 
 /datum/ai_action/sangheili_overheat_response/proc/step_away_from_threat(atom/threat)
-	var/mob/living/carbon/human/tied_human = brain.tied_human
 	var/turf/threat_turf = brain.halo_covenant_get_cached_threat_turf()
-	if(!tied_human || !threat_turf)
+	if(!brain.has_valid_tied_human() || !threat_turf)
 		return FALSE
 
 	var/turf/best_destination
 	var/best_score = -INFINITY
 
 	for(var/direction in GLOB.cardinals)
-		var/turf/destination = get_step(tied_human, direction)
+		var/turf/destination = brain.tied_controller.get_step_in_dir(direction)
 		if(!destination || destination.density)
 			continue
 
@@ -98,5 +96,5 @@
 	if(!brain.navigation.move_to_next_turf(best_destination))
 		return FALSE
 
-	tied_human.face_atom(threat)
+	brain.tied_controller.face_atom(threat)
 	return TRUE

@@ -19,7 +19,7 @@
 	if(!get_charge_target(brain))
 		return 0
 
-	if(find_active_held_grenade(brain.tied_human))
+	if(find_active_held_grenade())
 		return 80
 
 	if(!length(brain.inventory.equipment_map[HUMAN_AI_GRENADES]))
@@ -30,19 +30,18 @@
 /datum/ai_action/unggoy_suicide_bomber/trigger_action()
 	. = ..()
 
-	var/mob/living/carbon/human/tied_human = brain.tied_human
-	if(!tied_human)
+	if(!brain.has_valid_tied_human())
 		return ONGOING_ACTION_COMPLETED
 
 	brain.cover.end_cover()
 
-	var/obj/item/explosive/grenade/active_grenade = find_active_held_grenade(tied_human)
+	var/obj/item/explosive/grenade/active_grenade = find_active_held_grenade()
 	if(!active_grenade)
 		var/atom/charge_target = get_charge_target(brain)
 		if(!charge_target)
 			return ONGOING_ACTION_COMPLETED
 
-		var/target_dist = get_dist(tied_human, charge_target)
+		var/target_dist = brain.tied_controller.get_distance_to(charge_target)
 		if(target_dist > brain.halo_suicide_prime_range)
 			if(!move_towards_target(charge_target))
 				return ONGOING_ACTION_COMPLETED
@@ -51,7 +50,7 @@
 		if(!prime_grenades())
 			return ONGOING_ACTION_COMPLETED
 
-		active_grenade = find_active_held_grenade(tied_human)
+		active_grenade = find_active_held_grenade()
 		if(!active_grenade)
 			return ONGOING_ACTION_COMPLETED
 
@@ -59,8 +58,8 @@
 	if(!current_target)
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
-	if(get_dist(tied_human, current_target) <= 1)
-		tied_human.face_atom(current_target)
+	if(brain.tied_controller.get_distance_to(current_target) <= 1)
+		brain.tied_controller.face_atom(current_target)
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
 	move_towards_target(current_target)
@@ -69,14 +68,16 @@
 /datum/ai_action/unggoy_suicide_bomber/proc/get_charge_target(datum/human_ai_brain/brain)
 	return brain.targeting.current_target || brain.targeting.target_turf
 
-/datum/ai_action/unggoy_suicide_bomber/proc/find_active_held_grenade(mob/living/carbon/human/tied_human)
-	if(istype(tied_human.l_hand, /obj/item/explosive/grenade))
-		var/obj/item/explosive/grenade/left_grenade = tied_human.l_hand
+/datum/ai_action/unggoy_suicide_bomber/proc/find_active_held_grenade()
+	if(!brain?.has_valid_tied_human())
+		return null
+	if(istype(brain.tied_controller.get_l_hand(), /obj/item/explosive/grenade))
+		var/obj/item/explosive/grenade/left_grenade = brain.tied_controller.get_l_hand()
 		if(left_grenade.active)
 			return left_grenade
 
-	if(istype(tied_human.r_hand, /obj/item/explosive/grenade))
-		var/obj/item/explosive/grenade/right_grenade = tied_human.r_hand
+	if(istype(brain.tied_controller.get_r_hand(), /obj/item/explosive/grenade))
+		var/obj/item/explosive/grenade/right_grenade = brain.tied_controller.get_r_hand()
 		if(right_grenade.active)
 			return right_grenade
 
@@ -91,15 +92,14 @@
 		return
 
 	brain.inventory.clear_main_hand()
-	brain.tied_human.swap_hand()
+	brain.tied_controller.swap_hand()
 	brain.inventory.clear_main_hand()
-	brain.tied_human.swap_hand()
+	brain.tied_controller.swap_hand()
 
 /datum/ai_action/unggoy_suicide_bomber/proc/prime_grenades()
 	if(!brain || !brain.has_valid_tied_human())
 		return FALSE
 
-	var/mob/living/carbon/human/tied_human = brain.tied_human
 	clear_both_hands()
 	if(!brain.has_valid_tied_human())
 		return FALSE
@@ -109,56 +109,25 @@
 		return FALSE
 
 	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, first_grenade)
-	if(QDELETED(first_grenade) || (first_grenade.loc != tied_human))
+	if(QDELETED(first_grenade) || !brain.tied_controller.is_item_equipped_or_held(first_grenade))
 		return FALSE
 
 	var/obj/item/explosive/grenade/second_grenade = find_stored_grenade(first_grenade)
 	if(second_grenade)
-		tied_human.swap_hand()
+		brain.tied_controller.swap_hand()
 		brain.inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, second_grenade)
-		if(QDELETED(second_grenade) || (second_grenade.loc != tied_human))
+		if(QDELETED(second_grenade) || !brain.tied_controller.is_item_equipped_or_held(second_grenade))
 			second_grenade = null
-		tied_human.swap_hand()
+		brain.tied_controller.swap_hand()
 
-	if(!prime_grenade_no_sleep(first_grenade, tied_human))
+	if(!brain.tied_controller.prime_grenade_no_sleep(first_grenade))
 		return FALSE
 	if(second_grenade)
-		prime_grenade_no_sleep(second_grenade, tied_human)
-	if(tied_human.throw_mode)
-		tied_human.toggle_throw_mode(THROW_MODE_OFF)
+		brain.tied_controller.prime_grenade_no_sleep(second_grenade)
+	if(brain.tied_controller.has_throw_mode())
+		brain.tied_controller.disable_throw_mode()
 
 	return TRUE
-
-/datum/ai_action/unggoy_suicide_bomber/proc/prime_grenade_no_sleep(obj/item/explosive/grenade/grenade, mob/living/carbon/human/user)
-	if(!grenade || !user || grenade.active)
-		return FALSE
-
-	if(!grenade.can_use_grenade(user))
-		return FALSE
-
-	if(QDELETED(grenade) || isnull(grenade.loc))
-		return FALSE
-
-	if(grenade.antigrief_protection && user.faction == FACTION_MARINE && explosive_antigrief_check(grenade, user))
-		to_chat(user, SPAN_WARNING("\The [grenade.name]'s safe-area accident inhibitor prevents you from priming the grenade!"))
-		msg_admin_niche("[key_name(user)] attempted to prime \a [grenade.name] in [get_area(grenade)] [ADMIN_JMP(grenade.loc)]")
-		return FALSE
-
-	if(SEND_SIGNAL(user, COMSIG_GRENADE_PRE_PRIME) & COMPONENT_GRENADE_PRIME_CANCEL)
-		return FALSE
-
-	grenade.add_fingerprint(user)
-	grenade.activate(user)
-	grenade.cause_data = create_cause_data(initial(grenade.name), user)
-
-	user.visible_message(SPAN_WARNING("[user] primes \a [grenade.name]!"), \
-	SPAN_WARNING("You prime \a [grenade.name]!"))
-	msg_admin_attack("[key_name(user)] primed \a grenade ([grenade.name]) in [get_area(grenade)] ([grenade.loc.x],[grenade.loc.y],[grenade.loc.z]).", grenade.loc.x, grenade.loc.y, grenade.loc.z)
-	user.attack_log += text("\[[time_stamp()]\] <font color='red'> [key_name(user)] primed \a grenade ([grenade.name]) at ([grenade.loc.x],[grenade.loc.y],[grenade.loc.z])</font>")
-	if(!user.throw_mode)
-		user.toggle_throw_mode(THROW_MODE_NORMAL)
-
-	return grenade.active
 
 /datum/ai_action/unggoy_suicide_bomber/proc/move_towards_target(atom/charge_target)
 	if(!brain || !brain.has_valid_tied_human())
@@ -176,5 +145,5 @@
 	if(!brain.has_valid_tied_human())
 		return FALSE
 
-	brain.tied_human.face_atom(charge_target)
+	brain.tied_controller.face_atom(charge_target)
 	return TRUE

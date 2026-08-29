@@ -132,6 +132,14 @@
 /datum/human_tied_controller/proc/is_item_equipped_or_held(obj/item/item)
 	return item && (item.loc == tied_human)
 
+/datum/human_tied_controller/proc/is_item_equipped_or_in_direct_storage(obj/item/item)
+	if(!can_read_puppet() || !item || QDELETED(item))
+		return FALSE
+	if(item.loc == tied_human)
+		return TRUE
+	var/atom/item_loc = item.loc
+	return item_loc?.loc == tied_human
+
 /datum/human_tied_controller/proc/is_item_in_primary_storage_or_hands(obj/item/item)
 	if(!item)
 		return FALSE

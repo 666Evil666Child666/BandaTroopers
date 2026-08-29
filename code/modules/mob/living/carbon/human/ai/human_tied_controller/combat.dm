@@ -46,6 +46,12 @@
 	tied_human.do_click(target, params, modifiers)
 	return TRUE
 
+/datum/human_tied_controller/proc/get_action(action_type)
+	RETURN_TYPE(/datum/action)
+	if(!can_read_puppet() || !action_type)
+		return null
+	return locate(action_type) in tied_human.actions
+
 /datum/human_tied_controller/proc/click_atom(atom/target)
 	if(!do_click(target, "", list()))
 		return FALSE
@@ -84,6 +90,16 @@
 		tied_human.toggle_throw_mode(mode)
 	return TRUE
 
+/datum/human_tied_controller/proc/has_throw_mode()
+	return !!tied_human?.throw_mode
+
+/datum/human_tied_controller/proc/disable_throw_mode()
+	if(!can_directly_control())
+		return FALSE
+	if(tied_human.throw_mode)
+		tied_human.toggle_throw_mode(THROW_MODE_OFF)
+	return TRUE
+
 /datum/human_tied_controller/proc/throw_item(turf/target_turf)
 	if(!can_throw() || !target_turf)
 		return FALSE
@@ -96,6 +112,38 @@
 		return FALSE
 	grenade.attack_self(tied_human)
 	return TRUE
+
+// Behavior helper for legacy grenade priming paths that cannot sleep through attack_self().
+/datum/human_tied_controller/proc/prime_grenade_no_sleep(obj/item/explosive/grenade/grenade)
+	if(!can_directly_control() || !grenade || grenade.active)
+		return FALSE
+
+	if(!grenade.can_use_grenade(tied_human))
+		return FALSE
+
+	if(QDELETED(grenade) || isnull(grenade.loc))
+		return FALSE
+
+	if(grenade.antigrief_protection && tied_human.faction == FACTION_MARINE && explosive_antigrief_check(grenade, tied_human))
+		to_chat(tied_human, SPAN_WARNING("\The [grenade.name]'s safe-area accident inhibitor prevents you from priming the grenade!"))
+		msg_admin_niche("[key_name(tied_human)] attempted to prime \a [grenade.name] in [get_area(grenade)] [ADMIN_JMP(grenade.loc)]")
+		return FALSE
+
+	if(SEND_SIGNAL(tied_human, COMSIG_GRENADE_PRE_PRIME) & COMPONENT_GRENADE_PRIME_CANCEL)
+		return FALSE
+
+	grenade.add_fingerprint(tied_human)
+	grenade.activate(tied_human)
+	grenade.cause_data = create_cause_data(initial(grenade.name), tied_human)
+
+	tied_human.visible_message(SPAN_WARNING("[tied_human] primes \a [grenade.name]!"), \
+		SPAN_WARNING("You prime \a [grenade.name]!"))
+	msg_admin_attack("[key_name(tied_human)] primed \a grenade ([grenade.name]) in [get_area(grenade)] ([grenade.loc.x],[grenade.loc.y],[grenade.loc.z]).", grenade.loc.x, grenade.loc.y, grenade.loc.z)
+	tied_human.attack_log += text("\[[time_stamp()]\] <font color='red'> [key_name(tied_human)] primed \a grenade ([grenade.name]) at ([grenade.loc.x],[grenade.loc.y],[grenade.loc.z])</font>")
+	if(!tied_human.throw_mode)
+		tied_human.toggle_throw_mode(THROW_MODE_NORMAL)
+
+	return grenade.active
 
 // Grenade primitives
 
