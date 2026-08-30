@@ -40,6 +40,8 @@
 
 /datum/ai_action/item_pickup/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(QDELETED(to_pickup) || !isturf(to_pickup.loc))
 		brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)

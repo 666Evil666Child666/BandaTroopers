@@ -36,6 +36,8 @@
 
 /datum/ai_action/sangheili_kick/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
 	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.combat.in_combat)

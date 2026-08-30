@@ -29,6 +29,8 @@
 
 /datum/ai_action/unggoy_suicide_bomber/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(!brain.has_valid_tied_human())
 		return ONGOING_ACTION_COMPLETED

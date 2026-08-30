@@ -19,6 +19,8 @@
 
 /datum/ai_action/unggoy_panic_retreat/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(!brain || !brain.halo_unggoy_runtime || !brain.combat.in_combat || !brain.halo_unggoy_should_retreat())
 		return ONGOING_ACTION_COMPLETED

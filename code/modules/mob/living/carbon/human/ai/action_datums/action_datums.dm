@@ -47,12 +47,14 @@ GLOBAL_LIST_INIT_TYPED(AI_actions, /datum/ai_action, setup_ai_actions())
 	return
 
 /datum/ai_action/Destroy(force, ...)
-	brain.action_runtime.ongoing_actions -= src
+	if(brain?.action_runtime)
+		brain.action_runtime.ongoing_actions -= src
 	brain = null
 	return ..()
 
 /// Everything that the action should do should go in this proc
 /datum/ai_action/proc/trigger_action()
 	SHOULD_NOT_SLEEP(TRUE)
+	// Child trigger_action() overrides must return parent completion before reading src.brain.
 	if(!brain)
 		return ONGOING_ACTION_COMPLETED

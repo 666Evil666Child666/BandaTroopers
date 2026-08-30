@@ -16,27 +16,25 @@
 
 /datum/ai_action/select_primary/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 	UNLINT(decide_primary_weapon())
 	return ONGOING_ACTION_COMPLETED
 
 /datum/ai_action/select_primary/proc/decide_primary_weapon()
-	var/static/datum/firearm_appraisal/default_appraisal = new() // SS220 EDIT - HALO GUN FIX
-
 	var/obj/item/weapon/gun/best_secondary
-	var/datum/firearm_appraisal/best_secondary_appraisal
+	var/best_secondary_weight = 0
 	for(var/obj/item/weapon/gun/secondary as anything in brain.inventory.get_secondary_weapons())
 		if(!brain.tied_controller.can_use_item(secondary))
 			continue
 
-		if(!best_secondary)
+		var/datum/human_ai_firearm_context/context = new(secondary, brain)
+		var/datum/human_ai_firearm_handler/handler = context.get_handler()
+		var/secondary_weight = handler?.get_primary_weight(context) || 0
+		qdel(context)
+		if(!best_secondary || secondary_weight > best_secondary_weight)
 			best_secondary = secondary
-			best_secondary_appraisal = get_firearm_appraisal(best_secondary) || default_appraisal // SS220 EDIT - HALO GUN FIX
-			continue
-
-		var/datum/firearm_appraisal/this_appraisal = get_firearm_appraisal(secondary) || default_appraisal // SS220 EDIT - HALO GUN FIX
-		if(brain.tied_controller.get_firearm_primary_weight(this_appraisal) > brain.tied_controller.get_firearm_primary_weight(best_secondary_appraisal)) // SS220 EDIT: allow modular firearm appraisals to bias primary selection
-			best_secondary = secondary
-			best_secondary_appraisal = this_appraisal
+			best_secondary_weight = secondary_weight
 			continue
 
 	if(!best_secondary)

@@ -10,6 +10,8 @@
 
 /datum/ai_action/resist_burning/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(!brain.tied_controller.is_on_fire())
 		return ONGOING_ACTION_COMPLETED

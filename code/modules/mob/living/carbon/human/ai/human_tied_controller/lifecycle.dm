@@ -44,8 +44,9 @@
 /datum/human_tied_controller/proc/detach(clear_ai_flag = FALSE, sync_brain = TRUE)
 	if(clear_ai_flag)
 		clear_ai_controlled()
-	if(sync_brain && brain?.tied_human == tied_human)
-		brain.tied_human = null
+	var/datum/human_ai_brain/old_brain = brain
+	if(sync_brain && old_brain && (old_brain.tied_human == tied_human))
+		old_brain.tied_human = null
 	brain = null
 	tied_human = null
 	ai_move_delay = 0

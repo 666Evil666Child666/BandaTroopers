@@ -21,6 +21,8 @@
 
 /datum/ai_action/reload/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(currently_reloading)
 		return ONGOING_ACTION_UNFINISHED
@@ -36,7 +38,7 @@
 	set waitfor = FALSE
 
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
-	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
 	if(gun_data.disposable)
 		brain.tied_controller.drop_held_item(primary_weapon)
 		brain.inventory.remove_from_pickup(primary_weapon)
@@ -47,20 +49,27 @@
 	currently_reloading = TRUE
 
 	/// Find ammo
-	var/obj/item/ammo_magazine/mag = primary_ammo_search()
-	if(!mag)
+	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain)
+	var/datum/human_ai_firearm_handler/handler = context.get_handler()
+	var/obj/item/reload_item = handler?.find_reload_item(context)
+	if(!reload_item)
+		qdel(context)
 		brain.guns.mark_tried_reload()
 		qdel(src)
 		return
 
+	context.set_reload_item(reload_item)
 	brain.communication.say_reload_line()
-	brain.tied_controller.do_reload(gun_data, primary_weapon, mag)
+	handler.do_reload(context)
+	qdel(context)
 
 	/// When do_reload() stops sleeping, let us check things one last time
 	currently_reloading = FALSE
 
 /datum/ai_action/reload/proc/primary_ammo_search()
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
-	for(var/obj/item/ammo_magazine/mag as anything in brain.inventory.get_equipment_list(HUMAN_AI_AMMUNITION))
-		if(istype(primary_weapon, mag.gun_type) && brain.tied_controller.can_use_item(mag))
-			return mag
+	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain)
+	var/datum/human_ai_firearm_handler/handler = context.get_handler()
+	var/obj/item/reload_item = handler?.find_reload_item(context)
+	qdel(context)
+	return reload_item

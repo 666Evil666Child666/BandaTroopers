@@ -24,6 +24,8 @@
 
 /datum/ai_action/patrol_waypoints/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	var/datum/ai_order/patrol/current_order = brain.squad.current_order
 	if(current_order.waiting || QDELETED(current_order) || !istype(current_order) || brain.inventory.has_pickup_queue() || brain.combat.in_combat)

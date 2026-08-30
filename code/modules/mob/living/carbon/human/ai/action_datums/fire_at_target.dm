@@ -25,7 +25,7 @@
 		return 0
 
 	var/turf/target_turf = brain.targeting.get_target_turf()
-	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
 	var/should_fire_offscreen = (target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen) && (gun_data.maximum_range > brain.profile.view_distance))
 
 	if(!brain.targeting.has_current_target() && !should_fire_offscreen)
@@ -43,7 +43,11 @@
 	if(brain.guns.should_reload())
 		return 0
 
-	if(!gun_data.can_queue_fire(primary_weapon, brain)) // SS220 EDIT: move weapon-family fire gating into firearm appraisal
+	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, brain.targeting.get_current_target(), target_turf)
+	var/datum/human_ai_firearm_handler/handler = context.get_handler()
+	var/can_queue_fire = handler?.can_queue_fire(context)
+	qdel(context)
+	if(!can_queue_fire)
 		return 0
 
 	return 10
@@ -93,18 +97,25 @@
 
 	brain.inventory.unholster_primary()
 
-	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
-	brain.tied_controller.before_fire(gun_data, primary_weapon)
+	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
+	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, brain.targeting.get_current_target(), target_turf)
+	var/datum/human_ai_firearm_handler/handler = context.get_handler()
+	if(!handler?.before_fire(context))
+		qdel(context)
+		return ONGOING_ACTION_COMPLETED
 	if(brain.guns.should_reload())
+		qdel(context)
 		if(gun_data?.disposable)
 			brain.tied_controller.drop_held_item(primary_weapon)
 			brain.inventory.set_primary_weapon(null)
 		return ONGOING_ACTION_COMPLETED
 
 	if((brain.tied_controller.get_distance_to(target_turf) > gun_data.maximum_range) && !should_fire_offscreen)
+		qdel(context)
 		return ONGOING_ACTION_COMPLETED
 
 	if(!firing_line_check(brain, target_turf))
+		qdel(context)
 		return ONGOING_ACTION_COMPLETED
 
 	brain.tied_controller.face_atom(target_turf)
@@ -117,11 +128,17 @@
 	if(current_target && (brain.tied_controller.get_distance_to(current_target) <= 1))
 		currently_firing = FALSE
 		primary_weapon.set_target(null)
+		qdel(context)
 		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), current_target, "", list())
 		return ONGOING_ACTION_UNFINISHED
 
-	primary_weapon?.set_target(target_turf)
-	primary_weapon?.start_fire(object = target_turf, bypass_checks = TRUE)
+	if(!handler.fire(context))
+		qdel(context)
+		return ONGOING_ACTION_COMPLETED
+	var/keep_fire_action_active = handler.keeps_fire_action_active(context)
+	qdel(context)
+	if(!keep_fire_action_active)
+		return ONGOING_ACTION_COMPLETED
 	return ONGOING_ACTION_UNFINISHED
 
 /datum/ai_action/fire_at_target/proc/firing_line_check(datum/human_ai_brain/brain, atom/target, listen = FALSE)
@@ -215,7 +232,7 @@
 
 	currently_firing = TRUE
 
-	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
 	if(brain.guns.should_reload()) // note that bullet removal comes after comsig is triggered
 		if(gun_data?.disposable)
 			brain.tied_controller.drop_held_item(brain.inventory.get_primary_weapon())
@@ -281,22 +298,22 @@
 		qdel(src)
 		return
 
-	// SS220 EDIT - START
-	var/datum/human_ai_fire_after_fire_result/after_fire_result = gun_data.handle_after_fire(primary_weapon, brain, current_target, target_turf)
+	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, current_target, target_turf)
+	var/datum/human_ai_firearm_handler/handler = context.get_handler()
+	var/datum/human_ai_firearm_result/after_fire_result = handler?.after_fire(context)
+	qdel(context)
 	if(after_fire_result)
-		if(!isnull(after_fire_result.currently_firing))
-			currently_firing = after_fire_result.currently_firing
 		if(after_fire_result.callback)
 			addtimer(after_fire_result.callback, after_fire_result.callback_delay)
 		if(after_fire_result.cooldown)
 			COOLDOWN_START(brain.guns, stop_fire_cooldown, after_fire_result.cooldown)
-		if(after_fire_result.stop_firing)
+		if(after_fire_result.interrupt_burst)
+			rounds_burst_fired = 0
+		if(after_fire_result.stop_fire)
+			currently_firing = FALSE
 			stop_firing(brain)
-		if(after_fire_result.delete_action)
-			qdel(src)
 		if(after_fire_result.handled)
 			return
-	// SS220 EDIT - END
 
 	if(primary_weapon.gun_firemode == GUN_FIREMODE_SEMIAUTO)
 		currently_firing = FALSE

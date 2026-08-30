@@ -33,6 +33,8 @@
 
 /datum/ai_action/treat_self/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(brain.targeting.has_current_target())
 		return ONGOING_ACTION_COMPLETED

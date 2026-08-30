@@ -34,6 +34,8 @@
 
 /datum/ai_action/machinegunner_nest/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(brain.guns.has_tried_reload() || brain.cover.has_cover() || brain.health.healing_someone)
 		return ONGOING_ACTION_COMPLETED

@@ -10,8 +10,8 @@
 	/// Ref to the latest weapon we've drawn as a melee
 	var/obj/item/drawn_melee_weapon
 	//var/obj/item/weapon/primary_melee
-	/// Appraisal datum
-	var/datum/firearm_appraisal/gun_data
+	/// Firearm profile datum
+	var/datum/human_ai_firearm_profile/gun_data
 	/// If TRUE, the AI won't try to pick up anything
 	var/ignore_looting = FALSE
 	/// If TRUE, the AI ignores darkness when it comes to determining vision
@@ -76,8 +76,12 @@
 	return !!primary_weapon
 
 /datum/human_ai_module/inventory/proc/get_gun_data()
-	RETURN_TYPE(/datum/firearm_appraisal)
+	RETURN_TYPE(/datum/human_ai_firearm_profile)
 	return gun_data
+
+/datum/human_ai_module/inventory/proc/get_gun_handler()
+	RETURN_TYPE(/datum/human_ai_firearm_handler)
+	return GLOB.human_ai_firearm_registry?.get_handler(primary_weapon)
 
 /datum/human_ai_module/inventory/proc/has_gun_data()
 	return !!gun_data
@@ -298,6 +302,8 @@
 /// Currently doesn't support recursive storage
 /// Used to determine what the AI has in their inventory
 /datum/human_ai_module/inventory/proc/appraise_inventory(belt = TRUE, back = TRUE, pocket_l = TRUE, pocket_r = TRUE, armor = TRUE, uniform = TRUE)
+	recalculate_containers()
+
 	if(brain.faction.previous_faction != brain.tied_controller.get_faction())
 		brain.faction.previous_faction = brain.tied_controller.get_faction()
 		var/datum/human_ai_faction/our_faction = SShuman_ai.human_ai_factions[brain.tied_controller.get_faction()]
@@ -506,7 +512,7 @@
 		return
 
 	if(dropped == primary_weapon)
-		var/datum/firearm_appraisal/current_gun_data = gun_data
+		var/datum/human_ai_firearm_profile/current_gun_data = gun_data
 		if(!(current_gun_data?.disposable && !brain.tied_controller.can_use_item(primary_weapon)))
 			to_pickup |= dropped
 		set_primary_weapon(null)
@@ -557,14 +563,7 @@
 	gun_data = null
 	if(!primary_weapon)
 		return
-	var/static/datum/firearm_appraisal/default = new()
-	for(var/datum/firearm_appraisal/appraisal as anything in GLOB.firearm_appraisals)
-		if(is_type_in_list(primary_weapon, appraisal.gun_types))
-			gun_data = appraisal
-			break
-
-	if(!gun_data)
-		gun_data = default
+	gun_data = GLOB.human_ai_firearm_registry?.get_profile(primary_weapon)
 
 /datum/human_ai_module/inventory/proc/item_search(list/things_around)
 	// SS220 EDIT - START: grenade threat must come only from the current local scan, not from stale refs.
@@ -601,11 +600,9 @@
 					if(isgun(item)) // One weapon at a time
 						continue search_loop
 
-				for(var/datum/firearm_appraisal/appraisal as anything in GLOB.firearm_appraisals)
-					if(is_type_in_list(thing_gun, appraisal.gun_types))
-						if(appraisal.disposable && thing_gun.current_mag?.current_rounds <= 0)
-							continue search_loop
-						break
+				var/datum/human_ai_firearm_profile/firearm_profile = GLOB.human_ai_firearm_registry?.get_profile(thing_gun)
+				if(firearm_profile?.disposable && thing_gun.current_mag?.current_rounds <= 0)
+					continue search_loop
 
 				add_to_pickup(thing)
 

@@ -27,6 +27,8 @@
 
 /datum/ai_action/chase_target/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	var/turf/target_turf = brain.targeting.get_target_turf()
 	if(QDELETED(target_turf) || brain.targeting.has_current_target())

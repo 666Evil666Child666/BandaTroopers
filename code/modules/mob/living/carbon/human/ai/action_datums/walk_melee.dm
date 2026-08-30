@@ -19,6 +19,8 @@
 
 /datum/ai_action/walk_melee/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	var/atom/movable/current_target = brain.targeting.get_current_target()
 	if(!current_target)

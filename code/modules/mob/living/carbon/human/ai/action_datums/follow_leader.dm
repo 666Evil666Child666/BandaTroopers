@@ -38,6 +38,8 @@
 
 /datum/ai_action/follow_leader/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(brain.combat.in_combat || brain.inventory.has_pickup_queue())
 		return ONGOING_ACTION_COMPLETED

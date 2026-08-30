@@ -11,7 +11,7 @@
 		return 0
 
 	var/distance = brain.tied_controller.get_distance_to(current_target)
-	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
 
 	if(ismob(current_target) && current_target?:is_mob_incapacitated())
 		if(distance != gun_data.minimum_range)
@@ -28,6 +28,8 @@
 
 /datum/ai_action/keep_distance/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	if(!brain.targeting.has_current_target())
 		return ONGOING_ACTION_COMPLETED
@@ -45,7 +47,7 @@
 
 /datum/ai_action/keep_distance/proc/approach()
 	var/atom/movable/current_target = brain.targeting.get_current_target()
-	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
 	var/range
 	if(ismob(current_target))
 		var/mob/current_mob_target = current_target
@@ -69,7 +71,7 @@
 
 /datum/ai_action/keep_distance/proc/back_up()
 	var/atom/movable/current_target = brain.targeting.get_current_target()
-	var/datum/firearm_appraisal/gun_data = brain.inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
 	var/range
 	var/is_incap = FALSE
 	if(ismob(current_target))

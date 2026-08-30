@@ -91,6 +91,9 @@
 
 /datum/ai_action/throw_back_nade/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
+
 	if(throw_finished)
 		return ONGOING_ACTION_COMPLETED
 

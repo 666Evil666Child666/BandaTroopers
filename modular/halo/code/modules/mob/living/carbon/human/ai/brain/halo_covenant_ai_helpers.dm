@@ -34,6 +34,21 @@
 /datum/human_tied_controller/proc/halo_is_ai_only_human()
 	return can_read_puppet() && halo_is_ai_only_human(tied_human)
 
+/datum/human_tied_controller/proc/halo_is_covenant_firearm_user()
+	return can_read_puppet() && iscovenant(tied_human)
+
+/datum/human_tied_controller/proc/halo_toggle_weapon_cover(obj/item/weapon/gun/halo_launcher/spnkr/weapon)
+	if(!can_directly_control() || !weapon)
+		return FALSE
+	weapon.toggle_cover(tied_human)
+	return TRUE
+
+/datum/human_tied_controller/proc/halo_cock_weapon(obj/item/weapon/gun/halo_launcher/spnkr/weapon)
+	if(!can_directly_control() || !weapon)
+		return FALSE
+	weapon.cock(tied_human)
+	return TRUE
+
 /datum/human_tied_controller/proc/halo_use_sangheili_kick(atom/target)
 	if(!can_directly_control() || !target)
 		return FALSE

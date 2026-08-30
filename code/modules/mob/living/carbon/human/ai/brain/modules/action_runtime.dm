@@ -64,6 +64,9 @@
 #endif
 
 	for(var/datum/ai_action/action as anything in ongoing_actions)
+		if(!action.brain)
+			ongoing_actions -= action
+			continue
 		// SS220 EDIT: suppress hand-using actions while a grenade throw is in async flight
 		if(grenade_throw_in_progress && (action.action_flags & ACTION_USING_HANDS))
 			continue

@@ -17,6 +17,8 @@
 
 /datum/ai_action/quick_approach/trigger_action()
 	. = ..()
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	var/turf/approach_turf = brain.orders.quick_approach
 	if(QDELETED(approach_turf))
