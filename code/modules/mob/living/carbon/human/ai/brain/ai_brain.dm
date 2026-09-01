@@ -1,8 +1,6 @@
 GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain
-	/// The human that this brain ties into
-	var/mob/living/carbon/human/tied_human
 	/// API facade for reading and controlling the tied human puppet.
 	var/datum/human_tied_controller/tied_controller
 
@@ -27,10 +25,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
 
-/datum/human_ai_brain/New(mob/living/carbon/human/tied_human)
+/datum/human_ai_brain/New(mob/living/carbon/human/new_human)
 	. = ..()
-	src.tied_human = tied_human
-	tied_controller = new(src, tied_human)
+	tied_controller = new(src, new_human)
 	faction = new(src)
 	targeting = new(src)
 	cover = new(src)
@@ -83,7 +80,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(profile)
 	QDEL_NULL(emplacement)
 	QDEL_NULL(tied_controller)
-	tied_human = null
 
 	return ..()
 
@@ -163,7 +159,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	reset_ai()
 	wake_rethink_queued_at = -1 // SS220 EDIT: owner delete must not leave a queued wake rethink pointing at a null tied human
 	tied_controller?.set_tied_human(null)
-	tied_human = null
 
 /datum/human_ai_brain/proc/on_human_death(datum/source)
 	SIGNAL_HANDLER

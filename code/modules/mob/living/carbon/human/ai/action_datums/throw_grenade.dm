@@ -21,7 +21,7 @@
 	if(!target_turf)
 		return 0
 
-	if(!brain.inventory.has_equipment(HUMAN_AI_GRENADES))
+	if(!brain.inventory.find_grenade_for_throw())
 		return 0
 
 	if(!brain.inventory.has_primary_weapon())
@@ -38,10 +38,23 @@
 	. += /datum/ai_action/sniper_nest
 
 /datum/ai_action/throw_grenade/Added()
-	throwing = locate() in brain.inventory.get_equipment_list(HUMAN_AI_GRENADES)
+	throwing = prepare_grenade_for_throw(brain.inventory.find_grenade_for_throw())
 	throw_range_override = isnum(throwing?.throw_range) ? throwing.throw_range : null
-	log_game("AI GRENADE: throw action created — grenade=[throwing] ([throwing?.type]), available=[english_list(brain?.inventory?.get_equipment_list(HUMAN_AI_GRENADES))], throw_range=[throw_range_override], mob=[brain?.tied_controller?.get_key_name()]")
+	log_game("AI GRENADE: throw action created — grenade=[throwing] ([throwing?.type]), available=[brain?.inventory?.get_equipment_summary(HUMAN_AI_GRENADES)], throw_range=[throw_range_override], mob=[brain?.tied_controller?.get_key_name()]")
 	cancel_conflicting_actions()
+
+/datum/ai_action/throw_grenade/proc/prepare_grenade_for_throw(obj/item/grenade_source)
+	RETURN_TYPE(/obj/item/explosive/grenade)
+
+	var/obj/item/explosive/grenade/direct_grenade = grenade_source
+	if(istype(direct_grenade))
+		return direct_grenade
+
+	var/obj/item/ammo_box/magazine/nade_box/grenade_box = grenade_source
+	if(istype(grenade_box))
+		return brain.tied_controller.take_grenade_from_grenade_box(grenade_box)
+
+	return null
 
 /datum/ai_action/throw_grenade/Destroy(force, ...)
 	throwing = null

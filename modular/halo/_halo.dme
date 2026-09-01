@@ -181,6 +181,7 @@
 #include "code/modules/gear_presets/Halo/unsc_crew.dm"
 #include "code/modules/gear_presets/Halo/unsc_marines.dm"
 #include "code/modules/mob/living/carbon/human/ai/brain/halo_grenade_throwback_rules.dm"
+#include "code/modules/mob/living/carbon/human/ai/human_tied_controller/halo_ability_bridges.dm"
 #include "code/modules/mob/living/carbon/human/ai/brain/halo_covenant_ai_helpers.dm"
 #include "code/modules/mob/living/carbon/human/ai/action_datums/sangheili_sword_charge.dm"
 #include "code/modules/mob/living/carbon/human/ai/action_datums/sangheili_overheat_response.dm"

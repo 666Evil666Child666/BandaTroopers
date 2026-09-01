@@ -187,11 +187,7 @@
 
 /datum/human_ai_module/health/proc/brute_heal(mob/living/carbon/human/target)
 	. = FALSE
-	var/obj/item/brute_heal
-	for(var/obj/item/heal_item as anything in brain.inventory.get_equipment_list(HUMAN_AI_HEALTHITEMS))
-		if(is_type_in_list(heal_item, brute_heal_items) && brain.tied_controller.can_use_item(heal_item, target))
-			brute_heal = heal_item
-			break
+	var/obj/item/brute_heal = brain.inventory.find_usable_equipment_by_type_list(brute_heal_items, HUMAN_AI_HEALTHITEMS, target)
 
 	if(!brute_heal)
 		return
@@ -218,11 +214,7 @@
 #endif
 
 /datum/human_ai_module/health/proc/bleed_heal(mob/living/carbon/human/target)
-	var/obj/item/bleed_heal
-	for(var/obj/item/heal_item as anything in brain.inventory.get_equipment_list(HUMAN_AI_HEALTHITEMS))
-		if(is_type_in_list(heal_item, bleed_heal_items) && brain.tied_controller.can_use_item(heal_item, target))
-			bleed_heal = heal_item
-			break
+	var/obj/item/bleed_heal = brain.inventory.find_usable_equipment_by_type_list(bleed_heal_items, HUMAN_AI_HEALTHITEMS, target)
 
 	if(!bleed_heal)
 		return
@@ -249,11 +241,7 @@
 #endif
 
 /datum/human_ai_module/health/proc/bone_heal(mob/living/carbon/human/target)
-	var/obj/item/bone_heal
-	for(var/obj/item/heal_item as anything in brain.inventory.get_equipment_list(HUMAN_AI_HEALTHITEMS))
-		if(is_type_in_list(heal_item, bonebreak_heal_items) && brain.tied_controller.can_use_item(heal_item, target))
-			bone_heal = heal_item
-			break
+	var/obj/item/bone_heal = brain.inventory.find_usable_equipment_by_type_list(bonebreak_heal_items, HUMAN_AI_HEALTHITEMS, target)
 
 	if(!bone_heal)
 		return
@@ -280,11 +268,7 @@
 #endif
 
 /datum/human_ai_module/health/proc/burn_heal(mob/living/carbon/human/target)
-	var/obj/item/burn_heal
-	for(var/obj/item/heal_item as anything in brain.inventory.get_equipment_list(HUMAN_AI_HEALTHITEMS))
-		if(is_type_in_list(heal_item, burn_heal_items) && brain.tied_controller.can_use_item(heal_item, target))
-			burn_heal = heal_item
-			break
+	var/obj/item/burn_heal = brain.inventory.find_usable_equipment_by_type_list(burn_heal_items, HUMAN_AI_HEALTHITEMS, target)
 
 	if(!burn_heal)
 		return
@@ -311,11 +295,7 @@
 #endif
 
 /datum/human_ai_module/health/proc/pain_heal(mob/living/carbon/human/target)
-	var/obj/item/painkiller
-	for(var/obj/item/heal_item as anything in brain.inventory.get_equipment_list(HUMAN_AI_HEALTHITEMS))
-		if(is_type_in_list(heal_item, painkiller_items) && brain.tied_controller.can_use_item(heal_item, target))
-			painkiller = heal_item
-			break
+	var/obj/item/painkiller = brain.inventory.find_usable_equipment_by_type_list(painkiller_items, HUMAN_AI_HEALTHITEMS, target)
 
 	if(!painkiller)
 		return
@@ -342,11 +322,7 @@
 #endif
 
 /datum/human_ai_module/health/proc/tox_heal(mob/living/carbon/human/target)
-	var/obj/item/tox_heal
-	for(var/obj/item/heal_item as anything in brain.inventory.get_equipment_list(HUMAN_AI_HEALTHITEMS))
-		if(is_type_in_list(heal_item, tox_heal_items) && brain.tied_controller.can_use_item(heal_item, target))
-			tox_heal = heal_item
-			break
+	var/obj/item/tox_heal = brain.inventory.find_usable_equipment_by_type_list(tox_heal_items, HUMAN_AI_HEALTHITEMS, target)
 
 	if(!tox_heal)
 		return
@@ -373,10 +349,7 @@
 #endif
 
 /datum/human_ai_module/health/proc/oxy_heal(mob/living/carbon/human/target)
-	var/obj/item/oxy_heal
-	for(var/obj/item/heal_item as anything in brain.inventory.get_equipment_list(HUMAN_AI_HEALTHITEMS))
-		if(is_type_in_list(heal_item, oxy_heal_items) && brain.tied_controller.can_use_item(heal_item, target))
-			oxy_heal = heal_item
+	var/obj/item/oxy_heal = brain.inventory.find_usable_equipment_by_type_list(oxy_heal_items, HUMAN_AI_HEALTHITEMS, target)
 
 	if(!oxy_heal)
 		healing_someone = FALSE

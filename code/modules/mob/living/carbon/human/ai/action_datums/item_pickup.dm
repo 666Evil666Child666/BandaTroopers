@@ -1,3 +1,7 @@
+#define HUMAN_AI_PICKUP_APPROACH_IN_RANGE 1
+#define HUMAN_AI_PICKUP_APPROACH_MOVING 2
+#define HUMAN_AI_PICKUP_APPROACH_FAILED 3
+
 /datum/ai_action/item_pickup
 	name = "Item Pickup"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
@@ -43,90 +47,107 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
-	if(QDELETED(to_pickup) || !isturf(to_pickup.loc))
-		brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
-		brain.inventory.remove_from_pickup(to_pickup)
+	if(is_pickup_target_invalid())
+		cleanup_pickup_target()
 		return ONGOING_ACTION_COMPLETED
 
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
 	if(primary_weapon && isgun(to_pickup))
-		brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
-		brain.inventory.remove_from_pickup(to_pickup)
+		cleanup_pickup_target()
 		return ONGOING_ACTION_COMPLETED
 
+	var/approach_result = approach_pickup_target()
+	if(approach_result == HUMAN_AI_PICKUP_APPROACH_FAILED)
+		return ONGOING_ACTION_COMPLETED
+	if(approach_result == HUMAN_AI_PICKUP_APPROACH_MOVING)
+		return ONGOING_ACTION_UNFINISHED
+
+	prepare_hands_for_pickup(primary_weapon)
+
+	if(try_pickup_primary_weapon())
+		return ONGOING_ACTION_COMPLETED
+
+	if(try_equip_pickup_storage())
+		return ONGOING_ACTION_COMPLETED
+
+	var/storage_spot = brain.inventory.storage_has_room(to_pickup)
+	if(!storage_spot || !brain.tied_controller.can_use_item_on_self(to_pickup))
+		cleanup_pickup_target()
+		return ONGOING_ACTION_COMPLETED
+
+	try_store_pickup_item(storage_spot)
+
+	return ONGOING_ACTION_COMPLETED
+
+/datum/ai_action/item_pickup/proc/is_pickup_target_invalid()
+	return QDELETED(to_pickup) || !isturf(to_pickup.loc)
+
+/datum/ai_action/item_pickup/proc/cleanup_pickup_target()
+	brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
+	brain.inventory.unqueue_pickup(to_pickup)
+
+/datum/ai_action/item_pickup/proc/approach_pickup_target()
+	if(brain.tied_controller.get_distance_to(to_pickup) <= 1)
+		return HUMAN_AI_PICKUP_APPROACH_IN_RANGE
+
+	if(!brain.navigation.move_to_next_turf(get_turf(to_pickup)))
+		cleanup_pickup_target()
+		return HUMAN_AI_PICKUP_APPROACH_FAILED
+
 	if(brain.tied_controller.get_distance_to(to_pickup) > 1)
-		if(!brain.navigation.move_to_next_turf(get_turf(to_pickup)))
-			brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
-			brain.inventory.remove_from_pickup(to_pickup)
-			return ONGOING_ACTION_COMPLETED
+		return HUMAN_AI_PICKUP_APPROACH_MOVING
 
-		if(brain.tied_controller.get_distance_to(to_pickup) > 1)
-			return ONGOING_ACTION_UNFINISHED
+	return HUMAN_AI_PICKUP_APPROACH_IN_RANGE
 
+/datum/ai_action/item_pickup/proc/prepare_hands_for_pickup(obj/item/weapon/gun/primary_weapon)
 	if(primary_weapon)
 		brain.tied_controller.unwield_weapon(primary_weapon)
 
 	if(brain.tied_controller.get_held_item())
 		brain.tied_controller.swap_hand()
 
-	if(isgun(to_pickup))
-		brain.tied_controller.put_in_hands(to_pickup, TRUE)
-		var/obj/item/weapon/gun/primary = to_pickup
-		// We do the three below lines to make it so that the AI can immediately pick up a gun and open fire. This ensures that we don't need to account for this possibility when firing.
-		primary.wield_time = world.time
-		primary.pull_time = world.time
-		primary.guaranteed_delay_time = world.time
-		return ONGOING_ACTION_COMPLETED
+/datum/ai_action/item_pickup/proc/try_pickup_primary_weapon()
+	if(!isgun(to_pickup))
+		return FALSE
 
-	if(istype(to_pickup, /obj/item/storage/belt) && !brain.inventory.has_container_ref("belt"))
-		brain.tied_controller.put_in_hands(to_pickup, TRUE)
-		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, equip_to_slot), to_pickup, WEAR_WAIST)
-		return ONGOING_ACTION_COMPLETED
+	brain.tied_controller.put_in_hands(to_pickup, TRUE)
+	var/obj/item/weapon/gun/primary = to_pickup
+	// We do the three below lines to make it so that the AI can immediately pick up a gun and open fire. This ensures that we don't need to account for this possibility when firing.
+	primary.wield_time = world.time
+	primary.pull_time = world.time
+	primary.guaranteed_delay_time = world.time
+	return TRUE
 
-	if(istype(to_pickup, /obj/item/storage/backpack) && !brain.inventory.has_container_ref("backpack"))
-		brain.tied_controller.put_in_hands(to_pickup, TRUE)
-		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, equip_to_slot), to_pickup, WEAR_BACK)
-		return ONGOING_ACTION_COMPLETED
+/datum/ai_action/item_pickup/proc/try_equip_pickup_storage()
+	if(try_equip_pickup_storage_to_slot(/obj/item/storage/belt, HUMAN_AI_STORAGE_BELT, WEAR_WAIST))
+		return TRUE
 
-	if(istype(to_pickup, /obj/item/storage/pouch) && !brain.inventory.has_container_ref("left_pocket"))
-		brain.tied_controller.put_in_hands(to_pickup, TRUE)
-		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, equip_to_slot), to_pickup, WEAR_L_STORE)
-		return ONGOING_ACTION_COMPLETED
+	if(try_equip_pickup_storage_to_slot(/obj/item/storage/backpack, HUMAN_AI_STORAGE_BACKPACK, WEAR_BACK))
+		return TRUE
 
-	if(istype(to_pickup, /obj/item/storage/pouch) && !brain.inventory.has_container_ref("right_pocket"))
-		brain.tied_controller.put_in_hands(to_pickup, TRUE)
-		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, equip_to_slot), to_pickup, WEAR_R_STORE)
-		return ONGOING_ACTION_COMPLETED
+	if(try_equip_pickup_storage_to_slot(/obj/item/storage/pouch, HUMAN_AI_STORAGE_LEFT_POCKET, WEAR_L_STORE))
+		return TRUE
 
-	var/storage_spot = brain.inventory.storage_has_room(to_pickup)
-	if(!storage_spot || !brain.tied_controller.can_use_item_on_self(to_pickup))
-		brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
-		brain.inventory.remove_from_pickup(to_pickup)
-		return ONGOING_ACTION_COMPLETED
+	return try_equip_pickup_storage_to_slot(/obj/item/storage/pouch, HUMAN_AI_STORAGE_RIGHT_POCKET, WEAR_R_STORE)
 
-	if(to_pickup.flags_human_ai & HEALING_ITEM)
-		brain.tied_controller.put_in_hands(to_pickup, TRUE)
-		brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_HEALTHITEMS)
-		return ONGOING_ACTION_COMPLETED
+/datum/ai_action/item_pickup/proc/try_equip_pickup_storage_to_slot(storage_type, container_id, wear_slot)
+	if(!istype(to_pickup, storage_type) || brain.inventory.has_container_ref(container_id))
+		return FALSE
 
-	if(primary_weapon && istype(to_pickup, /obj/item/ammo_magazine))
-		var/obj/item/ammo_magazine/mag = to_pickup
-		if(istype(primary_weapon, mag.gun_type))
-			brain.tied_controller.put_in_hands(to_pickup, TRUE)
-			brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_AMMUNITION)
-			brain.guns.clear_tried_reload() // not appraising inventory there, let's say we can reload now
-		return ONGOING_ACTION_COMPLETED
+	brain.tied_controller.put_in_hands(to_pickup, TRUE)
+	INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, equip_to_slot), to_pickup, wear_slot)
+	return TRUE
 
-	if(istype(to_pickup, /obj/item/explosive/grenade))
-		var/obj/item/explosive/grenade/nade = to_pickup
-		if(!nade.active)
-			brain.tied_controller.put_in_hands(to_pickup, TRUE)
-			brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_GRENADES)
-		return ONGOING_ACTION_COMPLETED
+/datum/ai_action/item_pickup/proc/try_store_pickup_item(storage_spot)
+	var/list/equipment_types = brain.inventory.get_pickup_storage_equipment_types(to_pickup)
+	if(!length(equipment_types))
+		return FALSE
 
-	if(to_pickup.flags_human_ai & TOOL_ITEM)
-		brain.tied_controller.put_in_hands(to_pickup, TRUE)
-		brain.inventory.store_item(to_pickup, storage_spot, HUMAN_AI_TOOLS)
-		return ONGOING_ACTION_COMPLETED
+	brain.tied_controller.put_in_hands(to_pickup, TRUE)
+	if(brain.inventory.store_item_as_types(to_pickup, storage_spot, equipment_types) && (HUMAN_AI_AMMUNITION in equipment_types))
+		brain.guns.clear_tried_reload() // not appraising inventory there, let's say we can reload now
+	return TRUE
 
-	return ONGOING_ACTION_COMPLETED
+#undef HUMAN_AI_PICKUP_APPROACH_IN_RANGE
+#undef HUMAN_AI_PICKUP_APPROACH_MOVING
+#undef HUMAN_AI_PICKUP_APPROACH_FAILED

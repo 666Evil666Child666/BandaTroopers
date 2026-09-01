@@ -43,7 +43,7 @@
 	if(!context?.is_valid() || !item || !context.controller.can_use_item(item))
 		return FALSE
 	var/obj/item/weapon/gun/launcher/grenade/grenade_launcher = context.firearm
-	return grenade_launcher.allowed_ammo_type(item)
+	return context.AI.inventory.can_item_supply_grenade(item, grenade_launcher)
 
 /datum/human_ai_firearm_handler/grenade_launcher/fire(datum/human_ai_firearm_context/context)
 	if(!can_use(context))
@@ -65,8 +65,15 @@
 		context.open_weapon_chamber()
 	context.swap_hand()
 	context.sleep_micro()
-	var/reload_equipment_type = get_reload_item_equipment_type(context, context.reload_item)
-	if(!reload_equipment_type || !context.equip_reload_item(reload_equipment_type))
-		return FALSE
+	var/obj/item/ammo_box/magazine/nade_box/grenade_box = context.reload_item
+	if(istype(grenade_box))
+		var/obj/item/explosive/grenade/boxed_grenade = context.controller.take_grenade_from_grenade_box(grenade_box, grenade_launcher)
+		if(!boxed_grenade)
+			return FALSE
+		context.set_reload_item(boxed_grenade)
+	else
+		var/reload_equipment_type = get_reload_item_equipment_type(context, context.reload_item)
+		if(!reload_equipment_type || !context.equip_reload_item(reload_equipment_type))
+			return FALSE
 	context.sleep_short()
 	return context.insert_reload_item()

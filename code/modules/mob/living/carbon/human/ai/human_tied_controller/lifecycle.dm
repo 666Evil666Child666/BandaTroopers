@@ -15,38 +15,22 @@
 	detach()
 	return ..()
 
-/datum/human_tied_controller/proc/attach(datum/human_ai_brain/new_brain, mob/living/carbon/human/new_human, sync_brain = TRUE)
+/datum/human_tied_controller/proc/attach(datum/human_ai_brain/new_brain, mob/living/carbon/human/new_human)
 	if(new_brain)
 		brain = new_brain
 	if(new_human)
 		tied_human = new_human
-	else if(!tied_human && brain?.tied_human)
-		tied_human = brain.tied_human
-	if(sync_brain)
-		sync_to_brain()
 	return has_tied_human()
 
-/datum/human_tied_controller/proc/set_brain(datum/human_ai_brain/new_brain, sync_brain = FALSE)
+/datum/human_tied_controller/proc/set_brain(datum/human_ai_brain/new_brain)
 	brain = new_brain
-	if(sync_brain)
-		sync_to_brain()
 
-/datum/human_tied_controller/proc/set_tied_human(mob/living/carbon/human/new_human, sync_brain = FALSE)
+/datum/human_tied_controller/proc/set_tied_human(mob/living/carbon/human/new_human)
 	tied_human = new_human
-	if(sync_brain)
-		sync_to_brain()
 
-/datum/human_tied_controller/proc/sync_to_brain()
-	if(brain)
-		brain.tied_human = tied_human
-	return TRUE
-
-/datum/human_tied_controller/proc/detach(clear_ai_flag = FALSE, sync_brain = TRUE)
+/datum/human_tied_controller/proc/detach(clear_ai_flag = FALSE)
 	if(clear_ai_flag)
 		clear_ai_controlled()
-	var/datum/human_ai_brain/old_brain = brain
-	if(sync_brain && old_brain && (old_brain.tied_human == tied_human))
-		old_brain.tied_human = null
 	brain = null
 	tied_human = null
 	ai_move_delay = 0

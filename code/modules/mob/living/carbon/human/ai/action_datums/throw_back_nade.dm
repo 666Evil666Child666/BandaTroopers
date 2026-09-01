@@ -187,7 +187,7 @@
 	brain.tied_controller.face_atom(place_to_throw)
 	log_game("AI GRENADE: throw-back proceeding to async throw — grenade=[active_grenade_found], target=[place_to_throw], mob=[brain.tied_controller.get_key_name()]")
 	brain.grenade.clear_active_grenade() // SS220 EDIT: the grenade is already under this AI's control, stop blocking the rest of its combat state
-	brain.inventory.remove_from_pickup(active_grenade_found) // Do NOT play fetch. Please.
+	brain.inventory.unqueue_pickup(active_grenade_found) // Do NOT play fetch. Please.
 	throw_ready_time = 0
 	mid_throw = TRUE // SS220 EDIT: actual throw runs asynchronously so trigger_action() stays no-sleep for DreamChecker
 	INVOKE_ASYNC(src, PROC_REF(async_throw_grenade), brain.tied_controller.get_identity_ref(), active_grenade_found, place_to_throw) // SS220 EDIT: async throw avoids DreamChecker sleep violations from throw_item/launch paths

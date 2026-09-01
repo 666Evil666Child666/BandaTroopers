@@ -3,6 +3,13 @@
 #define HUMAN_AI_GRENADES "grenades"
 #define HUMAN_AI_TOOLS "tools"
 
+#define HUMAN_AI_STORAGE_BELT "belt"
+#define HUMAN_AI_STORAGE_BACKPACK "backpack"
+#define HUMAN_AI_STORAGE_LEFT_POCKET "left_pocket"
+#define HUMAN_AI_STORAGE_RIGHT_POCKET "right_pocket"
+#define HUMAN_AI_STORAGE_ARMOR "armor"
+#define HUMAN_AI_STORAGE_UNIFORM "uniform"
+
 #define ACTION_USING_HANDS (1<<0)
 #define ACTION_USING_LEGS (1<<1)
 #define ACTION_USING_MOUTH (1<<2)

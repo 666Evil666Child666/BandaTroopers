@@ -13,7 +13,8 @@
 	context.use_unique_action()
 	context.swap_hand()
 	context.sleep_short()
-	context.AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, context.mag)
+	if(!prepare_reload_item(context))
+		return FALSE
 	context.sleep_short()
 	context.insert_ammo()
 	context.sleep_micro()

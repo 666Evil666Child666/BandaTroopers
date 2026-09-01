@@ -41,7 +41,7 @@
 	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
 	if(gun_data.disposable)
 		brain.tied_controller.drop_held_item(primary_weapon)
-		brain.inventory.remove_from_pickup(primary_weapon)
+		brain.inventory.unqueue_pickup(primary_weapon)
 		brain.inventory.set_primary_weapon(null)
 		qdel(src)
 		return

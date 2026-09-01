@@ -22,21 +22,7 @@
 	return ONGOING_ACTION_COMPLETED
 
 /datum/ai_action/select_primary/proc/decide_primary_weapon()
-	var/obj/item/weapon/gun/best_secondary
-	var/best_secondary_weight = 0
-	for(var/obj/item/weapon/gun/secondary as anything in brain.inventory.get_secondary_weapons())
-		if(!brain.tied_controller.can_use_item(secondary))
-			continue
-
-		var/datum/human_ai_firearm_context/context = new(secondary, brain)
-		var/datum/human_ai_firearm_handler/handler = context.get_handler()
-		var/secondary_weight = handler?.get_primary_weight(context) || 0
-		qdel(context)
-		if(!best_secondary || secondary_weight > best_secondary_weight)
-			best_secondary = secondary
-			best_secondary_weight = secondary_weight
-			continue
-
+	var/obj/item/weapon/gun/best_secondary = brain.inventory.get_next_secondary_weapon()
 	if(!best_secondary)
 		return
 

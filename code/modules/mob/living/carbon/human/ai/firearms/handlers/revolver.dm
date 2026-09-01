@@ -26,9 +26,8 @@
 		context.controller.unload_weapon(revolver)
 	context.swap_hand()
 	context.sleep_micro()
-	if(!can_use(context) || QDELETED(context.mag))
+	if(!can_use(context) || !prepare_reload_item(context) || QDELETED(context.mag))
 		return FALSE
-	context.AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, context.mag)
 	context.sleep_short()
 	if(!can_use(context) || QDELETED(context.mag))
 		return FALSE

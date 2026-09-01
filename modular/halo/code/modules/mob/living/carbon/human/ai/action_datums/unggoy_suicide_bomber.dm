@@ -22,7 +22,7 @@
 	if(find_active_held_grenade())
 		return 80
 
-	if(!length(brain.inventory.equipment_map[HUMAN_AI_GRENADES]))
+	if(!brain.inventory.has_equipment(HUMAN_AI_GRENADES))
 		return 0
 
 	return 70
@@ -84,10 +84,7 @@
 			return right_grenade
 
 /datum/ai_action/unggoy_suicide_bomber/proc/find_stored_grenade(obj/item/explosive/grenade/excluding = null)
-	for(var/obj/item/explosive/grenade/grenade as anything in brain.inventory.equipment_map[HUMAN_AI_GRENADES])
-		if(grenade == excluding)
-			continue
-		return grenade
+	return brain.inventory.get_first_equipment_item(HUMAN_AI_GRENADES, excluding)
 
 /datum/ai_action/unggoy_suicide_bomber/proc/clear_both_hands()
 	if(!brain || !brain.has_valid_tied_human())

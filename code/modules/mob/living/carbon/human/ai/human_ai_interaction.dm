@@ -77,17 +77,17 @@
 	if(!(stat & NOPOWER))
 		return INFINITY
 
-	if(density && !operating && !unacidable && brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR))
+	if(density && !operating && !unacidable && brain.inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
 		return DOOR_PENALTY
 
 	return INFINITY
 
 /obj/structure/machinery/door/poddoor/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	if(!(stat & NOPOWER) || !brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR))
+	if(!(stat & NOPOWER) || !brain.inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
 		return
 
 	brain.inventory.holster_primary()
-	var/obj/item/crowbar = brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR)
+	var/obj/item/crowbar = brain.inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
 	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
 	brain.tied_controller.do_click(src)
 	brain.inventory.store_item(crowbar, brain.inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
@@ -124,7 +124,7 @@
 		return
 
 	brain.inventory.holster_primary()
-	var/obj/item/crowbar = brain.inventory.get_tool_from_equipment_map(TRAIT_TOOL_CROWBAR)
+	var/obj/item/crowbar = brain.inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
 	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
 	brain.tied_controller.do_click(src)
 	brain.inventory.store_item(crowbar, brain.inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
