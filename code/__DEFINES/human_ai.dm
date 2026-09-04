@@ -21,6 +21,13 @@
 /// Action isn't finished, block any further actions from the AI this tick
 #define ONGOING_ACTION_UNFINISHED_BLOCK "unfinished_block"
 
+#define HUMAN_AI_LIFECYCLE_INVALID "invalid"
+#define HUMAN_AI_LIFECYCLE_DEAD "dead"
+#define HUMAN_AI_LIFECYCLE_PLAYER_CONTROLLED "player_controlled"
+#define HUMAN_AI_LIFECYCLE_HARDCRIT "hardcrit"
+#define HUMAN_AI_LIFECYCLE_INCAPACITATED "incapacitated"
+#define HUMAN_AI_LIFECYCLE_ACTIVE "active"
+
 #define HUMAN_AI_MAX_PATHFINDING_RANGE 45
 
 GLOBAL_LIST_EMPTY(ai_humans)

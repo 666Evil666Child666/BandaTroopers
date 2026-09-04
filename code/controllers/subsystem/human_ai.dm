@@ -61,7 +61,7 @@ SUBSYSTEM_DEF(human_ai)
 	while(length(current_run))
 		var/datum/human_ai_brain/brain = current_run[length(current_run)]
 		current_run.len--
-		if(!QDELETED(brain) && !brain.tied_controller?.can_player_takeover_block_ai())
+		if(!QDELETED(brain)) // SS220 EDIT: brain.process() owns player-control/dead/incap lifecycle gating
 			brain.process(wait * 0.1)
 
 		if(MC_TICK_CHECK)

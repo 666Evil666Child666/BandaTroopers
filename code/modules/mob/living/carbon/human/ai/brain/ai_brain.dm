@@ -24,7 +24,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
-	var/player_control_blocked_last_tick = FALSE
+	var/lifecycle_state = HUMAN_AI_LIFECYCLE_ACTIVE // SS220 EDIT: brain owns active/suspended runtime admission
 
 /datum/human_ai_brain/New(mob/living/carbon/human/new_human)
 	. = ..()
@@ -104,38 +104,110 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/process(delta_time)
 	last_process_tick = world.time // SS220 EDIT: track scheduler entry to guard same-tick wake rethinks
 	wake_rethink_queued_at = -1 // SS220 EDIT: any queued wake rethink has been serviced once processing starts
-	if(!has_valid_tied_human()) // SS220 EDIT: upstream process loop must no-op once modular AI owner is gone
-		reset_ai()
+
+	var/new_lifecycle_state = get_lifecycle_state()
+	if(new_lifecycle_state != HUMAN_AI_LIFECYCLE_ACTIVE)
+		handle_suspended_lifecycle_state(new_lifecycle_state)
+		lifecycle_state = new_lifecycle_state
 		return
 
-	if(tied_controller.is_dead()) // SS220 EDIT: dead HALO AI must never remain in the wake-up recovery path
-		perception.suspend()
-		wake_rethink_queued_at = -1 // SS220 EDIT: death fallback must kill any queued wake rethink that survived until process()
-		action_runtime.clear_actions()
-		targeting.lose_target()
-		tied_controller.force_prone()
-		return
+	if(lifecycle_state != HUMAN_AI_LIFECYCLE_ACTIVE)
+		resume_from_lifecycle_suspension(lifecycle_state)
+	lifecycle_state = HUMAN_AI_LIFECYCLE_ACTIVE
 
-	handle_player_control_transition()
+	process_active_ai(delta_time)
 
+/datum/human_ai_brain/proc/get_lifecycle_state()
+	if(!has_valid_tied_human())
+		return HUMAN_AI_LIFECYCLE_INVALID
+	if(tied_controller.is_dead())
+		return HUMAN_AI_LIFECYCLE_DEAD
+	if(tied_controller.can_player_takeover_block_ai())
+		return HUMAN_AI_LIFECYCLE_PLAYER_CONTROLLED
+	if(should_force_hardcrit_resting())
+		return HUMAN_AI_LIFECYCLE_HARDCRIT
 	if(tied_controller.is_incapacitated())
-		perception.suspend() // SS220 EDIT: stunned or dead AI should not keep turf-enter listeners alive
-		action_runtime.clear_actions()
-		targeting.lose_target()
+		return HUMAN_AI_LIFECYCLE_INCAPACITATED
+	return HUMAN_AI_LIFECYCLE_ACTIVE
+
+/datum/human_ai_brain/proc/handle_suspended_lifecycle_state(new_lifecycle_state)
+	switch(new_lifecycle_state)
+		if(HUMAN_AI_LIFECYCLE_INVALID)
+			reset_ai()
+		if(HUMAN_AI_LIFECYCLE_DEAD)
+			suspend_for_death()
+		if(HUMAN_AI_LIFECYCLE_PLAYER_CONTROLLED)
+			suspend_for_player_control()
+		if(HUMAN_AI_LIFECYCLE_HARDCRIT)
+			suspend_for_hardcrit()
+		if(HUMAN_AI_LIFECYCLE_INCAPACITATED)
+			suspend_for_incapacitated()
+
+/datum/human_ai_brain/proc/suspend_runtime(clear_inventory = FALSE)
+	cover.end_cover()
+	perception.suspend()
+	wake_rethink_queued_at = -1
+	combat.reset_combat()
+	grenade.reset_grenade()
+	targeting.clear_target_turf()
+	targeting.lose_target()
+	health.lose_injured_ally()
+	health.healing_someone = FALSE
+	action_runtime.clear_actions()
+	if(clear_inventory)
+		inventory.reset_inventory()
+	else
+		inventory.invalidate_nearby_item_search()
+
+/datum/human_ai_brain/proc/suspend_for_death()
+	suspend_runtime()
+	if(!has_valid_tied_human() || !tied_controller.is_dead())
 		return
+	if(tied_controller.is_buckled()) // SS220 EDIT: death suspension releases forced-standing buckle state without deleting revive-capable brain
+		tied_controller.unbuckle()
+	tied_controller.force_prone()
+
+/datum/human_ai_brain/proc/suspend_for_player_control()
+	if(lifecycle_state == HUMAN_AI_LIFECYCLE_PLAYER_CONTROLLED)
+		return
+	suspend_runtime()
+
+/datum/human_ai_brain/proc/suspend_for_incapacitated()
+	suspend_runtime()
+
+/datum/human_ai_brain/proc/suspend_for_hardcrit()
+	suspend_runtime()
+	if(!has_valid_tied_human())
+		return
+	tied_controller.force_prone()
+	inventory.clear_pickup_queue()
+	inventory.invalidate_nearby_item_search()
+
+/datum/human_ai_brain/proc/resume_from_lifecycle_suspension(previous_lifecycle_state)
+	if(!has_valid_tied_human() || tied_controller.can_player_takeover_block_ai())
+		return FALSE
+
+	if(previous_lifecycle_state == HUMAN_AI_LIFECYCLE_INVALID)
+		return FALSE
+
+	inventory.appraise_inventory()
+	guns.clear_tried_reload()
+	inventory.invalidate_nearby_item_search()
+	brain_resume_modular_runtime()
+	return TRUE
+
+/datum/human_ai_brain/proc/brain_resume_modular_runtime()
+	invalidate_halo_runtime_caches()
+
+/datum/human_ai_brain/proc/should_force_hardcrit_resting()
+	return (tied_controller.has_effect(/datum/effects/crit) && tied_controller.has_status_flag(CANKNOCKOUT))
+
+/datum/human_ai_brain/proc/process_active_ai(delta_time)
 
 	perception.process_module(delta_time) // SS220 EDIT: restore projectile detection after recovering from incap or reset
 
 	// SS220 EDIT - START: hardcrit AIs should keep resting until the crit loop and knockdown pressure are truly gone
-	var/should_force_resting = (tied_controller.has_effect(/datum/effects/crit) && tied_controller.has_status_flag(CANKNOCKOUT))
-	if(should_force_resting)
-		tied_controller.force_prone() // SS220 EDIT: crit-resting AI can keep a stale standing transform unless prone is re-asserted through the shared helper
-		perception.suspend() // SS220 EDIT: prone hardcrit AI should not keep live projectile listeners or continue active combat movement
-		action_runtime.clear_actions()
-		inventory.clear_pickup_queue() // SS220 EDIT: lying crit AI must drop stale pickup goals so it does not keep chasing far-away weapons after forced prone
-		inventory.invalidate_nearby_item_search()
-		return
-	else if((tied_controller.get_stat() == CONSCIOUS) && tied_controller.is_resting() && !tied_controller.has_trait(TRAIT_FLOORED))
+	if((tied_controller.get_stat() == CONSCIOUS) && tied_controller.is_resting() && !tied_controller.has_trait(TRAIT_FLOORED))
 		// SS220 EDIT - START: final stand-up gate must stay exactly aligned with the existing wake rethink eligibility rules
 		tied_controller.try_stand_up()
 		// SS220 EDIT - END
@@ -160,18 +232,14 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	SIGNAL_HANDLER
 	perception.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
 	reset_ai()
+	lifecycle_state = HUMAN_AI_LIFECYCLE_INVALID
 	wake_rethink_queued_at = -1 // SS220 EDIT: owner delete must not leave a queued wake rethink pointing at a null tied human
 	tied_controller?.set_tied_human(null)
 
 /datum/human_ai_brain/proc/on_human_death(datum/source)
 	SIGNAL_HANDLER
-	reset_ai()
-	wake_rethink_queued_at = -1 // SS220 EDIT: death signal must immediately invalidate any deferred wake processing
-	if(!has_valid_tied_human() || !tied_controller.is_dead())
-		return
-	if(tied_controller.is_buckled()) // SS220 EDIT: only the direct death path should release forced-standing buckle state
-		tied_controller.unbuckle()
-	tied_controller.force_prone()
+	suspend_for_death()
+	lifecycle_state = HUMAN_AI_LIFECYCLE_DEAD
 
 /datum/human_ai_brain/proc/on_species_change(datum/source, new_species)
 	SIGNAL_HANDLER
@@ -210,30 +278,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	process(0) // SS220 EDIT: reuse the existing shared AI loop instead of inventing a separate wake-up behavior
-
-/datum/human_ai_brain/proc/handle_player_control_transition()
-	if(!has_valid_tied_human())
-		player_control_blocked_last_tick = FALSE
-		return FALSE
-
-	if(tied_controller.can_player_takeover_block_ai())
-		player_control_blocked_last_tick = TRUE
-		return FALSE
-
-	if(!player_control_blocked_last_tick)
-		return FALSE
-
-	player_control_blocked_last_tick = FALSE
-	return sync_after_player_control()
-
-/datum/human_ai_brain/proc/sync_after_player_control()
-	if(!has_valid_tied_human() || tied_controller.can_player_takeover_block_ai())
-		return FALSE
-
-	inventory.appraise_inventory()
-	guns.clear_tried_reload()
-	inventory.invalidate_nearby_item_search()
-	return TRUE
 
 
 
