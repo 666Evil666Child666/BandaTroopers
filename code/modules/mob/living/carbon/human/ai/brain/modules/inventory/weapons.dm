@@ -1,6 +1,8 @@
 /datum/human_ai_module/inventory/proc/set_primary_weapon(obj/item/weapon/gun/new_gun)
 	if(primary_weapon)
 		UnregisterSignal(primary_weapon, COMSIG_PARENT_QDELETING)
+	if(new_gun && !can_select_firearm(new_gun))
+		new_gun = null
 	primary_weapon = new_gun
 	appraise_primary()
 	invalidate_nearby_item_search()
@@ -9,7 +11,7 @@
 		RegisterSignal(primary_weapon, COMSIG_PARENT_QDELETING, PROC_REF(on_primary_delete), TRUE)
 
 /datum/human_ai_module/inventory/proc/add_secondary_weapon(obj/item/weapon/gun/secondary)
-	if(!secondary || has_secondary_weapon(secondary))
+	if(!secondary || has_secondary_weapon(secondary) || !can_select_firearm(secondary))
 		return
 
 	secondary_weapons += secondary
@@ -25,7 +27,7 @@
 	var/obj/item/weapon/gun/best_secondary
 	var/best_secondary_weight = 0
 	for(var/obj/item/weapon/gun/secondary as anything in secondary_weapons)
-		if(!brain.tied_controller.can_use_item(secondary))
+		if(!can_select_firearm(secondary) || !brain.tied_controller.can_use_item(secondary))
 			continue
 
 		var/datum/human_ai_firearm_context/context = new(secondary, brain)

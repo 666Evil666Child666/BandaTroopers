@@ -13,7 +13,7 @@
 	context.use_unique_action()
 	context.swap_hand()
 	context.sleep_short()
-	if(!prepare_reload_item(context))
+	if(!context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
 		return FALSE
 	context.sleep_short()
 	context.insert_ammo()

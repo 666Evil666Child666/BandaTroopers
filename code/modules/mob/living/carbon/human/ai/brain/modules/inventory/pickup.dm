@@ -119,7 +119,9 @@
 		return FALSE
 
 	var/obj/item/weapon/gun/thing_gun = thing
-	var/datum/human_ai_firearm_profile/firearm_profile = GLOB.human_ai_firearm_registry?.get_profile(thing_gun)
+	var/datum/human_ai_firearm_profile/firearm_profile = get_available_firearm_profile(thing_gun)
+	if(!firearm_profile)
+		return FALSE
 	if(firearm_profile?.disposable && thing_gun.current_mag?.current_rounds <= 0)
 		return FALSE
 
@@ -137,9 +139,13 @@
 /datum/human_ai_module/inventory/proc/should_pickup_ammo(obj/item/thing)
 	if(!(thing.flags_human_ai & AMMUNITION_ITEM) || !primary_weapon)
 		return FALSE
+	if(istype(thing, /obj/item/ammo_box/magazine))
+		return FALSE
 	return can_item_supply_ammo_for_weapon(thing, primary_weapon)
 
 /datum/human_ai_module/inventory/proc/should_pickup_grenade(obj/item/thing)
+	if(istype(thing, /obj/item/ammo_box/magazine/nade_box))
+		return FALSE
 	return (thing.flags_human_ai & GRENADE_ITEM) && can_item_supply_grenade(thing)
 
 /datum/human_ai_module/inventory/proc/should_pickup_tool(obj/item/thing)
@@ -160,7 +166,7 @@
 		var/obj/item/explosive/grenade/nade = thing
 		if(!nade.active)
 			equipment_types += HUMAN_AI_GRENADES
-	else if(can_item_supply_grenade(thing))
+	else if(!istype(thing, /obj/item/ammo_box/magazine/nade_box) && can_item_supply_grenade(thing))
 		equipment_types += HUMAN_AI_GRENADES
 
 	if(should_pickup_tool(thing))

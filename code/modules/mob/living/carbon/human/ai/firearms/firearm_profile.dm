@@ -15,6 +15,8 @@
 	var/count_every_shot_toward_burst_limit = FALSE
 	/// If TRUE, this gun is disposable and is not worth trying to reload.
 	var/disposable = FALSE
+	/// If FALSE, Human AI must not select this weapon even if it matches generic gun rules.
+	var/available_to_ai = TRUE
 	/// Selection weight used when choosing primary weapon.
 	var/primary_weight = 1
 
@@ -163,6 +165,7 @@
 	minimum_range = 2
 	optimal_range = 5
 	maximum_range = 10
+	available_to_ai = FALSE
 	primary_weight = 8
 
 /datum/human_ai_firearm_profile/smg/ppsh

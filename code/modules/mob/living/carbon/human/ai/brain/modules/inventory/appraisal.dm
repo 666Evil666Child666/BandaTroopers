@@ -119,4 +119,4 @@
 	gun_data = null
 	if(!primary_weapon)
 		return
-	gun_data = GLOB.human_ai_firearm_registry?.get_profile(primary_weapon)
+	gun_data = get_available_firearm_profile(primary_weapon)

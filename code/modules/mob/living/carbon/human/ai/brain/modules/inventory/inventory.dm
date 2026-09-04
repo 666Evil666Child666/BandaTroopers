@@ -77,6 +77,17 @@
 /datum/human_ai_module/inventory/proc/has_gun_data()
 	return !!gun_data
 
+/datum/human_ai_module/inventory/proc/get_available_firearm_profile(obj/item/weapon/gun/weapon)
+	RETURN_TYPE(/datum/human_ai_firearm_profile)
+
+	var/datum/human_ai_firearm_profile/firearm_profile = GLOB.human_ai_firearm_registry?.get_profile(weapon)
+	if(!firearm_profile?.available_to_ai)
+		return null
+	return firearm_profile
+
+/datum/human_ai_module/inventory/proc/can_select_firearm(obj/item/weapon/gun/weapon)
+	return !!get_available_firearm_profile(weapon)
+
 /datum/human_ai_module/inventory/proc/has_secondary_weapons()
 	return get_secondary_weapon_count()
 

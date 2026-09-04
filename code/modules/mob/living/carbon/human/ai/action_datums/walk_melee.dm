@@ -36,10 +36,9 @@
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.tied_controller.get_distance_to(current_target) <= 1)
-		brain.tied_controller.set_combat_intent()
-		brain.inventory.unholster_any_weapon()
-		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), current_target, "", list())
-		brain.tied_controller.face_atom(current_target)
+		var/datum/human_ai_melee_context/context = new(brain, null, current_target)
+		GLOB.human_ai_melee_handler.attack(context)
+		qdel(context)
 
 	if(!brain.navigation.move_to_next_turf(get_turf(current_target)))
 		return ONGOING_ACTION_COMPLETED

@@ -1,4 +1,4 @@
-// Isolated Human AI firearm item-reload handlers proposal. Not included in colonialmarines.dme yet.
+// Human AI firearm item-reload handlers.
 
 /datum/human_ai_firearm_handler/flare
 	gun_types = list(/obj/item/weapon/gun/flare)
@@ -65,15 +65,9 @@
 		context.open_weapon_chamber()
 	context.swap_hand()
 	context.sleep_micro()
-	var/obj/item/ammo_box/magazine/nade_box/grenade_box = context.reload_item
-	if(istype(grenade_box))
-		var/obj/item/explosive/grenade/boxed_grenade = context.controller.take_grenade_from_grenade_box(grenade_box, grenade_launcher)
-		if(!boxed_grenade)
-			return FALSE
-		context.set_reload_item(boxed_grenade)
-	else
-		var/reload_equipment_type = get_reload_item_equipment_type(context, context.reload_item)
-		if(!reload_equipment_type || !context.equip_reload_item(reload_equipment_type))
-			return FALSE
+	if(!context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
+		return FALSE
 	context.sleep_short()
+	if(!context.can_continue_reload())
+		return FALSE
 	return context.insert_reload_item()

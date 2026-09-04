@@ -56,7 +56,7 @@
 	appraise_inventory(slot == WEAR_WAIST, slot == WEAR_BACK, slot == WEAR_L_STORE, slot == WEAR_R_STORE, slot == WEAR_JACKET, slot == WEAR_BODY)
 
 /datum/human_ai_module/inventory/proc/handle_equipped_primary_weapon(obj/item/equipment, slot)
-	if(!primary_weapon && isgun(equipment) && (slot == WEAR_J_STORE))
+	if(!primary_weapon && isgun(equipment) && can_select_firearm(equipment) && (slot == WEAR_J_STORE))
 		set_primary_weapon(equipment)
 
 /datum/human_ai_module/inventory/proc/handle_worn_nightvision_change(obj/item/equipment, slot, enabled)
@@ -94,7 +94,7 @@
 	invalidate_nearby_item_search()
 
 /datum/human_ai_module/inventory/proc/handle_picked_up_primary_weapon(obj/item/picked_up)
-	if(!primary_weapon && isgun(picked_up))
+	if(!primary_weapon && isgun(picked_up) && can_select_firearm(picked_up))
 		set_primary_weapon(picked_up)
 
 /datum/human_ai_module/inventory/proc/handle_picked_up_active_grenade(obj/item/picked_up)

@@ -42,6 +42,15 @@
 		mag = null
 	return reload_item
 
+/datum/human_ai_firearm_context/proc/can_continue_reload(obj/item/item = reload_item)
+	if(!can_use())
+		return FALSE
+	if(item && QDELETED(item))
+		return FALSE
+	if(mag && QDELETED(mag))
+		return FALSE
+	return TRUE
+
 /datum/human_ai_firearm_context/proc/prepare_primary_weapon()
 	if(!is_valid())
 		return FALSE

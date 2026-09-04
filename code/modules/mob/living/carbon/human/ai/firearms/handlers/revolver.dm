@@ -26,15 +26,15 @@
 		context.controller.unload_weapon(revolver)
 	context.swap_hand()
 	context.sleep_micro()
-	if(!can_use(context) || !prepare_reload_item(context) || QDELETED(context.mag))
+	if(!context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
 		return FALSE
 	context.sleep_short()
-	if(!can_use(context) || QDELETED(context.mag))
+	if(!context.can_continue_reload())
 		return FALSE
 	if(istype(context.mag, /obj/item/ammo_magazine/handful))
 		var/obj/item/ammo_magazine/handful/handful = context.mag
 		for(var/i in 1 to handful.current_rounds)
-			if(!can_use(context) || QDELETED(handful))
+			if(!context.can_continue_reload(handful))
 				return FALSE
 			context.insert_ammo(handful)
 			context.sleep_micro()

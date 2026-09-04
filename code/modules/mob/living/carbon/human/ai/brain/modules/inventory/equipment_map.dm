@@ -96,7 +96,7 @@
 
 	var/obj/item/ammo_magazine/magazine = item
 	if(istype(magazine))
-		return magazine.current_rounds > 0 && istype(weapon, magazine.gun_type)
+		return can_magazine_supply_ammo_for_weapon(magazine, weapon)
 
 	var/obj/item/ammo_box/magazine/ammo_box = item
 	if(!istype(ammo_box) || !ammo_box.is_loaded())
@@ -104,13 +104,36 @@
 
 	if(ammo_box.handfuls)
 		var/obj/item/ammo_magazine/source = locate(/obj/item/ammo_magazine) in ammo_box.contents
-		return source && source.current_rounds > 0 && istype(weapon, source.gun_type)
+		return can_magazine_supply_ammo_for_weapon(source, weapon)
 
 	for(var/obj/item/ammo_magazine/boxed_magazine as anything in ammo_box.contents)
-		if(boxed_magazine.current_rounds > 0 && istype(weapon, boxed_magazine.gun_type))
+		if(can_magazine_supply_ammo_for_weapon(boxed_magazine, weapon))
 			return TRUE
 
 	return FALSE
+
+/datum/human_ai_module/inventory/proc/can_magazine_supply_ammo_for_weapon(obj/item/ammo_magazine/magazine, obj/item/weapon/gun/weapon)
+	if(!magazine || !weapon || magazine.current_rounds <= 0)
+		return FALSE
+
+	var/obj/item/ammo_magazine/handful/handful = magazine
+	if(istype(handful))
+		return can_handful_supply_ammo_for_weapon(handful, weapon)
+
+	return istype(weapon, magazine.gun_type)
+
+/datum/human_ai_module/inventory/proc/can_handful_supply_ammo_for_weapon(obj/item/ammo_magazine/handful/handful, obj/item/weapon/gun/weapon)
+	if(!handful || !weapon || handful.current_rounds <= 0)
+		return FALSE
+
+	var/obj/item/ammo_magazine/current_mag = weapon.current_mag
+	if(current_mag)
+		if(!current_mag.current_rounds && current_mag.caliber == handful.caliber)
+			return TRUE
+		if(current_mag.default_ammo == handful.default_ammo)
+			return TRUE
+
+	return istype(weapon, handful.gun_type)
 
 /datum/human_ai_module/inventory/proc/find_ammo_for_weapon(obj/item/weapon/gun/weapon)
 	RETURN_TYPE(/obj/item)

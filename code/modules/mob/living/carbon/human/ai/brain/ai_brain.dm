@@ -24,6 +24,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
+	var/player_control_blocked_last_tick = FALSE
 
 /datum/human_ai_brain/New(mob/living/carbon/human/new_human)
 	. = ..()
@@ -114,6 +115,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		targeting.lose_target()
 		tied_controller.force_prone()
 		return
+
+	handle_player_control_transition()
 
 	if(tied_controller.is_incapacitated())
 		perception.suspend() // SS220 EDIT: stunned or dead AI should not keep turf-enter listeners alive
@@ -207,6 +210,30 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	process(0) // SS220 EDIT: reuse the existing shared AI loop instead of inventing a separate wake-up behavior
+
+/datum/human_ai_brain/proc/handle_player_control_transition()
+	if(!has_valid_tied_human())
+		player_control_blocked_last_tick = FALSE
+		return FALSE
+
+	if(tied_controller.can_player_takeover_block_ai())
+		player_control_blocked_last_tick = TRUE
+		return FALSE
+
+	if(!player_control_blocked_last_tick)
+		return FALSE
+
+	player_control_blocked_last_tick = FALSE
+	return sync_after_player_control()
+
+/datum/human_ai_brain/proc/sync_after_player_control()
+	if(!has_valid_tied_human() || tied_controller.can_player_takeover_block_ai())
+		return FALSE
+
+	inventory.appraise_inventory()
+	guns.clear_tried_reload()
+	inventory.invalidate_nearby_item_search()
+	return TRUE
 
 
 

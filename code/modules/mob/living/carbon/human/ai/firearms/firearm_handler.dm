@@ -23,64 +23,6 @@
 /datum/human_ai_firearm_handler/proc/get_reload_equipment_types(datum/human_ai_firearm_context/context)
 	return list(HUMAN_AI_AMMUNITION)
 
-/datum/human_ai_firearm_handler/proc/can_reload_with(datum/human_ai_firearm_context/context, obj/item/item)
-	if(!can_use(context) || !item || !context.controller.can_use_item(item))
-		return FALSE
-	return context.AI.inventory.can_item_supply_ammo_for_weapon(item, context.firearm)
-
-/datum/human_ai_firearm_handler/proc/find_reload_item(datum/human_ai_firearm_context/context)
-	RETURN_TYPE(/obj/item)
-	if(!context?.is_valid())
-		return null
-	for(var/equipment_type as anything in get_reload_equipment_types(context))
-		for(var/obj/item/item as anything in context.AI.inventory.iter_equipment_type(equipment_type))
-			if(can_reload_with(context, item))
-				return item
-	return null
-
-/datum/human_ai_firearm_handler/proc/get_reload_item_equipment_type(datum/human_ai_firearm_context/context, obj/item/item)
-	if(!context?.is_valid() || !item)
-		return null
-	for(var/equipment_type as anything in get_reload_equipment_types(context))
-		if(context.AI.inventory.has_equipment_item(item, equipment_type))
-			return equipment_type
-	return null
-
-/datum/human_ai_firearm_handler/proc/prepare_reload_item(datum/human_ai_firearm_context/context)
-	if(can_use(context) && !context.reload_item)
-		context.set_reload_item(find_reload_item(context))
-	if(!can_use(context) || !context.reload_item)
-		return FALSE
-
-	var/obj/item/ammo_magazine/magazine = context.reload_item
-	if(istype(magazine))
-		if((magazine.flags_magazine & AMMUNITION_HANDFUL_BOX) && !(magazine.flags_magazine & AMMUNITION_HANDFUL))
-			var/obj/item/ammo_magazine/handful/handful = context.controller.create_handful_from_ammo_source(magazine)
-			if(!handful)
-				return FALSE
-			context.set_reload_item(handful)
-			return TRUE
-
-		var/equipment_type = get_reload_item_equipment_type(context, magazine)
-		return equipment_type && context.equip_reload_item(equipment_type)
-
-	var/obj/item/ammo_box/magazine/ammo_box = context.reload_item
-	if(istype(ammo_box))
-		if(ammo_box.handfuls)
-			var/obj/item/ammo_magazine/handful/boxed_handful = context.controller.create_handful_from_ammo_box(ammo_box)
-			if(!boxed_handful)
-				return FALSE
-			context.set_reload_item(boxed_handful)
-			return TRUE
-
-		var/obj/item/ammo_magazine/boxed_magazine = context.controller.take_magazine_from_ammo_box(ammo_box)
-		if(!boxed_magazine)
-			return FALSE
-		context.set_reload_item(boxed_magazine)
-		return TRUE
-
-	return FALSE
-
 /datum/human_ai_firearm_handler/proc/before_fire(datum/human_ai_firearm_context/context)
 	if(!can_use(context))
 		return FALSE
@@ -120,21 +62,21 @@
 	context.prepare_primary_weapon()
 	context.unwield_weapon()
 	context.sleep_short()
-	if(!can_use(context))
+	if(!context.can_continue_reload())
 		return FALSE
 	if(!(context.firearm.flags_gun_features & GUN_INTERNAL_MAG) && context.firearm.current_mag)
 		context.unload_for_reload()
 	context.swap_hand()
 	context.sleep_micro()
-	if(!can_use(context) || !prepare_reload_item(context) || QDELETED(context.mag))
+	if(!context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
 		return FALSE
 	context.sleep_short()
-	if(!can_use(context) || QDELETED(context.mag))
+	if(!context.can_continue_reload())
 		return FALSE
 	if(istype(context.mag, /obj/item/ammo_magazine/handful))
 		var/obj/item/ammo_magazine/handful/handful = context.mag
 		for(var/i in 1 to handful.current_rounds)
-			if(!can_use(context) || QDELETED(handful))
+			if(!context.can_continue_reload(handful))
 				return FALSE
 			context.insert_ammo(handful)
 			context.sleep_micro()
