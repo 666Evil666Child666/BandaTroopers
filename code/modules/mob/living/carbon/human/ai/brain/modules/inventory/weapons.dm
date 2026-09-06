@@ -43,28 +43,44 @@
 
 /// Unholsters the AI's primary weapon, dropping anything that might obstruct it.
 /datum/human_ai_module/inventory/proc/unholster_primary()
-	if(!primary_weapon || brain.tied_controller.get_l_hand() == primary_weapon || brain.tied_controller.get_r_hand() == primary_weapon)
-		return
+	if(!primary_weapon || !brain.can_continue_runtime_work())
+		return FALSE
+	if(brain.tied_controller.get_l_hand() == primary_weapon || brain.tied_controller.get_r_hand() == primary_weapon)
+		return ensure_primary_hand(primary_weapon)
 
 	var/cur_hand = brain.tied_controller.get_active_hand()
 	if(cur_hand)
-		brain.tied_controller.drop_held_item(cur_hand)
+		if(!brain.tied_controller.drop_held_item(cur_hand))
+			return FALSE
 
-	brain.tied_controller.u_equip(primary_weapon)
-	brain.tied_controller.put_in_active_hand(primary_weapon)
+	if(!brain.tied_controller.u_equip(primary_weapon))
+		return FALSE
+	if(!brain.tied_controller.put_in_active_hand(primary_weapon))
+		return FALSE
 
 	primary_weapon.guaranteed_delay_time = world.time
 	primary_weapon.wield_time = world.time
 	primary_weapon.pull_time = world.time
+	return TRUE
 
 /// Tells the AI to wield their primary weapon, can be called if they aren't holding it or if they are already wielding it
 /datum/human_ai_module/inventory/proc/wield_primary()
-	brain.tied_controller.wield(primary_weapon)
+	if(!primary_weapon || !brain.can_continue_runtime_work())
+		return FALSE
+	if(!ensure_primary_hand(primary_weapon))
+		return FALSE
+	return brain.tied_controller.wield(primary_weapon)
 
 /// wield_primary() with a delay inbuilt
 /datum/human_ai_module/inventory/proc/wield_primary_sleep()
-	wield_primary()
+	// SS220 EDIT - START: propagate preparation failure and tolerate module deletion during sleep
+	// wield_primary()
+	if(!wield_primary())
+		return FALSE
 	sleep(max(primary_weapon?.wield_delay, brain.profile.short_action_delay * brain.profile.action_delay_mult))
+	// return brain.can_continue_runtime_work()
+	return !QDELETED(src) && brain?.can_continue_runtime_work()
+	// SS220 EDIT - END
 
 /// Tells the AI to unwield *something*, prioritizing melee
 /datum/human_ai_module/inventory/proc/unholster_any_weapon()
@@ -94,9 +110,16 @@
 	if(brain.tied_controller.get_s_store() || (brain.tied_controller.get_l_hand() != primary_weapon && brain.tied_controller.get_r_hand() != primary_weapon))
 		return FALSE
 
+	if(!ensure_primary_hand(primary_weapon)) // SS220 EDIT: unwield expects the fake offhand to be the inactive hand
+		return FALSE
+	if((primary_weapon.flags_item & TWOHANDED) && (primary_weapon.flags_item & WIELDED) && !brain.tied_controller.unwield_weapon(primary_weapon))
+		return FALSE
 	return brain.tied_controller.equip_to_slot_if_possible(primary_weapon, WEAR_J_STORE, TRUE)
 
 /// Assuming an item is in the AI's hands, this ensures it is their actively selected hand
 /datum/human_ai_module/inventory/proc/ensure_primary_hand(obj/item/held_item)
+	if(!held_item || !brain.can_continue_runtime_work())
+		return FALSE
 	if(brain.tied_controller.get_inactive_hand() == held_item)
 		brain.tied_controller.swap_hand()
+	return brain.tied_controller.get_active_hand() == held_item

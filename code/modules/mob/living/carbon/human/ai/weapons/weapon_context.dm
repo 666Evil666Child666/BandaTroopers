@@ -15,7 +15,7 @@
 	target_turf = new_target_turf
 
 /datum/human_ai_weapon_context/proc/is_valid()
-	return AI?.has_valid_tied_human() && controller
+	return AI?.can_continue_runtime_work() && controller
 
 /datum/human_ai_weapon_context/proc/can_continue(obj/item/item = weapon_item)
 	if(!is_valid())
@@ -26,6 +26,8 @@
 
 /datum/human_ai_weapon_context/proc/sleep_short()
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
+	return can_continue()
 
 /datum/human_ai_weapon_context/proc/sleep_micro()
 	sleep(AI.profile.micro_action_delay * AI.profile.action_delay_mult)
+	return can_continue()

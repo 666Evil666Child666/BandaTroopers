@@ -26,7 +26,8 @@
 /datum/human_ai_firearm_handler/proc/before_fire(datum/human_ai_firearm_context/context)
 	if(!can_use(context))
 		return FALSE
-	context.prepare_primary_weapon()
+	if(!context.prepare_primary_weapon())
+		return FALSE
 	if((context.firearm.flags_item & TWOHANDED) && !(context.firearm.flags_item & WIELDED))
 		context.wield_primary()
 	context.ensure_safety_off()
@@ -59,19 +60,17 @@
 		context.set_reload_item(find_reload_item(context))
 	if(!can_use(context) || !context.mag)
 		return FALSE
-	context.prepare_primary_weapon()
+	if(!context.prepare_primary_weapon())
+		return FALSE
 	context.unwield_weapon()
-	context.sleep_short()
-	if(!context.can_continue_reload())
+	if(!context.sleep_short() || !context.can_continue_reload())
 		return FALSE
 	if(!(context.firearm.flags_gun_features & GUN_INTERNAL_MAG) && context.firearm.current_mag)
 		context.unload_for_reload()
 	context.swap_hand()
-	context.sleep_micro()
-	if(!context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
+	if(!context.sleep_micro() || !context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
 		return FALSE
-	context.sleep_short()
-	if(!context.can_continue_reload())
+	if(!context.sleep_short() || !context.can_continue_reload())
 		return FALSE
 	if(istype(context.mag, /obj/item/ammo_magazine/handful))
 		var/obj/item/ammo_magazine/handful/handful = context.mag
@@ -79,7 +78,8 @@
 			if(!context.can_continue_reload(handful))
 				return FALSE
 			context.insert_ammo(handful)
-			context.sleep_micro()
+			if(!context.sleep_micro())
+				return FALSE
 		if(!QDELETED(handful) && (handful.current_rounds > 0))
 			var/storage_slot = context.AI.inventory.storage_has_room(handful)
 			if(storage_slot)
@@ -88,9 +88,9 @@
 				context.controller.drop_held_item(handful)
 	else
 		context.insert_ammo()
-	context.sleep_short()
-	if(!context.is_valid())
+	if(!context.sleep_short() || !context.is_valid())
 		return FALSE
 	context.swap_hand()
-	context.wield_primary_sleep()
+	if(!context.wield_primary_sleep())
+		return FALSE
 	return TRUE

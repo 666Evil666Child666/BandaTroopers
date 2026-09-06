@@ -16,13 +16,16 @@
 		context.set_reload_item(find_reload_item(context))
 	if(!can_use(context) || !context.reload_item)
 		return FALSE
-	context.prepare_primary_weapon()
+	if(!context.prepare_primary_weapon())
+		return FALSE
 	context.unwield_weapon()
 	context.swap_hand()
-	context.sleep_micro()
+	if(!context.sleep_micro())
+		return FALSE
 	if(!context.equip_reload_item(HUMAN_AI_TOOLS))
 		return FALSE
-	context.sleep_short()
+	if(!context.sleep_short())
+		return FALSE
 	return context.insert_reload_item()
 
 /datum/human_ai_firearm_handler/grenade_launcher
@@ -59,15 +62,14 @@
 	if(!can_use(context) || !context.reload_item)
 		return FALSE
 	var/obj/item/weapon/gun/launcher/grenade/grenade_launcher = context.firearm
-	context.prepare_primary_weapon()
+	if(!context.prepare_primary_weapon())
+		return FALSE
 	context.unwield_weapon()
 	if(!grenade_launcher.open_chamber)
 		context.open_weapon_chamber()
 	context.swap_hand()
-	context.sleep_micro()
-	if(!context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
+	if(!context.sleep_micro() || !context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
 		return FALSE
-	context.sleep_short()
-	if(!context.can_continue_reload())
+	if(!context.sleep_short() || !context.can_continue_reload())
 		return FALSE
 	return context.insert_reload_item()

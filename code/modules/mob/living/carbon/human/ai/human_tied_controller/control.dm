@@ -44,7 +44,11 @@
 	return is_tied_human_loaded() && !can_player_takeover_block_ai()
 
 /datum/human_tied_controller/proc/can_tick_ai()
-	return can_mutate_puppet() && !is_dead()
+	if(!can_mutate_puppet() || is_dead())
+		return FALSE
+	if(brain && !brain.can_continue_runtime_work()) // SS220 EDIT: raw puppet mutations must obey brain lifecycle between scheduler ticks
+		return FALSE
+	return TRUE
 
 /datum/human_tied_controller/proc/can_directly_control()
 	return can_tick_ai()

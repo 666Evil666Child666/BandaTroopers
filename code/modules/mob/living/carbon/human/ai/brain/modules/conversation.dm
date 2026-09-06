@@ -22,10 +22,10 @@
 	return prob(conversation_start_prob)
 
 /datum/human_ai_module/conversation/proc/can_participate()
-	if(!brain.has_valid_tied_human())
+	if(!brain.can_continue_runtime_work())
 		return FALSE
 
-	if(brain.combat.in_combat || in_conversation || brain.tied_controller.can_player_takeover_block_ai() || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	if(brain.combat.in_combat || in_conversation || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return FALSE
 
 	return TRUE

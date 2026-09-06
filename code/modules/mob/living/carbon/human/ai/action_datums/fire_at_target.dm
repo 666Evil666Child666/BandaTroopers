@@ -77,8 +77,8 @@
 
 /datum/ai_action/fire_at_target/trigger_action()
 	. = ..()
-	if(!brain || !brain.has_valid_tied_human()) // SS220 EDIT: firing action exits cleanly if the modular AI owner disappears mid-combat
-		return ONGOING_ACTION_COMPLETED
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
 	if(!primary_weapon || brain.grenade.has_active_grenade() || !COOLDOWN_FINISHED(brain.guns, stop_fire_cooldown))
@@ -142,7 +142,7 @@
 	return ONGOING_ACTION_UNFINISHED
 
 /datum/ai_action/fire_at_target/proc/firing_line_check(datum/human_ai_brain/brain, atom/target, listen = FALSE)
-	if(!brain.has_valid_tied_human()) // SS220 EDIT: avoid post-delete signal work from upstream firing callbacks
+	if(!brain?.can_continue_runtime_work()) // SS220 EDIT: avoid post-lifecycle signal work from upstream firing callbacks
 		return FALSE
 	var/list/turf_list = brain.tied_controller.get_line_from_current_turf_to(target)
 	for(var/turf/tile in turf_list)
@@ -200,7 +200,7 @@
 
 /datum/ai_action/fire_at_target/proc/cheap_friendly_check(datum/source, atom/movable/entering)
 	SIGNAL_HANDLER
-	if(!brain)
+	if(!brain?.can_continue_runtime_work())
 		return
 	if(brain.tied_controller.is_puppet(entering))
 		return
@@ -219,7 +219,7 @@
 /datum/ai_action/fire_at_target/proc/on_gun_fire(datum/source, obj/item/weapon/gun/fired)
 	SIGNAL_HANDLER
 
-	if(!brain || !brain.has_valid_tied_human()) // SS220 EDIT: late gun callbacks can outlive the modular AI owner for a tick
+	if(!brain?.can_continue_runtime_work()) // SS220 EDIT: late gun callbacks can outlive active AI control for a tick
 		qdel(src)
 		return
 
@@ -317,12 +317,18 @@
 
 	if(primary_weapon.gun_firemode == GUN_FIREMODE_SEMIAUTO)
 		currently_firing = FALSE
-		addtimer(CALLBACK(primary_weapon, TYPE_PROC_REF(/obj/item/weapon/gun, start_fire), null, current_target, null, null, null, TRUE), primary_weapon.get_fire_delay())
+		addtimer(CALLBACK(src, PROC_REF(delayed_start_fire), primary_weapon, current_target), primary_weapon.get_fire_delay())
 
 	else if(primary_weapon.gun_firemode == GUN_FIREMODE_BURSTFIRE)
 		currently_firing = FALSE
-		addtimer(CALLBACK(primary_weapon, TYPE_PROC_REF(/obj/item/weapon/gun, start_fire), null, current_target, null, null, null, TRUE), primary_weapon.get_burst_fire_delay())
+		addtimer(CALLBACK(src, PROC_REF(delayed_start_fire), primary_weapon, current_target), primary_weapon.get_burst_fire_delay())
 
 	primary_weapon?.set_target(shoot_next)
+
+/datum/ai_action/fire_at_target/proc/delayed_start_fire(obj/item/weapon/gun/primary_weapon, atom/movable/current_target)
+	if(!brain?.can_continue_runtime_work() || QDELETED(primary_weapon))
+		return FALSE
+	primary_weapon.start_fire(null, current_target, null, null, null, TRUE)
+	return TRUE
 
 #undef FRIENDLY_FIRE_ADJACENT_CHECK_START_INDEX

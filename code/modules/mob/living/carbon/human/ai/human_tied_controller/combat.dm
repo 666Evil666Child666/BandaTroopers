@@ -29,8 +29,15 @@
 /datum/human_tied_controller/proc/wield(obj/item/weapon/gun/weapon)
 	if(!can_directly_control() || !weapon)
 		return FALSE
+	// SS220 EDIT - START: report readiness, including already wielded and one-handed weapons
+	if(get_active_hand() != weapon)
+		return FALSE
+	if(!(weapon.flags_item & TWOHANDED))
+		return TRUE
 	weapon.wield(tied_human)
-	return TRUE
+	// return TRUE
+	return !QDELETED(weapon) && get_active_hand() == weapon && (weapon.flags_item & WIELDED)
+	// SS220 EDIT - END
 
 /datum/human_tied_controller/proc/unwield_weapon(obj/item/weapon/gun/weapon)
 	if(!can_directly_control() || !weapon)

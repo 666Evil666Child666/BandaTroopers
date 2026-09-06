@@ -25,6 +25,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
 	var/lifecycle_state = HUMAN_AI_LIFECYCLE_ACTIVE // SS220 EDIT: brain owns active/suspended runtime admission
+	var/runtime_shutdown_started = FALSE // SS220 EDIT: component-owned lifetime teardown may race brain delete signals
 
 /datum/human_ai_brain/New(mob/living/carbon/human/new_human)
 	. = ..()
@@ -62,7 +63,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/Destroy(force, ...)
 	GLOB.human_ai_brains -= src
-	reset_ai()
+	shutdown_runtime()
 	QDEL_NULL(targeting)
 	QDEL_NULL(perception)
 	QDEL_NULL(cover)
@@ -88,6 +89,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	return tied_controller?.has_valid_tied_human()
 
 /datum/human_ai_brain/proc/reset_ai()
+	health.cancel_treatment() // SS220 EDIT: reset invalidates suspended treatment before clearing actions
+	navigation.cancel_navigation() // SS220 EDIT: cancel owned searches before controller detach
 	cover.end_cover()
 	perception.reset_detection()
 	wake_rethink_queued_at = -1 // SS220 EDIT: reset must always cancel deferred wake-up recovery before owner teardown finishes
@@ -100,6 +103,22 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	health.lose_injured_ally()
 
 	action_runtime.clear_actions()
+
+/datum/human_ai_brain/proc/shutdown_runtime()
+	if(runtime_shutdown_started)
+		return FALSE
+
+	runtime_shutdown_started = TRUE
+	lifecycle_state = HUMAN_AI_LIFECYCLE_INVALID
+	reset_ai()
+	return TRUE
+
+/datum/human_ai_brain/proc/can_continue_runtime_work()
+	if(QDELETED(src) || runtime_shutdown_started)
+		return FALSE
+	if(lifecycle_state != HUMAN_AI_LIFECYCLE_ACTIVE)
+		return FALSE
+	return get_lifecycle_state() == HUMAN_AI_LIFECYCLE_ACTIVE
 
 /datum/human_ai_brain/process(delta_time)
 	last_process_tick = world.time // SS220 EDIT: track scheduler entry to guard same-tick wake rethinks
@@ -144,6 +163,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			suspend_for_incapacitated()
 
 /datum/human_ai_brain/proc/suspend_runtime(clear_inventory = FALSE)
+	navigation.cancel_navigation() // SS220 EDIT: suspended brains must not retain queued paths or stale navigation
 	cover.end_cover()
 	perception.suspend()
 	wake_rethink_queued_at = -1
@@ -152,7 +172,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	targeting.clear_target_turf()
 	targeting.lose_target()
 	health.lose_injured_ally()
-	health.healing_someone = FALSE
+	// health.healing_someone = FALSE
+	health.cancel_treatment() // SS220 EDIT: resumed AI must not inherit an old treatment continuation
 	action_runtime.clear_actions()
 	if(clear_inventory)
 		inventory.reset_inventory()
@@ -231,8 +252,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/proc/on_human_delete(datum/source, force)
 	SIGNAL_HANDLER
 	perception.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
-	reset_ai()
-	lifecycle_state = HUMAN_AI_LIFECYCLE_INVALID
+	shutdown_runtime()
 	wake_rethink_queued_at = -1 // SS220 EDIT: owner delete must not leave a queued wake rethink pointing at a null tied human
 	tied_controller?.set_tied_human(null)
 

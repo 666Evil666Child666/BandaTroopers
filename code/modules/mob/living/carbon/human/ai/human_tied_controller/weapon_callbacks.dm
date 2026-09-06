@@ -56,7 +56,13 @@
 /datum/human_tied_controller/proc/start_weapon_fire(obj/item/weapon/gun/weapon, delay = 0)
 	if(!can_directly_control() || !weapon)
 		return FALSE
-	addtimer(CALLBACK(weapon, TYPE_PROC_REF(/obj/item/weapon/gun, start_fire), tied_human), delay)
+	addtimer(CALLBACK(src, PROC_REF(delayed_start_weapon_fire), weapon, get_identity_ref()), delay)
+	return TRUE
+
+/datum/human_tied_controller/proc/delayed_start_weapon_fire(obj/item/weapon/gun/weapon, datum/weakref/identity_ref)
+	if(!brain?.can_continue_runtime_work() || !matches_identity_ref(identity_ref) || !weapon)
+		return FALSE
+	weapon.start_fire(tied_human)
 	return TRUE
 
 /datum/human_tied_controller/proc/fire_weapon_at(obj/item/weapon/gun/weapon, atom/target)
@@ -75,7 +81,13 @@
 /datum/human_tied_controller/proc/start_weapon_unique_action(obj/item/weapon/weapon, delay = 0)
 	if(!can_directly_control() || !weapon)
 		return FALSE
-	addtimer(CALLBACK(weapon, TYPE_PROC_REF(/obj/item/weapon, unique_action), tied_human), delay)
+	addtimer(CALLBACK(src, PROC_REF(delayed_weapon_unique_action), weapon, get_identity_ref()), delay)
+	return TRUE
+
+/datum/human_tied_controller/proc/delayed_weapon_unique_action(obj/item/weapon/weapon, datum/weakref/identity_ref)
+	if(!brain?.can_continue_runtime_work() || !matches_identity_ref(identity_ref) || !weapon)
+		return FALSE
+	weapon.unique_action(tied_human)
 	return TRUE
 
 /datum/human_tied_controller/proc/get_ai_followup_fire_callback(obj/item/weapon/gun/weapon, atom/movable/current_target)

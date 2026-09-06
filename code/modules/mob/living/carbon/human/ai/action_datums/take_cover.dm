@@ -19,8 +19,8 @@
 
 /datum/ai_action/take_cover/trigger_action()
 	. = ..()
-	if(!brain || !brain.has_valid_tied_human()) // SS220 EDIT: cover movement exits cleanly if the modular AI owner vanishes mid-action
-		return ONGOING_ACTION_COMPLETED
+	if(. == ONGOING_ACTION_COMPLETED)
+		return .
 
 	var/turf/current_cover = brain.cover.get_current_cover()
 	if(!current_cover)
@@ -36,7 +36,7 @@
 			brain.cover.end_cover()
 			return ONGOING_ACTION_COMPLETED
 
-		if(!brain || !brain.has_valid_tied_human())
+		if(!brain.can_continue_runtime_work())
 			return ONGOING_ACTION_COMPLETED
 
 		if(brain.tied_controller.get_distance_from(current_cover) > 0)

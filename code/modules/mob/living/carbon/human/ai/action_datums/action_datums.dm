@@ -56,5 +56,5 @@ GLOBAL_LIST_INIT_TYPED(AI_actions, /datum/ai_action, setup_ai_actions())
 /datum/ai_action/proc/trigger_action()
 	SHOULD_NOT_SLEEP(TRUE)
 	// Child trigger_action() overrides must return parent completion before reading src.brain.
-	if(!brain)
+	if(!brain?.can_continue_runtime_work()) // SS220 EDIT: delayed/ongoing actions must re-check lifecycle before side effects
 		return ONGOING_ACTION_COMPLETED

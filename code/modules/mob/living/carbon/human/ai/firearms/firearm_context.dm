@@ -19,7 +19,7 @@
 	reload_item = new_reload_item || new_mag
 
 /datum/human_ai_firearm_context/proc/is_valid()
-	return firearm && AI?.has_valid_tied_human() && controller
+	return firearm && AI?.can_continue_runtime_work() && controller
 
 /datum/human_ai_firearm_context/proc/can_use()
 	if(!is_valid())
@@ -54,9 +54,9 @@
 /datum/human_ai_firearm_context/proc/prepare_primary_weapon()
 	if(!is_valid())
 		return FALSE
-	AI.inventory.unholster_primary()
-	AI.inventory.ensure_primary_hand(firearm)
-	return TRUE
+	if(!AI.inventory.unholster_primary())
+		return FALSE
+	return AI.inventory.ensure_primary_hand(firearm)
 
 /datum/human_ai_firearm_context/proc/wield_primary()
 	if(!is_valid())
@@ -67,8 +67,7 @@
 /datum/human_ai_firearm_context/proc/wield_primary_sleep()
 	if(!is_valid())
 		return FALSE
-	AI.inventory.wield_primary_sleep()
-	return TRUE
+	return AI.inventory.wield_primary_sleep()
 
 /datum/human_ai_firearm_context/proc/unwield_weapon()
 	if(!is_valid())
@@ -82,9 +81,11 @@
 
 /datum/human_ai_firearm_context/proc/sleep_short()
 	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
+	return can_use()
 
 /datum/human_ai_firearm_context/proc/sleep_micro()
 	sleep(AI.profile.micro_action_delay * AI.profile.action_delay_mult)
+	return can_use()
 
 /datum/human_ai_firearm_context/proc/ensure_safety_off()
 	if(!is_valid() || !(firearm.flags_gun_features & GUN_TRIGGER_SAFETY))

@@ -17,19 +17,17 @@
 	if(!can_use(context) || !context.mag)
 		return FALSE
 	var/obj/item/weapon/gun/revolver/revolver = context.firearm
-	context.prepare_primary_weapon()
+	if(!context.prepare_primary_weapon())
+		return FALSE
 	context.unwield_weapon()
-	context.sleep_short()
-	if(!can_use(context))
+	if(!context.sleep_short() || !can_use(context))
 		return FALSE
 	if(revolver.current_mag?.chamber_closed)
 		context.controller.unload_weapon(revolver)
 	context.swap_hand()
-	context.sleep_micro()
-	if(!context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
+	if(!context.sleep_micro() || !context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
 		return FALSE
-	context.sleep_short()
-	if(!context.can_continue_reload())
+	if(!context.sleep_short() || !context.can_continue_reload())
 		return FALSE
 	if(istype(context.mag, /obj/item/ammo_magazine/handful))
 		var/obj/item/ammo_magazine/handful/handful = context.mag
@@ -37,12 +35,15 @@
 			if(!context.can_continue_reload(handful))
 				return FALSE
 			context.insert_ammo(handful)
-			context.sleep_micro()
+			if(!context.sleep_micro())
+				return FALSE
 	else
 		context.insert_ammo()
-	context.sleep_micro()
+	if(!context.sleep_micro())
+		return FALSE
 	if(revolver.current_mag && !revolver.current_mag.chamber_closed)
 		context.controller.unload_weapon(revolver)
 	context.swap_hand()
-	context.wield_primary_sleep()
+	if(!context.wield_primary_sleep())
+		return FALSE
 	return TRUE

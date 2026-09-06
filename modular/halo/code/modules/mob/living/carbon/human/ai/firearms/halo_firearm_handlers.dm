@@ -139,5 +139,4 @@
 	if(!context.is_valid())
 		return FALSE
 	context.swap_hand()
-	context.wield_primary_sleep()
-	return TRUE
+	return context.wield_primary_sleep()

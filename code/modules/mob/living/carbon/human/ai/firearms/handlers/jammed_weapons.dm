@@ -6,9 +6,9 @@
 /datum/human_ai_firearm_handler/jammed_smg/proc/try_clear_jam(datum/human_ai_firearm_context/context, jammed)
 	if(!jammed)
 		return FALSE
-	context.prepare_primary_weapon()
-	context.use_unique_action()
-	return TRUE
+	if(!context.prepare_primary_weapon())
+		return FALSE
+	return context.use_unique_action()
 
 /datum/human_ai_firearm_handler/jammed_smg/ppsh
 	gun_types = list(/obj/item/weapon/gun/smg/ppsh)

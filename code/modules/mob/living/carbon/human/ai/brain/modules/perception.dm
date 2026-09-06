@@ -107,7 +107,7 @@
 		brain.targeting.set_target_turf(get_turf(firer), 4 SECONDS)
 
 /datum/human_ai_module/perception/proc/can_process_detection()
-	return brain?.has_valid_tied_human() && !brain.tied_controller.can_player_takeover_block_ai()
+	return brain?.can_continue_runtime_work()
 
 /datum/human_ai_module/perception/proc/is_projectile_debounced(obj/projectile/bullet)
 	return (last_detected_projectile == bullet) && (last_detected_projectile_time == world.time)

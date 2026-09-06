@@ -14,7 +14,7 @@
 
 /datum/human_ai_module/combat/proc/enter_combat()
 	SIGNAL_HANDLER
-	if(!brain.has_valid_tied_human())
+	if(!brain.can_continue_runtime_work())
 		return
 
 	if(brain.squad.squad_id) // call for help
@@ -30,9 +30,6 @@
 			if(!squaddie.targeting.can_target(current_target))
 				continue
 			squaddie.targeting.set_target_turf_direct(brain.targeting.get_target_turf())
-
-	if(brain.tied_controller.can_player_takeover_block_ai())
-		return
 
 	if(!in_combat)
 		brain.communication.say_in_combat_line()
@@ -53,7 +50,7 @@
 		in_combat = FALSE
 		return
 
-	if(brain.tied_controller.can_player_takeover_block_ai())
+	if(!brain.can_continue_runtime_work())
 		return
 
 	if(in_combat)

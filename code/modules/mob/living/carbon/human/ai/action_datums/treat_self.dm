@@ -28,7 +28,8 @@
 	return 4
 
 /datum/ai_action/treat_self/Destroy(force, ...)
-	brain.health.healing_someone = FALSE
+	// brain.health.healing_someone = FALSE
+	brain?.health?.cancel_treatment() // SS220 EDIT: cancel the suspended operation, not just its busy flag
 	return ..()
 
 /datum/ai_action/treat_self/trigger_action()

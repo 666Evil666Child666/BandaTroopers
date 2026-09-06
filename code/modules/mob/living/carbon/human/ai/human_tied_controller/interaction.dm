@@ -20,8 +20,13 @@
 /datum/human_tied_controller/proc/act_on_blocker(atom/obstacle)
 	if(!can_directly_control() || !obstacle)
 		return FALSE
-	INVOKE_ASYNC(obstacle, TYPE_PROC_REF(/atom, human_ai_act), tied_human, brain)
+	INVOKE_ASYNC(src, PROC_REF(async_act_on_blocker), obstacle, get_identity_ref())
 	return TRUE
+
+/datum/human_tied_controller/proc/async_act_on_blocker(atom/obstacle, datum/weakref/identity_ref)
+	if(!brain?.can_continue_runtime_work() || !matches_identity_ref(identity_ref) || !obstacle)
+		return FALSE
+	return obstacle.human_ai_act(tied_human, brain)
 
 // Behavior/migration helpers
 
@@ -58,5 +63,11 @@
 /datum/human_tied_controller/proc/resist()
 	if(!can_directly_control())
 		return FALSE
-	INVOKE_ASYNC(tied_human, TYPE_VERB_REF(/mob/living, resist))
+	INVOKE_ASYNC(src, PROC_REF(async_resist), get_identity_ref())
+	return TRUE
+
+/datum/human_tied_controller/proc/async_resist(datum/weakref/identity_ref)
+	if(!brain?.can_continue_runtime_work() || !matches_identity_ref(identity_ref))
+		return FALSE
+	tied_human.resist()
 	return TRUE

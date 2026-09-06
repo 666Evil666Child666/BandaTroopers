@@ -43,10 +43,6 @@
 		return FALSE
 	return apply_move_delay()
 
-// Helper for reconstructing the old movement behavior during migration.
-/datum/human_tied_controller/proc/can_move_and_apply_move_delay()
-	return try_apply_move_delay()
-
 // Raw movement primitives
 
 /datum/human_tied_controller/proc/get_move_direction(turf/target_turf)
@@ -128,6 +124,14 @@
 
 /datum/human_tied_controller/proc/is_calculating_path()
 	return can_read_puppet() && CALCULATING_PATH(tied_human)
+
+// SS220 EDIT - START: lifecycle cleanup must cancel by agent before detach clears tied_human
+/datum/human_tied_controller/proc/cancel_pathfinding()
+	if(!tied_human)
+		return FALSE
+	SSpathfinding.stop_calculating_path(tied_human)
+	return TRUE
+// SS220 EDIT - END
 
 /datum/human_tied_controller/proc/calculate_path_to(turf/destination, max_range, datum/callback/path_callback, list/additional_exclusions)
 	if(!can_read_puppet() || !destination || !path_callback)

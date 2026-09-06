@@ -8,24 +8,29 @@
 		context.set_reload_item(find_reload_item(context))
 	if(!can_use(context) || !context.mag)
 		return FALSE
-	context.prepare_primary_weapon()
+	if(!context.prepare_primary_weapon())
+		return FALSE
 	context.unwield_weapon()
 	context.use_unique_action()
 	context.swap_hand()
-	context.sleep_short()
-	if(!context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
+	if(!context.sleep_short() || !context.can_continue_reload() || !prepare_reload_item(context) || !context.can_continue_reload())
 		return FALSE
-	context.sleep_short()
+	if(!context.sleep_short())
+		return FALSE
 	context.insert_ammo()
-	context.sleep_micro()
+	if(!context.sleep_micro())
+		return FALSE
 	context.insert_ammo()
 	if(!QDELETED(context.mag))
 		var/storage_spot = context.AI.inventory.storage_has_room(context.mag)
 		if(storage_spot)
-			context.sleep_micro()
+			if(!context.sleep_micro())
+				return FALSE
 			context.AI.inventory.store_item(context.mag, storage_spot, HUMAN_AI_AMMUNITION)
-	context.sleep_short()
+	if(!context.sleep_short())
+		return FALSE
 	context.swap_hand()
 	context.use_unique_action()
-	context.wield_primary_sleep()
+	if(!context.wield_primary_sleep())
+		return FALSE
 	return TRUE
