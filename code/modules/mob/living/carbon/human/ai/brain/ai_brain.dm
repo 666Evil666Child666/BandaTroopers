@@ -78,25 +78,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	combat_exit_finished_modules = null
 	combat_exit_force_clear_modules = null
 	target_vision_modules = null
-	QDEL_LIST(extension_modules)
-	extension_modules = null
-	QDEL_NULL(targeting)
-	QDEL_NULL(perception)
-	QDEL_NULL(cover)
-	QDEL_NULL(faction)
-	QDEL_NULL(inventory)
-	QDEL_NULL(grenade)
-	QDEL_NULL(health)
-	QDEL_NULL(communication)
-	QDEL_NULL(guns)
-	QDEL_NULL(navigation)
-	QDEL_NULL(squad)
-	QDEL_NULL(action_runtime)
-	QDEL_NULL(combat)
-	QDEL_NULL(conversation)
-	QDEL_NULL(orders)
-	QDEL_NULL(profile)
-	QDEL_NULL(emplacement)
+	module_config?.teardown_brain_modules(src)
 	QDEL_NULL(module_config)
 	QDEL_NULL(tied_controller)
 
@@ -115,6 +97,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!module)
 		return null
 
+	module_config?.register_module(module)
 	LAZYOR(extension_modules, module)
 	return module
 
