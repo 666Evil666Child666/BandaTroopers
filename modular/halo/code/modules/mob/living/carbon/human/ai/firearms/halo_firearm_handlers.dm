@@ -40,7 +40,7 @@
 	if(!. || plasma.heat < 60)
 		return
 	if(plasma.dispersing)
-		context.AI.cover.try_cover()
+		context.AI.try_cover()
 		return
 	if(prob(get_vent_chance(context)))
 		context.prepare_primary_weapon()
@@ -124,7 +124,7 @@
 	context.sleep_micro()
 	if(!can_use(context) || QDELETED(context.mag))
 		return FALSE
-	context.AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, context.mag)
+	context.AI.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, context.mag)
 	context.sleep_short()
 	if(!can_use(context) || QDELETED(context.mag))
 		return FALSE

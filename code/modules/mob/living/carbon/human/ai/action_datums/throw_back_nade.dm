@@ -1,6 +1,7 @@
 /datum/ai_action/throw_back_nade
 	name = "Throw Back Grenade"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/grenade, /datum/human_ai_module/inventory)
 	var/min_safe_throw_distance = 4 // SS220 EDIT: throw-back should not deliberately choose turf inside the expected grenade danger radius
 	var/throw_ready_time = 0 // SS220 EDIT: picked-up timed grenades roll a random hold window before the actual throw
 	var/mid_throw = FALSE // SS220 EDIT: transient async state keeps trigger_action() no-sleep while the real throw runs separately

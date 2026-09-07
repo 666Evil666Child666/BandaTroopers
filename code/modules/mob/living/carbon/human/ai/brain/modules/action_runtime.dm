@@ -1,4 +1,6 @@
 /datum/human_ai_module/action_runtime
+	required_module_types = list(/datum/human_ai_module/combat)
+
 	/// List of whitelisted/blacklisted action datums
 	var/list/action_whitelist = null
 	var/list/action_blacklist = null
@@ -33,7 +35,8 @@
 
 /datum/human_ai_module/action_runtime/proc/process_actions(delta_time)
 	// List all allowed action types for AI to consider
-	var/list/allowed_actions = action_whitelist ? action_whitelist.Copy() : (GLOB.AI_actions.Copy() - action_blacklist) // SS220 EDIT: runtime selection must not mutate preset whitelists
+	var/list/allowed_actions = action_whitelist ? action_whitelist.Copy() : GLOB.AI_actions.Copy() // SS220 EDIT: runtime selection must not mutate preset whitelists
+	allowed_actions -= action_blacklist
 	for(var/datum/ongoing_action as anything in ongoing_actions)
 		if(is_type_in_list(ongoing_action, allowed_actions))
 			allowed_actions -= ongoing_action.type

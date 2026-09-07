@@ -1,6 +1,7 @@
 /datum/ai_action/sangheili_kick
 	name = "Пинок сангхейли"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/inventory, /datum/human_ai_module/action_runtime)
 
 /datum/ai_action/sangheili_kick/Added()
 	brain.halo_sangheili_holster_sword()

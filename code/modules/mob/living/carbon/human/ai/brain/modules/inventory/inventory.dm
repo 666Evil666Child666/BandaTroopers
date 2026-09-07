@@ -1,4 +1,6 @@
 /datum/human_ai_module/inventory
+	required_module_types = list(/datum/human_ai_module/faction)
+
 	/// If an AI takes out an item from their equipment_map, the place it was last stored is added to this dict
 	var/list/equipped_items_original_loc = list()
 	/// A list of items that the AI is trying to pick up

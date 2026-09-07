@@ -1,6 +1,7 @@
 /datum/ai_action/patrol_waypoints
 	name = "Patrol Waypoints"
 	action_flags = ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/navigation, /datum/human_ai_module/squad, /datum/human_ai_module/combat, /datum/human_ai_module/inventory)
 
 /datum/ai_action/patrol_waypoints/get_weight(datum/human_ai_brain/brain)
 	if(brain.is_in_combat())

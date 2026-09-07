@@ -54,20 +54,20 @@
 /datum/human_ai_firearm_context/proc/prepare_primary_weapon()
 	if(!is_valid())
 		return FALSE
-	if(!AI.inventory.unholster_primary())
+	if(!AI.unholster_primary())
 		return FALSE
-	return AI.inventory.ensure_primary_hand(firearm)
+	return AI.ensure_primary_hand(firearm)
 
 /datum/human_ai_firearm_context/proc/wield_primary()
 	if(!is_valid())
 		return FALSE
-	AI.inventory.wield_primary()
+	AI.wield_primary()
 	return TRUE
 
 /datum/human_ai_firearm_context/proc/wield_primary_sleep()
 	if(!is_valid())
 		return FALSE
-	return AI.inventory.wield_primary_sleep()
+	return AI.wield_primary_sleep()
 
 /datum/human_ai_firearm_context/proc/unwield_weapon()
 	if(!is_valid())
@@ -80,11 +80,11 @@
 	return controller.swap_hand()
 
 /datum/human_ai_firearm_context/proc/sleep_short()
-	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
+	sleep(AI.get_action_delay())
 	return can_use()
 
 /datum/human_ai_firearm_context/proc/sleep_micro()
-	sleep(AI.profile.micro_action_delay * AI.profile.action_delay_mult)
+	sleep(AI.get_micro_action_delay())
 	return can_use()
 
 /datum/human_ai_firearm_context/proc/ensure_safety_off()
@@ -108,7 +108,7 @@
 /datum/human_ai_firearm_context/proc/equip_reload_item(equipment_type = HUMAN_AI_AMMUNITION)
 	if(!is_valid() || !reload_item)
 		return FALSE
-	return AI.inventory.equip_item_from_equipment_map(equipment_type, reload_item)
+	return AI.equip_item_from_equipment_map(equipment_type, reload_item)
 
 /datum/human_ai_firearm_context/proc/insert_reload_item(obj/item/item = reload_item)
 	if(!is_valid() || !item)

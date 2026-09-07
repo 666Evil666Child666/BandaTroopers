@@ -1,6 +1,7 @@
 /datum/ai_action/sniper_nest
 	name = "Sniper Nest"
 	action_flags = ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/emplacement, /datum/human_ai_module/guns, /datum/human_ai_module/inventory, /datum/human_ai_module/navigation, /datum/human_ai_module/profile)
 	var/initial_view
 	var/initial_reload_line_chance
 

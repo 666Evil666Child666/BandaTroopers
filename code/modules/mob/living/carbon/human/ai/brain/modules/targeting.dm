@@ -1,6 +1,8 @@
 #define EXTRA_CHECK_DISTANCE_MULTIPLIER 0.20
 
 /datum/human_ai_module/targeting
+	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/profile)
+
 	/// Ref to the currently focused (and shooting at) target
 	var/atom/movable/current_target
 	/// Last turf our target was seen at

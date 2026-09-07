@@ -13,7 +13,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/clear_threat(datum/human_ai_throwable_context/context, datum/ai_action/throw_back_nade/action)
 	if(context?.AI)
-		context.AI.grenade.clear_active_grenade()
+		context.AI.clear_active_grenade()
 	if(action)
 		action.throw_ready_time = 0
 
@@ -35,7 +35,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 		return TRUE
 
 	if(!(context.controller.get_active_hand()?.flags_item & NODROP))
-		context.AI.inventory.clear_main_hand()
+		context.AI.clear_main_hand()
 		if(context.controller.put_in_active_hand(grenade))
 			return TRUE
 
@@ -44,7 +44,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 		return TRUE
 
 	if(!(context.controller.get_active_hand()?.flags_item & NODROP))
-		context.AI.inventory.clear_main_hand()
+		context.AI.clear_main_hand()
 		if(context.controller.put_in_active_hand(grenade))
 			return TRUE
 
@@ -54,7 +54,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/try_hold_live_grenade_ensure_primary(datum/human_ai_throwable_context/context)
 	if(!try_hold_live_grenade(context))
 		return FALSE
-	context.AI.inventory.ensure_primary_hand(context.grenade)
+	context.AI.ensure_primary_hand(context.grenade)
 	return TRUE
 
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/get_directional_throw_target(datum/human_ai_throwable_context/context)
@@ -82,8 +82,8 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 							continue dir_loop
 
 				var/has_friendly = FALSE
-				for(var/mob/possible_friendly in range(context.AI.grenade.get_friendly_throw_check_range(), location))
-					if(!context.AI.targeting.can_target(possible_friendly))
+				for(var/mob/possible_friendly in range(context.AI.get_friendly_throw_check_range(), location))
+					if(!context.AI.can_target(possible_friendly))
 						has_friendly = TRUE
 						break
 
@@ -97,10 +97,10 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 	if(!context?.is_valid())
 		return null
 
-	var/view_distance = context.AI.profile.view_distance
+	var/view_distance = context.AI.get_view_distance()
 	var/list/possible_targets = list()
 	for(var/mob/living/carbon/target in context.controller.get_range(view_distance))
-		if(context.AI.targeting.can_target(target))
+		if(context.AI.can_target(target))
 			possible_targets += target
 
 	var/turf/place_to_throw
@@ -125,7 +125,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 	if(!context?.is_valid() || !action)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!context.AI.grenade.can_throw_back())
+	if(!context.AI.can_throw_back_grenade())
 		log_game("AI GRENADE: throw-back aborted - capability disabled, mob=[context.controller.get_key_name()]")
 		clear_threat(context, action)
 		return ONGOING_ACTION_COMPLETED
@@ -137,7 +137,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 
 	if(!context.controller.is_item_equipped_or_held(context.grenade))
 		if(context.controller.get_distance_to(context.grenade) > 1)
-			if(!context.AI.navigation.move_to_next_turf(get_turf(context.grenade)))
+			if(!context.AI.move_to_turf(get_turf(context.grenade)))
 				log_game("AI GRENADE: throw-back aborted - could not move to grenade, grenade=[context.grenade], mob=[context.controller.get_key_name()]")
 				return ONGOING_ACTION_COMPLETED
 
@@ -182,8 +182,8 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 	context.controller.toggle_throw_mode(THROW_MODE_NORMAL)
 	context.controller.face_atom(place_to_throw)
 	log_game("AI GRENADE: throw-back proceeding to async throw - grenade=[context.grenade], target=[place_to_throw], mob=[context.controller.get_key_name()]")
-	context.AI.grenade.clear_active_grenade()
-	context.AI.inventory.unqueue_pickup(context.grenade)
+	context.AI.clear_active_grenade()
+	context.AI.unqueue_pickup(context.grenade)
 	action.throw_ready_time = 0
 	action.mid_throw = TRUE
 	INVOKE_ASYNC(src, PROC_REF(async_throw_grenade), action, context.controller.get_identity_ref(), context.grenade, place_to_throw)

@@ -1,4 +1,6 @@
 /datum/human_ai_module/cover
+	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/targeting, /datum/human_ai_module/profile, /datum/human_ai_module/inventory)
+
 	/// If TRUE, AI is currently in some form of cover
 	var/in_cover = FALSE
 	/// Reference to atom currently selected as a cover place
@@ -116,7 +118,7 @@
 
 /// If an AI decides to go into cover, any squadmates in their view range will process on the same view dictionary so as to help with performance
 /datum/human_ai_module/cover/proc/squad_cover_processing(list/turf_dict)
-	if(!brain.get_squad_id())
+	if(!brain.squad?.squad_id)
 		return
 
 	var/datum/human_ai_squad/squad = brain.get_squad_datum()

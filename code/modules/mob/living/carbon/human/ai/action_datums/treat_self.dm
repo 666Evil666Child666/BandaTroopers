@@ -1,6 +1,7 @@
 /datum/ai_action/treat_self
 	name = "Treat Self"
 	action_flags = ACTION_USING_HANDS
+	required_ai_modules = list(/datum/human_ai_module/health, /datum/human_ai_module/inventory, /datum/human_ai_module/targeting)
 
 /datum/ai_action/treat_self/get_weight(datum/human_ai_brain/brain)
 	if(brain.tied_controller.is_zombie())

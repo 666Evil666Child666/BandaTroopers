@@ -91,6 +91,8 @@
 	remove_current_order()
 
 /datum/human_ai_module/squad
+	required_module_types = list(/datum/human_ai_module/targeting, /datum/human_ai_module/profile)
+
 	/// Numeric ID of the squad this AI is in, if any
 	var/squad_id
 	var/is_squad_leader = FALSE

@@ -1,4 +1,6 @@
 /datum/human_ai_module/perception
+	required_module_types = list(/datum/human_ai_module/combat)
+
 	/// Nearby turfs that we're watching for bullets
 	var/list/detection_turfs = list()
 	/// Prevent repeated projectile detection re-entry in the same tick

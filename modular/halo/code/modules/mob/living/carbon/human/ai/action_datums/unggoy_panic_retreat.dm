@@ -1,6 +1,7 @@
 /datum/ai_action/unggoy_panic_retreat
 	name = "Паническое отступление унггоя"
 	action_flags = ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/squad)
 
 /datum/ai_action/unggoy_panic_retreat/get_weight(datum/human_ai_brain/brain)
 	if(!brain.halo_unggoy_runtime)

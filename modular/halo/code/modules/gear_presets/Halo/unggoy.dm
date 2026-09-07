@@ -709,6 +709,7 @@
 	rank = JOB_COV_MINOR
 	paygrades = list(PAY_SHORT_COV_MINOR = JOB_PLAYTIME_TIER_0)
 	role_comm_title = "Смертник"
+	human_ai_action_whitelist = list(/datum/ai_action/unggoy_suicide_bomber)
 	halo_unggoy_role = "bomber"
 	halo_unggoy_ignore_panic = TRUE
 	halo_unggoy_overheat_retreat = FALSE
@@ -718,6 +719,10 @@
 	add_plasma_grenades(new_human, 2)
 	add_ai_injectors(new_human, list(/obj/item/reagent_container/hypospray/autoinjector/bicaridine/halo, /obj/item/reagent_container/hypospray/autoinjector/kelotane/halo))
 
+/datum/equipment_preset/covenant/unggoy/ai/suicide_bomber/get_human_ai_action_blacklist()
+	. = ..()
+	LAZYOR(., /datum/ai_action/throw_grenade)
+
 /datum/equipment_preset/covenant/unggoy/ai/suicide_bomber/modular_apply_human_ai_brain_overrides(datum/human_ai_brain/brain, mob/living/carbon/human/new_human)
 	..()
 	if(!brain)
@@ -725,5 +730,5 @@
 
 	brain.halo_suicide_bomber = TRUE
 	brain.halo_suicide_prime_range = 5
-	brain.grenade.grenading_allowed = FALSE
-	brain.inventory.ignore_looting = TRUE
+	brain.set_grenade_throwing_enabled(FALSE)
+	brain.set_looting_disabled(TRUE)

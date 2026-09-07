@@ -25,9 +25,9 @@
 	return TRUE
 
 /datum/human_ai_weapon_context/proc/sleep_short()
-	sleep(AI.profile.short_action_delay * AI.profile.action_delay_mult)
+	sleep(AI.get_action_delay())
 	return can_continue()
 
 /datum/human_ai_weapon_context/proc/sleep_micro()
-	sleep(AI.profile.micro_action_delay * AI.profile.action_delay_mult)
+	sleep(AI.get_micro_action_delay())
 	return can_continue()

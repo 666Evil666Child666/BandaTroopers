@@ -1,6 +1,7 @@
 /datum/ai_action/chase_target
 	name = "Chase Target"
 	action_flags = ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation)
 
 /datum/ai_action/chase_target/get_weight(datum/human_ai_brain/brain)
 	if(brain.is_in_cover())

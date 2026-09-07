@@ -5,6 +5,7 @@
 /datum/ai_action/unggoy_suicide_bomber
 	name = "Унггой-смертник"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/inventory, /datum/human_ai_module/action_runtime)
 
 /datum/ai_action/unggoy_suicide_bomber/get_weight(datum/human_ai_brain/brain)
 	if(!brain.has_valid_tied_human())

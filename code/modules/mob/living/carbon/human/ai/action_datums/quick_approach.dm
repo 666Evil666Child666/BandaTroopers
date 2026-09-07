@@ -1,6 +1,7 @@
 /datum/ai_action/quick_approach
 	name = "Quick Approach"
 	action_flags = ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/orders, /datum/human_ai_module/navigation)
 
 /datum/ai_action/quick_approach/get_weight(datum/human_ai_brain/brain)
 	if(!brain.get_quick_approach_turf())

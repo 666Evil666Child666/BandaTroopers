@@ -3,6 +3,7 @@
 /datum/ai_action/fire_at_target
 	name = "Fire At Target"
 	action_flags = ACTION_USING_HANDS
+	required_ai_modules = list(/datum/human_ai_module/combat, /datum/human_ai_module/guns, /datum/human_ai_module/inventory, /datum/human_ai_module/targeting, /datum/human_ai_module/profile, /datum/human_ai_module/faction)
 	var/rounds_burst_fired = 0
 	var/currently_firing
 	var/list/watched_turfs = list()

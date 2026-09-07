@@ -1,4 +1,6 @@
 /datum/human_ai_module/guns
+	required_module_types = list(/datum/human_ai_module/inventory)
+
 	/// If we've tried to reload (and failed) with our current inventory
 	var/tried_reload = FALSE
 	/// Cooldown for if we've fired too many rounds in a burst (for recoil)

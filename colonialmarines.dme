@@ -2171,6 +2171,7 @@
 #include "code\modules\mob\living\carbon\human\ai\ai_spawner\ai_presets_zombies.dm"
 #include "code\modules\mob\living\carbon\human\ai\ai_spawner\ai_spawner.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_module_facades.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_conversation.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_factions.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_helpers.dm"

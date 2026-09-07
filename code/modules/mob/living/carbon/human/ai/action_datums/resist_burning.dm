@@ -1,6 +1,7 @@
 /datum/ai_action/resist_burning
 	name = "Resist Burning"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS | ACTION_USING_MOUTH
+	required_ai_modules = list(/datum/human_ai_module/cover)
 
 /datum/ai_action/resist_burning/get_weight(datum/human_ai_brain/brain)
 	if(!brain.tied_controller.is_on_fire() || brain.tied_controller.is_zombie())

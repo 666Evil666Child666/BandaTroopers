@@ -46,7 +46,7 @@
 	if(!context?.is_valid() || !item || !context.controller.can_use_item(item))
 		return FALSE
 	var/obj/item/weapon/gun/launcher/grenade/grenade_launcher = context.firearm
-	return context.AI.inventory.can_item_supply_grenade(item, grenade_launcher)
+	return context.AI.can_item_supply_grenade(item, grenade_launcher)
 
 /datum/human_ai_firearm_handler/grenade_launcher/fire(datum/human_ai_firearm_context/context)
 	if(!can_use(context))

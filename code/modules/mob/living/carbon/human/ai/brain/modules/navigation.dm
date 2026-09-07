@@ -1,4 +1,6 @@
 /datum/human_ai_module/navigation
+	required_module_types = list(/datum/human_ai_module/targeting)
+
 	/// The list of turfs that the AI is trying to move through
 	var/list/current_path
 	/// The next turf in current_path that the AI is moving to

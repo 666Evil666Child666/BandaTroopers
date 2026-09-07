@@ -5,6 +5,7 @@
 /datum/ai_action/item_pickup
 	name = "Item Pickup"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/inventory, /datum/human_ai_module/navigation)
 	var/obj/item/to_pickup
 
 /datum/ai_action/item_pickup/get_weight(datum/human_ai_brain/brain)

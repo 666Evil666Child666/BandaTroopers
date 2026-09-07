@@ -1,4 +1,6 @@
 /datum/human_ai_module/combat
+	required_module_types = list(/datum/human_ai_module/targeting)
+
 	/// Ref to the last turf that the AI shot at
 	var/turf/shot_at
 	/// If TRUE, then we're actively fighting someone or saw a bullet go by or saw someone else go into combat

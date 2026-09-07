@@ -1,6 +1,7 @@
 /datum/ai_action/reload
 	name = "Reload"
 	action_flags = ACTION_USING_HANDS
+	required_ai_modules = list(/datum/human_ai_module/guns, /datum/human_ai_module/inventory)
 	var/currently_reloading
 
 /datum/ai_action/reload/get_weight(datum/human_ai_brain/brain)

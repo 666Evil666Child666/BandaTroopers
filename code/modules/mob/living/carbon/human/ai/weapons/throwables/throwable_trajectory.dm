@@ -60,8 +60,8 @@
 	if(!AI || !target)
 		return FALSE
 
-	for(var/mob/possible_friendly in range(AI.grenade.get_friendly_throw_check_range(), target))
-		if(!AI.targeting.can_target(possible_friendly))
+	for(var/mob/possible_friendly in range(AI.get_friendly_throw_check_range(), target))
+		if(!AI.can_target(possible_friendly))
 			return TRUE
 
 	return FALSE

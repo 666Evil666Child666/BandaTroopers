@@ -1,6 +1,7 @@
 /datum/ai_action/select_primary
 	name = "Select Primary"
 	action_flags = ACTION_USING_HANDS
+	required_ai_modules = list(/datum/human_ai_module/guns, /datum/human_ai_module/inventory)
 
 /datum/ai_action/select_primary/get_weight(datum/human_ai_brain/brain)
 	if(!brain.has_secondary_weapons())

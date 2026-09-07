@@ -24,7 +24,7 @@
 	context.swap_hand()
 	if(!context.sleep_micro())
 		return FALSE
-	context.AI.inventory.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, context.mag)
+	context.AI.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, context.mag)
 	if(!context.sleep_short())
 		return FALSE
 	context.insert_ammo()

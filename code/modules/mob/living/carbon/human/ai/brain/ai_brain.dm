@@ -47,7 +47,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/New(mob/living/carbon/human/new_human)
 	. = ..()
 	tied_controller = new(src, new_human)
-	module_config = create_module_config()
+	module_config = create_module_config(new_human?.assigned_equipment_preset?.human_ai_module_config_type)
 	module_config.setup_brain(src, new_human)
 	setup_lifecycle_modules()
 	tied_controller.register_signal_for(src, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
@@ -58,7 +58,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	tied_controller.register_signal_for(src, COMSIG_HUMAN_SET_SPECIES, PROC_REF(on_species_change))
 	tied_controller.register_signal_for(src, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(on_body_position_change)) // SS220 EDIT: standing back up should wake shared human AI immediately
 	GLOB.human_ai_brains += src
-	inventory.appraise_inventory()
+	inventory?.appraise_inventory()
 	tied_controller.set_safe_intent()
 
 /datum/human_ai_brain/Destroy(force, ...)
@@ -87,8 +87,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/proc/has_valid_tied_human()
 	return tied_controller?.has_valid_tied_human()
 
-/datum/human_ai_brain/proc/create_module_config()
-	return new /datum/human_ai_module_config/default()
+/datum/human_ai_brain/proc/create_module_config(module_config_type = /datum/human_ai_module_config/default)
+	if(!ispath(module_config_type, /datum/human_ai_module_config))
+		module_config_type = /datum/human_ai_module_config/default
+	return new module_config_type()
 
 /datum/human_ai_brain/proc/setup_lifecycle_modules()
 	module_config.configure_module_lists(src)
@@ -194,8 +196,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!has_valid_tied_human())
 		return
 	tied_controller.force_prone()
-	inventory.clear_pickup_queue()
-	inventory.invalidate_nearby_item_search()
+	if(inventory)
+		inventory.clear_pickup_queue()
+		inventory.invalidate_nearby_item_search()
 
 /datum/human_ai_brain/proc/resume_from_lifecycle_suspension(previous_lifecycle_state)
 	if(!has_valid_tied_human() || tied_controller.can_player_takeover_block_ai())
@@ -265,7 +268,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	tied_controller.set_safe_intent()
-	var/should_holster_primary = !emplacement.has_sniper_home()
+	var/should_holster_primary = !emplacement?.has_sniper_home()
 	for(var/datum/human_ai_module/module as anything in combat_exit_started_modules)
 		module.on_combat_exit_started(should_holster_primary)
 
@@ -297,398 +300,10 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			return TRUE
 	return FALSE
 
-// Combat facade
-/datum/human_ai_brain/proc/is_in_combat()
-	return combat.in_combat
-
-/datum/human_ai_brain/proc/set_shot_at_turf(turf/target_turf)
-	combat.shot_at = get_turf(target_turf)
-
-// Orders facade
-/datum/human_ai_brain/proc/can_move_for_action()
-	return orders.can_move_for_action()
-
-/datum/human_ai_brain/proc/get_quick_approach_turf()
-	RETURN_TYPE(/turf)
-	return orders.quick_approach
-
-/datum/human_ai_brain/proc/clear_quick_approach()
-	orders.clear_quick_approach()
-
-// Grenade facade
-/datum/human_ai_brain/proc/has_active_grenade()
-	return grenade.has_active_grenade()
-
-/datum/human_ai_brain/proc/get_active_grenade()
-	RETURN_TYPE(/obj/item/explosive/grenade)
-	return grenade.get_active_grenade()
-
-/datum/human_ai_brain/proc/set_active_grenade(obj/item/explosive/grenade/new_grenade)
-	grenade.set_active_grenade(new_grenade)
-
-/datum/human_ai_brain/proc/clear_active_grenade()
-	grenade.clear_active_grenade()
-
-/datum/human_ai_brain/proc/can_throw_grenades()
-	return grenade.can_throw_grenades()
-
-/datum/human_ai_brain/proc/can_throw_back_grenade()
-	return grenade.can_throw_back()
-
-/datum/human_ai_brain/proc/find_grenade_for_throw()
-	RETURN_TYPE(/obj/item/explosive/grenade)
-	return inventory.find_grenade_for_throw()
-
-/datum/human_ai_brain/proc/has_throw_in_progress()
-	return grenade.has_throw_in_progress()
-
-// Inventory facade
-/datum/human_ai_brain/proc/get_equipment_summary(equipment_type)
-	return inventory.get_equipment_summary(equipment_type)
-
-/datum/human_ai_brain/proc/has_equipment(equipment_type)
-	return inventory.has_equipment(equipment_type)
-
-/datum/human_ai_brain/proc/has_pickup_queue()
-	return inventory.has_pickup_queue()
-
-/datum/human_ai_brain/proc/get_next_pickup()
-	RETURN_TYPE(/obj/item)
-	return inventory.get_next_pickup()
-
-/datum/human_ai_brain/proc/unqueue_pickup(obj/item/item)
-	inventory.unqueue_pickup(item)
-
-/datum/human_ai_brain/proc/is_looting_disabled()
-	return inventory.is_looting_disabled()
-
-/datum/human_ai_brain/proc/has_primary_weapon()
-	return inventory.has_primary_weapon()
-
-/datum/human_ai_brain/proc/set_primary_weapon(obj/item/weapon/gun/new_primary_weapon)
-	inventory.set_primary_weapon(new_primary_weapon)
-
-/datum/human_ai_brain/proc/drop_primary_weapon()
-	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
-	if(primary_weapon)
-		tied_controller.drop_held_item(primary_weapon)
-	inventory.set_primary_weapon(null)
-
-/datum/human_ai_brain/proc/unholster_primary()
-	return inventory.unholster_primary()
-
-/datum/human_ai_brain/proc/ensure_primary_hand(obj/item/weapon/gun/primary_weapon)
-	return inventory.ensure_primary_hand(primary_weapon)
-
-/datum/human_ai_brain/proc/wield_primary()
-	return inventory.wield_primary()
-
-/datum/human_ai_brain/proc/has_secondary_weapons()
-	return inventory.has_secondary_weapons()
-
-/datum/human_ai_brain/proc/get_next_secondary_weapon()
-	RETURN_TYPE(/obj/item/weapon/gun)
-	return inventory.get_next_secondary_weapon()
-
-/datum/human_ai_brain/proc/add_secondary_weapon(obj/item/weapon/gun/weapon)
-	return inventory.add_secondary_weapon(weapon)
-
-/datum/human_ai_brain/proc/get_primary_weapon()
-	RETURN_TYPE(/obj/item/weapon/gun)
-	return inventory.get_primary_weapon()
-
-/datum/human_ai_brain/proc/get_gun_data()
-	RETURN_TYPE(/datum/human_ai_firearm_profile)
-	return inventory.get_gun_data()
-
-/datum/human_ai_brain/proc/has_gun_data()
-	return inventory.has_gun_data()
-
-/datum/human_ai_brain/proc/storage_has_room(obj/item/item)
-	return inventory.storage_has_room(item)
-
-/datum/human_ai_brain/proc/has_container_ref(container_id)
-	return inventory.has_container_ref(container_id)
-
-/datum/human_ai_brain/proc/get_pickup_storage_equipment_types(obj/item/item)
-	return inventory.get_pickup_storage_equipment_types(item)
-
-/datum/human_ai_brain/proc/store_item_as_types(obj/item/item, storage_spot, list/equipment_types)
-	return inventory.store_item_as_types(item, storage_spot, equipment_types)
-
-/datum/human_ai_brain/proc/store_item(obj/item/item, storage_spot, equipment_type = null)
-	return inventory.store_item(item, storage_spot, equipment_type)
-
-/datum/human_ai_brain/proc/prepare_primary_for_fire(obj/item/weapon/gun/primary_weapon)
-	if(!primary_weapon)
-		return FALSE
-	unholster_primary()
-	ensure_primary_hand(primary_weapon)
-	wield_primary()
-	return TRUE
-
-/datum/human_ai_brain/proc/clear_main_hand()
-	inventory.clear_main_hand()
-
-/datum/human_ai_brain/proc/equip_item_from_equipment_map(equipment_type, obj/item/item)
-	return inventory.equip_item_from_equipment_map(equipment_type, item)
-
-/datum/human_ai_brain/proc/find_usable_equipment_by_type_list(list/item_types, equipment_type, mob/living/carbon/human/target = null)
-	RETURN_TYPE(/obj/item)
-	return inventory.find_usable_equipment_by_type_list(item_types, equipment_type, target)
-
-// Guns facade
-/datum/human_ai_brain/proc/has_tried_reload()
-	return guns.has_tried_reload()
-
-/datum/human_ai_brain/proc/mark_tried_reload()
-	guns.mark_tried_reload()
-
-/datum/human_ai_brain/proc/should_reload()
-	return guns.should_reload()
-
-/datum/human_ai_brain/proc/can_start_fire()
-	return COOLDOWN_FINISHED(guns, stop_fire_cooldown)
-
-/datum/human_ai_brain/proc/start_stop_fire_cooldown(cooldown)
-	COOLDOWN_START(guns, stop_fire_cooldown, cooldown)
-
-/datum/human_ai_brain/proc/can_continue_fire_burst()
-	return COOLDOWN_FINISHED(guns, fire_overload_cooldown)
-
-/datum/human_ai_brain/proc/start_fire_overload_cooldown()
-	var/short_action_delay = profile.short_action_delay
-	COOLDOWN_START(guns, fire_overload_cooldown, max(short_action_delay, short_action_delay * profile.action_delay_mult))
-
-/datum/human_ai_brain/proc/clear_tried_reload()
-	guns.clear_tried_reload()
-
-/datum/human_ai_brain/proc/can_use_ranged_weapon()
-	return !guns.has_tried_reload() && (inventory.has_primary_weapon() || inventory.has_secondary_weapons())
-
-// Action runtime facade
-/datum/human_ai_brain/proc/cancel_ongoing_actions_by_type(list/action_types, datum/ai_action/except_action = null)
-	if(!length(action_types))
-		return
-
-	for(var/datum/ai_action/ongoing_action as anything in action_runtime.ongoing_actions)
-		if((ongoing_action != except_action) && (ongoing_action.type in action_types))
-			qdel(ongoing_action)
-
-/datum/human_ai_brain/proc/remove_ongoing_action(datum/ai_action/action)
-	action_runtime.ongoing_actions -= action
-
-/datum/human_ai_brain/proc/has_ongoing_action(action_type)
-	return action_runtime.has_ongoing_action(action_type)
-
-/datum/human_ai_brain/proc/has_ongoing_throw_action_in_progress()
-	for(var/datum/ai_action/ongoing_action as anything in action_runtime.ongoing_actions)
-		if(istype(ongoing_action, /datum/ai_action/throw_grenade))
-			var/datum/ai_action/throw_grenade/throw_grenade_action = ongoing_action
-			if(throw_grenade_action.mid_throw)
-				return TRUE
-
-		if(istype(ongoing_action, /datum/ai_action/throw_back_nade))
-			var/datum/ai_action/throw_back_nade/throw_back_action = ongoing_action
-			if(throw_back_action.mid_throw)
-				return TRUE
-
-	return FALSE
-
-// Targeting facade
-/datum/human_ai_brain/proc/get_current_target()
-	RETURN_TYPE(/atom/movable)
-	return targeting.get_current_target()
-
-/datum/human_ai_brain/proc/get_aim_target()
-	RETURN_TYPE(/atom)
-	return targeting.get_aim_target()
-
-/datum/human_ai_brain/proc/has_current_target()
-	return targeting.has_current_target()
-
-/datum/human_ai_brain/proc/can_target(atom/movable/target)
-	return targeting.can_target(target)
-
-/datum/human_ai_brain/proc/get_target_turf()
-	RETURN_TYPE(/turf)
-	return targeting.get_target_turf()
-
-/datum/human_ai_brain/proc/has_target_turf()
-	return targeting.has_target_turf()
-
-/datum/human_ai_brain/proc/has_offscreen_fire_target()
-	return targeting.has_target_turf() && !COOLDOWN_FINISHED(src, targeting.fire_offscreen)
-
-/datum/human_ai_brain/proc/can_fire_offscreen(turf/target_turf, datum/human_ai_firearm_profile/gun_data = null)
-	if(!target_turf || COOLDOWN_FINISHED(src, targeting.fire_offscreen))
-		return FALSE
-	if(!gun_data)
-		return TRUE
-	return gun_data.maximum_range > profile.view_distance
-
-/datum/human_ai_brain/proc/lose_target()
-	targeting.lose_target()
-
-/datum/human_ai_brain/proc/clear_target_turf()
-	targeting.clear_target_turf()
-
-/datum/human_ai_brain/proc/set_target_turf_direct(turf/new_target_turf)
-	targeting.set_target_turf_direct(new_target_turf)
-
-// Cover facade
-/datum/human_ai_brain/proc/has_cover()
-	return cover.has_cover()
-
-/datum/human_ai_brain/proc/is_in_cover()
-	return cover.is_in_cover()
-
-/datum/human_ai_brain/proc/has_pending_cover()
-	return cover.has_cover() && !cover.is_in_cover()
-
-/datum/human_ai_brain/proc/get_current_cover()
-	RETURN_TYPE(/turf)
-	return cover.get_current_cover()
-
-/datum/human_ai_brain/proc/end_cover()
-	cover.end_cover()
-
-/datum/human_ai_brain/proc/enter_cover()
-	cover.enter_cover()
-
-/datum/human_ai_brain/proc/try_cover(angle = null, atom/source = null)
-	cover.try_cover(angle, source)
-
-/datum/human_ai_brain/proc/apply_cover_processing(list/turf_dict, from_squad = FALSE)
-	cover.cover_processing(turf_dict, from_squad)
-
-/datum/human_ai_brain/proc/start_cover_search_cooldown(cooldown)
-	COOLDOWN_START(cover, cover_search_cooldown, cooldown)
-
-// Navigation facade
-/datum/human_ai_brain/proc/move_to_turf(turf/destination)
-	return navigation.move_to_next_turf(destination)
-
-/datum/human_ai_brain/proc/move_to_atom(atom/target)
-	if(!target)
-		return FALSE
-	return navigation.move_to_next_turf(get_turf(target))
-
-// Squad facade
-/datum/human_ai_brain/proc/is_squad_leader()
-	return squad.is_squad_leader
-
-/datum/human_ai_brain/proc/set_squad_leader_status(is_leader)
-	squad.is_squad_leader = is_leader
-
-/datum/human_ai_brain/proc/get_squad_id()
-	return squad.squad_id
-
-/datum/human_ai_brain/proc/set_squad_id(new_squad_id)
-	squad.squad_id = new_squad_id
-
-/datum/human_ai_brain/proc/get_squad_datum()
-	if(!squad.squad_id)
-		return null
-	return SShuman_ai.squad_id_dict["[squad.squad_id]"]
-
-/datum/human_ai_brain/proc/get_current_order()
-	return squad.current_order
-
-/datum/human_ai_brain/proc/remove_current_order()
-	squad.remove_current_order()
-
-/datum/human_ai_brain/proc/set_current_order(datum/ai_order/order)
-	squad.set_current_order(order)
-
-/datum/human_ai_brain/proc/on_squad_member_death(mob/living/carbon/human/dead_mob)
-	communication.on_squad_member_death(dead_mob)
-
-// Emplacement facade
-/datum/human_ai_brain/proc/has_sniper_home()
-	return emplacement.has_sniper_home()
-
-/datum/human_ai_brain/proc/set_sniper_home(turf/home, new_dir = SOUTH)
-	emplacement.set_sniper_home(home, new_dir)
-
-/datum/human_ai_brain/proc/get_sniper_home()
-	RETURN_TYPE(/turf)
-	return emplacement.sniper_home
-
-/datum/human_ai_brain/proc/get_sniper_dir()
-	return emplacement.sniper_dir
-
-/datum/human_ai_brain/proc/has_machinegunner_home()
-	return emplacement.has_machinegunner_home()
-
-/datum/human_ai_brain/proc/set_machinegunner_home(turf/home, new_dir = SOUTH)
-	emplacement.set_machinegunner_home(home, new_dir)
-
-/datum/human_ai_brain/proc/get_machinegunner_home()
-	RETURN_TYPE(/turf)
-	return emplacement.machinegunner_home
-
-/datum/human_ai_brain/proc/get_machinegunner_dir()
-	return emplacement.machinegunner_dir
-
-/datum/human_ai_brain/proc/is_stationary_fire_blocked()
-	return guns.has_tried_reload() || cover.has_cover() || health.healing_someone
-
-// Faction facade
-/datum/human_ai_brain/proc/is_friendly_target(atom/target)
-	return faction.faction_check(target)
-
-/datum/human_ai_brain/proc/get_previous_faction()
-	return faction.previous_faction
-
-/datum/human_ai_brain/proc/set_previous_faction(new_faction)
-	faction.previous_faction = new_faction
-
-// Profile facade
-/datum/human_ai_brain/proc/get_targeting_view_distance()
-	return profile.view_distance
-
-/datum/human_ai_brain/proc/has_scope_vision()
-	return profile.scope_vision
-
-/datum/human_ai_brain/proc/should_shoot_to_kill()
-	return profile.shoot_to_kill
-
-/datum/human_ai_brain/proc/get_view_distance()
-	return profile.view_distance
-
-/datum/human_ai_brain/proc/set_view_distance(new_view_distance)
-	profile.view_distance = new_view_distance
-
-/datum/human_ai_brain/proc/get_action_delay()
-	return profile.short_action_delay * profile.action_delay_mult
-
-// Communication facade
-/datum/human_ai_brain/proc/get_reload_line_chance()
-	return communication.reload_line_chance
-
-/datum/human_ai_brain/proc/set_reload_line_chance(new_chance)
-	communication.reload_line_chance = new_chance
-
-/datum/human_ai_brain/proc/say_reload_line()
-	communication.say_reload_line()
-
-// Health facade
-/datum/human_ai_brain/proc/is_healing_someone()
-	return health.healing_someone
-
-/datum/human_ai_brain/proc/can_retry_self_treatment()
-	return health.cant_be_treated_stacks < health.treatment_stack_threshold
-
-/datum/human_ai_brain/proc/cancel_treatment()
-	health.cancel_treatment()
-
-/datum/human_ai_brain/proc/increment_treatment_stacks()
-	health.increment_treatment_stacks()
 
 /datum/human_ai_brain/proc/on_human_delete(datum/source, force)
 	SIGNAL_HANDLER
-	perception.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
+	perception?.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
 	shutdown_runtime()
 	wake_rethink_queued_at = -1 // SS220 EDIT: owner delete must not leave a queued wake rethink pointing at a null tied human
 	tied_controller?.set_tied_human(null)
@@ -700,6 +315,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/on_species_change(datum/source, new_species)
 	SIGNAL_HANDLER
+	if(!inventory)
+		return
 	if((new_species == SPECIES_YAUTJA) || (new_species == SPECIES_ZOMBIE))
 		inventory.set_looting_disabled(TRUE)
 	else
@@ -713,8 +330,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!tied_controller.can_stand_up())
 		return
 
-	inventory.invalidate_nearby_item_search() // SS220 EDIT: wake-up should immediately invalidate idle pickup/grenade scan throttles
-	if(targeting.has_current_target())
+	inventory?.invalidate_nearby_item_search() // SS220 EDIT: wake-up should immediately invalidate idle pickup/grenade scan throttles
+	if(targeting?.has_current_target())
 		targeting.update_target_pos() // SS220 EDIT: refresh transient combat targeting state after knockdown recovery
 
 	if((last_process_tick == world.time) || (wake_rethink_queued_at == world.time))
@@ -742,15 +359,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!has_valid_tied_human())
 		return
 
-	perception.setup_detection_radius()
+	perception?.setup_detection_radius()
 
-	if(cover.is_in_cover() && (tied_controller.get_distance_to(cover.get_current_cover()) > inventory.get_gun_data()?.minimum_range))
+	if(cover && inventory && cover.is_in_cover() && (tied_controller.get_distance_to(cover.get_current_cover()) > inventory.get_gun_data()?.minimum_range))
 		cover.end_cover()
 
-	targeting.update_target_pos()
-
-/datum/human_ai_brain/proc/enter_combat()
-	return combat.enter_combat()
-
-/datum/human_ai_brain/proc/exit_combat()
-	return combat.exit_combat()
+	targeting?.update_target_pos()

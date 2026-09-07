@@ -1,9 +1,10 @@
 /datum/ai_action/converse
 	name = "Start Conversation"
 	action_flags = ACTION_USING_MOUTH
+	required_ai_modules = list(/datum/human_ai_module/conversation)
 
 /datum/ai_action/converse/get_weight(datum/human_ai_brain/brain)
-	if(!brain.conversation.can_try_start())
+	if(!brain.can_try_start_conversation())
 		return 0
 
 	return 1
@@ -16,7 +17,7 @@
 	var/list/ai_nearby = list()
 	for(var/mob/living/carbon/human/nearby_human in brain.tied_controller.get_view(2))
 		var/datum/human_ai_brain/other_brain = nearby_human.get_ai_brain()
-		if(!other_brain || !other_brain.conversation.can_participate())
+		if(!other_brain?.can_participate_in_conversation())
 			continue
 
 		ai_nearby += other_brain

@@ -1,6 +1,7 @@
 /datum/ai_action/walk_melee
 	name = "Walk Melee"
 	action_flags = ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/combat, /datum/human_ai_module/inventory, /datum/human_ai_module/guns)
 
 /datum/ai_action/walk_melee/get_weight(datum/human_ai_brain/brain)
 	if(!brain.has_current_target())

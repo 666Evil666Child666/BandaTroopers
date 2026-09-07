@@ -34,8 +34,18 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 	if(!length(brains_involved))
 		return
 
+	var/list/valid_brains = list()
 	for(var/datum/human_ai_brain/brain as anything in brains_involved)
-		brain.conversation.start_conversation()
+		if(!brain.conversation)
+			continue
+		valid_brains += brain
+
+	brains_involved = valid_brains
+	if(!length(brains_involved))
+		return
+
+	for(var/datum/human_ai_brain/brain as anything in brains_involved)
+		brain.conversation?.start_conversation()
 
 	for(var/string in conversation_data)
 		switch(string[1])
@@ -44,7 +54,7 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 				var/datum/human_ai_brain/brain = brains_involved[ai_index]
 				if(should_interrupt_conversation(brain))
 					for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
-						other_brain.conversation.end_conversation()
+						other_brain.conversation?.end_conversation()
 					return
 
 				for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
@@ -58,11 +68,14 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 				sleep(text2num(copytext(string, 3)))
 
 	for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
-		other_brain.conversation.end_conversation(TRUE)
+		other_brain.conversation?.end_conversation(TRUE)
 
 /// Simple check to see if a conversation should stop at a given line
 /datum/human_ai_conversation/proc/should_interrupt_conversation(datum/human_ai_brain/brain)
-	return (brain.combat.in_combat || !brain.conversation.in_conversation || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	if(!brain)
+		return TRUE
+
+	return (brain.is_in_combat() || !brain.conversation?.in_conversation || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 
 /// Check to be overridden to see if an AI should be able to start a conversation
 /datum/human_ai_conversation/proc/conversation_allowed(datum/human_ai_brain/brain)

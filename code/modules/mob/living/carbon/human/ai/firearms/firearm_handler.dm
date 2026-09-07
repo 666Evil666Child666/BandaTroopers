@@ -81,9 +81,9 @@
 			if(!context.sleep_micro())
 				return FALSE
 		if(!QDELETED(handful) && (handful.current_rounds > 0))
-			var/storage_slot = context.AI.inventory.storage_has_room(handful)
+			var/storage_slot = context.AI.storage_has_room(handful)
 			if(storage_slot)
-				context.AI.inventory.store_item(handful, storage_slot, HUMAN_AI_AMMUNITION)
+				context.AI.store_item(handful, storage_slot, HUMAN_AI_AMMUNITION)
 			else
 				context.controller.drop_held_item(handful)
 	else

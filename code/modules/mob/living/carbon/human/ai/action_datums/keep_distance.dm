@@ -1,6 +1,7 @@
 /datum/ai_action/keep_distance
 	name = "Keep Distance"
 	action_flags = ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/combat, /datum/human_ai_module/inventory, /datum/human_ai_module/guns)
 
 /datum/ai_action/keep_distance/get_weight(datum/human_ai_brain/brain)
 	var/atom/movable/current_target = brain.get_current_target()

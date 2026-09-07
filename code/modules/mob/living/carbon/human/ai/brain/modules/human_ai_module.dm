@@ -1,5 +1,6 @@
 /datum/human_ai_module
 	var/datum/human_ai_brain/brain
+	var/list/required_module_types = list()
 
 /datum/human_ai_module/New(datum/human_ai_brain/new_brain)
 	. = ..()

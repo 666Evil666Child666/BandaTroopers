@@ -1,6 +1,7 @@
 /datum/ai_action/take_cover
 	name = "Take Cover"
 	action_flags = ACTION_USING_LEGS
+	required_ai_modules = list(/datum/human_ai_module/cover, /datum/human_ai_module/navigation, /datum/human_ai_module/orders, /datum/human_ai_module/targeting, /datum/human_ai_module/inventory)
 
 /datum/ai_action/take_cover/get_weight(datum/human_ai_brain/brain)
 	if(!brain.has_valid_tied_human()) // SS220 EDIT: upstream cover action must not score after modular owner teardown

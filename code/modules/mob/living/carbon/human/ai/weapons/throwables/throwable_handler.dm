@@ -22,17 +22,17 @@
 	if(active_hand && (active_hand != grenade))
 		if(active_hand.flags_item & NODROP)
 			return FALSE
-		context.AI.inventory.clear_main_hand()
+		context.AI.clear_main_hand()
 		if(context.controller.get_active_hand())
 			return FALSE
 
 	if(!context.controller.is_item_equipped_or_held(grenade))
-		if(!context.AI.inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, grenade))
+		if(!context.AI.equip_item_from_equipment_map(HUMAN_AI_GRENADES, grenade))
 			return FALSE
 	else if(!context.controller.put_in_active_hand(grenade))
 		return FALSE
 
-	context.AI.inventory.ensure_primary_hand(grenade)
+	context.AI.ensure_primary_hand(grenade)
 	return context.controller.get_active_hand() == grenade
 
 /datum/human_ai_throwable_handler/grenade
@@ -43,7 +43,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 	if(!context?.can_continue_throw() || !action)
 		return FALSE
 
-	var/obj/item/weapon/gun/primary_weapon = context.AI.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = context.AI.get_primary_weapon()
 	if(primary_weapon)
 		context.controller.unwield_weapon(primary_weapon)
 		if(context.controller.get_active_hand() == primary_weapon)
@@ -75,7 +75,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 	RETURN_TYPE(/datum/human_ai_throwable_context)
 	if(!action || QDELETED(action) || !action.brain)
 		return null
-	return new /datum/human_ai_throwable_context(action.brain, grenade, action.brain.targeting.get_current_target(), target_turf, throw_range_override)
+	return new /datum/human_ai_throwable_context(action.brain, grenade, action.brain.get_current_target(), target_turf, throw_range_override)
 
 /datum/human_ai_throwable_handler/grenade/proc/async_prime_and_throw(datum/ai_action/throw_grenade/action, datum/weakref/puppet_ref, obj/item/explosive/grenade/grenade, turf/target_turf, throw_range_override)
 	log_game("AI GRENADE: async throw started - grenade=[grenade] ([grenade?.type]), target=[target_turf], mob=[action?.brain?.tied_controller?.get_key_name()]")
@@ -89,7 +89,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 		finish_async_throw(action)
 		return
 
-	var/pre_throw_hold_delay = max(HUMAN_AI_GRENADE_MIN_HOLD_DELAY, context.AI.profile.short_action_delay * context.AI.profile.action_delay_mult)
+	var/pre_throw_hold_delay = max(HUMAN_AI_GRENADE_MIN_HOLD_DELAY, context.AI.get_action_delay())
 	sleep(pre_throw_hold_delay)
 
 	qdel(context)
@@ -121,8 +121,8 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 		finish_async_throw(action)
 		return
 
-	context.AI.inventory.ensure_primary_hand(grenade)
-	context.AI.communication.say_grenade_thrown_line()
+	context.AI.ensure_primary_hand(grenade)
+	context.AI.say_grenade_thrown_line()
 	sleep(HUMAN_AI_GRENADE_POST_PRIME_THROW_DELAY)
 
 	qdel(context)

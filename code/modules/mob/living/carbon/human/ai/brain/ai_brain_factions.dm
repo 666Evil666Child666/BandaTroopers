@@ -17,30 +17,35 @@
 
 /// Given an AI brain, apply all the faction's data to the AI.
 /datum/human_ai_faction/proc/apply_faction_data(datum/human_ai_brain/brain)
-	if(length(enter_combat_lines))
+	if(!brain)
+		return
+
+	if(brain.communication && length(enter_combat_lines))
 		brain.communication.enter_combat_lines = enter_combat_lines
 
-	if(length(exit_combat_lines))
+	if(brain.communication && length(exit_combat_lines))
 		brain.communication.exit_combat_lines = exit_combat_lines
 
-	if(length(squad_member_death_lines))
+	if(brain.communication && length(squad_member_death_lines))
 		brain.communication.squad_member_death_lines = squad_member_death_lines
 
-	if(length(grenade_thrown_lines))
+	if(brain.communication && length(grenade_thrown_lines))
 		brain.communication.grenade_thrown_lines = grenade_thrown_lines
 
-	if(length(reload_lines))
+	if(brain.communication && length(reload_lines))
 		brain.communication.reload_lines = reload_lines
 
-	if(length(reload_internal_mag_lines))
+	if(brain.communication && length(reload_internal_mag_lines))
 		brain.communication.reload_internal_mag_lines = reload_internal_mag_lines
 
-	if(length(need_healing_lines))
+	if(brain.communication && length(need_healing_lines))
 		brain.communication.need_healing_lines = need_healing_lines
 
-	brain.profile.shoot_to_kill = shoot_to_kill
-	brain.faction.friendly_factions = friendly_factions
-	brain.faction.neutral_factions = neutral_factions
+	if(brain.profile)
+		brain.profile.shoot_to_kill = shoot_to_kill
+	if(brain.faction)
+		brain.faction.friendly_factions = friendly_factions
+		brain.faction.neutral_factions = neutral_factions
 
 /// Reapplies the faction's data to all AI that belong to this faction
 /datum/human_ai_faction/proc/reapply_faction_data()

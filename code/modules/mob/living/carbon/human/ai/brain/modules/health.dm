@@ -1,4 +1,6 @@
 /datum/human_ai_module/health
+	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/inventory, /datum/human_ai_module/profile)
+
 	/// What items the AI considers when trying to heal brute damage
 	var/static/list/brute_heal_items = list(
 		/obj/item/stack/medical/advanced/bruise_pack,

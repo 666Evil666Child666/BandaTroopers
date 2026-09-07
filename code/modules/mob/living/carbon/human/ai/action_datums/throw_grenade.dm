@@ -1,6 +1,7 @@
 /datum/ai_action/throw_grenade
 	name = "Throw Grenade"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS // SS220 EDIT: grenade priming/throwing should own both hand and movement slots until it resolves
+	required_ai_modules = list(/datum/human_ai_module/grenade, /datum/human_ai_module/inventory, /datum/human_ai_module/targeting, /datum/human_ai_module/combat, /datum/human_ai_module/guns, /datum/human_ai_module/action_runtime)
 	var/obj/item/explosive/grenade/throwing
 	var/mid_throw = FALSE
 	var/throw_finished = FALSE

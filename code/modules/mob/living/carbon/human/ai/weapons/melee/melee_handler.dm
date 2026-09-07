@@ -13,7 +13,7 @@ GLOBAL_DATUM_INIT(human_ai_melee_handler, /datum/human_ai_melee_handler, new)
 		return FALSE
 
 	context.controller.set_combat_intent()
-	context.AI.inventory.unholster_any_weapon()
+	context.AI.unholster_any_weapon()
 	INVOKE_ASYNC(context.controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), context.current_target, "", list())
 	context.controller.face_atom(context.current_target)
 	return TRUE

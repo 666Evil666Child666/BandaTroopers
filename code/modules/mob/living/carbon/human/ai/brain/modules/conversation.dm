@@ -1,4 +1,6 @@
 /datum/human_ai_module/conversation
+	required_module_types = list(/datum/human_ai_module/combat)
+
 	/// If TRUE, this AI is currently in a conversation with others
 	var/in_conversation = FALSE
 	/// The chance that the AI will try to initiate a conversation. Trying to initiate a conversation is on a 1 second cooldown, so this is really every 5 ticks
