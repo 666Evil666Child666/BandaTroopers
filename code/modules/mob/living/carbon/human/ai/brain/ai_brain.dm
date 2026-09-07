@@ -3,6 +3,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain
 	/// API facade for reading and controlling the tied human puppet.
 	var/datum/human_tied_controller/tied_controller
+	var/datum/human_ai_module_config/module_config
 
 	var/datum/human_ai_module/targeting/targeting
 	var/datum/human_ai_module/perception/perception
@@ -46,26 +47,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/New(mob/living/carbon/human/new_human)
 	. = ..()
 	tied_controller = new(src, new_human)
-	faction = new(src)
-	targeting = new(src)
-	cover = new(src)
-	grenade = new(src)
-	health = new(src)
-	communication = new(src)
-	guns = new(src)
-	navigation = new(src)
-	squad = new(src)
-	action_runtime = new(src)
-	combat = new(src)
-	conversation = new(src)
-	orders = new(src)
-	profile = new(src)
-	emplacement = new(src)
-	perception = new(src)
-	perception.register_signals()
-	perception.setup_detection_radius()
-	inventory = new(src)
-	inventory.register_signals()
+	module_config = create_module_config()
+	module_config.setup_brain(src, new_human)
 	setup_lifecycle_modules()
 	tied_controller.register_signal_for(src, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
 	tied_controller.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: HALO death guard should tear down AI and force corpses prone immediately
@@ -114,6 +97,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	QDEL_NULL(orders)
 	QDEL_NULL(profile)
 	QDEL_NULL(emplacement)
+	QDEL_NULL(module_config)
 	QDEL_NULL(tied_controller)
 
 	return ..()
@@ -121,114 +105,11 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/proc/has_valid_tied_human()
 	return tied_controller?.has_valid_tied_human()
 
+/datum/human_ai_brain/proc/create_module_config()
+	return new /datum/human_ai_module_config/default()
+
 /datum/human_ai_brain/proc/setup_lifecycle_modules()
-	setup_lifecycle_module_lists()
-	configure_lifecycle_module_lists()
-	setup_process_module_lists()
-	configure_process_module_lists()
-	setup_event_module_lists()
-	configure_event_module_lists()
-	setup_query_module_lists()
-	configure_query_module_lists()
-
-/datum/human_ai_brain/proc/setup_lifecycle_module_lists()
-	reset_modules_before_wake_clear = list(
-		health,
-		navigation,
-		cover,
-		perception,
-	)
-
-	reset_modules_after_wake_clear = list(
-		combat,
-		grenade,
-		targeting,
-		inventory,
-		action_runtime,
-	)
-
-	suspend_modules_before_wake_clear = list(
-		navigation,
-		cover,
-		perception,
-	)
-
-	suspend_modules_after_wake_clear = list(
-		combat,
-		grenade,
-		targeting,
-		health,
-		action_runtime,
-		inventory,
-	)
-
-	resume_modules = list(
-		inventory,
-		guns,
-	)
-
-/datum/human_ai_brain/proc/setup_process_module_lists()
-	process_modules_before_posture = list(
-		perception,
-	)
-
-	process_modules_after_posture = list(
-		targeting,
-		combat,
-		inventory,
-		action_runtime,
-	)
-
-/datum/human_ai_brain/proc/setup_event_module_lists()
-	target_change_modules = list(
-		inventory,
-	)
-
-	projectile_threat_modules = list(
-		combat,
-		faction,
-		targeting,
-		cover,
-	)
-
-	combat_entered_modules = list(
-		squad,
-		communication,
-		cover,
-	)
-
-	combat_exit_started_modules = list(
-		targeting,
-		communication,
-		inventory,
-	)
-
-	combat_exit_finished_modules = list(
-		cover,
-		targeting,
-	)
-
-	combat_exit_force_clear_modules = list(
-		targeting,
-		cover,
-	)
-
-/datum/human_ai_brain/proc/setup_query_module_lists()
-	target_vision_modules = list(
-		inventory,
-	)
-
-/datum/human_ai_brain/proc/configure_lifecycle_module_lists()
-	return
-
-/datum/human_ai_brain/proc/configure_process_module_lists()
-	return
-
-/datum/human_ai_brain/proc/configure_event_module_lists()
-	return
-
-/datum/human_ai_brain/proc/configure_query_module_lists()
-	return
+	module_config.configure_module_lists(src)
 
 /datum/human_ai_brain/proc/register_extension_module(datum/human_ai_module/module)
 	if(!module)

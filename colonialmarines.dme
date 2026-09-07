@@ -2212,6 +2212,7 @@
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\perception.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\targeting.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\cover.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\module_config.dm"
 #include "code\modules\mob\living\carbon\human\ai\conversations\ai_conversations_general.dm"
 #include "code\modules\mob\living\carbon\human\ai\conversations\ai_conversations_military.dm"
 #include "code\modules\mob\living\carbon\human\ai\order_datums\order.dm"
