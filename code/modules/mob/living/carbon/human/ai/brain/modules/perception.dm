@@ -22,6 +22,12 @@
 /datum/human_ai_module/perception/proc/suspend()
 	clear_detection_radius()
 
+/datum/human_ai_module/perception/reset_module()
+	reset_detection()
+
+/datum/human_ai_module/perception/suspend_module(clear_inventory = FALSE)
+	suspend()
+
 /datum/human_ai_module/perception/proc/register_signals()
 	if(!brain?.has_valid_tied_human())
 		return
@@ -76,7 +82,7 @@
 	if(!bullet.firer)
 		return
 
-	handle_projectile_threat(bullet)
+	brain.on_projectile_threat(bullet)
 
 /datum/human_ai_module/perception/proc/on_shot(datum/source, damage_result, ammo_flags, obj/projectile/bullet)
 	SIGNAL_HANDLER
@@ -87,24 +93,7 @@
 	if(!bullet || !bullet.firer)
 		return
 
-	handle_projectile_threat(bullet)
-	brain.cover.react_to_incoming_fire(bullet.angle, bullet.firer)
-
-/datum/human_ai_module/perception/proc/handle_projectile_threat(obj/projectile/bullet)
-	var/atom/firer = bullet.firer
-	if(!firer)
-		return
-
-	brain.combat.enter_combat()
-	brain.faction.react_to_attacker_faction(firer)
-
-	if(brain.faction.faction_check(firer))
-		return
-
-	if(brain.tied_controller.get_distance_to(firer) <= brain.profile.view_distance)
-		brain.targeting.set_target(firer)
-	else
-		brain.targeting.set_target_turf(get_turf(firer), 4 SECONDS)
+	brain.on_projectile_threat(bullet, TRUE)
 
 /datum/human_ai_module/perception/proc/can_process_detection()
 	return brain?.can_continue_runtime_work()

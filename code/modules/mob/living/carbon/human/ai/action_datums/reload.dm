@@ -4,13 +4,13 @@
 	var/currently_reloading
 
 /datum/ai_action/reload/get_weight(datum/human_ai_brain/brain)
-	if(brain.guns.has_tried_reload())
+	if(brain.has_tried_reload())
 		return 0
 
-	if(!brain.inventory.has_gun_data())
+	if(!brain.has_gun_data())
 		return 0
 
-	if(!brain.guns.should_reload())
+	if(!brain.should_reload())
 		return 0
 
 	return 15
@@ -27,8 +27,8 @@
 	if(currently_reloading)
 		return ONGOING_ACTION_UNFINISHED
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
-	if(!primary_weapon || brain.guns.has_tried_reload() || !brain.guns.should_reload())
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	if(!primary_weapon || brain.has_tried_reload() || !brain.should_reload())
 		return ONGOING_ACTION_COMPLETED
 
 	reload()
@@ -37,12 +37,12 @@
 /datum/ai_action/reload/proc/reload()
 	set waitfor = FALSE
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
-	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
 	if(gun_data.disposable)
 		brain.tied_controller.drop_held_item(primary_weapon)
-		brain.inventory.unqueue_pickup(primary_weapon)
-		brain.inventory.set_primary_weapon(null)
+		brain.unqueue_pickup(primary_weapon)
+		brain.set_primary_weapon(null)
 		qdel(src)
 		return
 
@@ -54,12 +54,12 @@
 	var/obj/item/reload_item = handler?.find_reload_item(context)
 	if(!reload_item)
 		qdel(context)
-		brain.guns.mark_tried_reload()
+		brain.mark_tried_reload()
 		qdel(src)
 		return
 
 	context.set_reload_item(reload_item)
-	brain.communication.say_reload_line()
+	brain.say_reload_line()
 	handler.do_reload(context)
 	qdel(context)
 
@@ -67,7 +67,7 @@
 	currently_reloading = FALSE
 
 /datum/ai_action/reload/proc/primary_ammo_search()
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain)
 	var/datum/human_ai_firearm_handler/handler = context.get_handler()
 	var/obj/item/reload_item = handler?.find_reload_item(context)

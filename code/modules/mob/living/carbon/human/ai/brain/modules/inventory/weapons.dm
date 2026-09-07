@@ -77,7 +77,7 @@
 	// wield_primary()
 	if(!wield_primary())
 		return FALSE
-	sleep(max(primary_weapon?.wield_delay, brain.profile.short_action_delay * brain.profile.action_delay_mult))
+	sleep(max(primary_weapon?.wield_delay, brain.get_action_delay()))
 	// return brain.can_continue_runtime_work()
 	return !QDELETED(src) && brain?.can_continue_runtime_work()
 	// SS220 EDIT - END

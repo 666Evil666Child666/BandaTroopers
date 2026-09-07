@@ -25,7 +25,7 @@
 	if(!brain.can_continue_runtime_work())
 		return FALSE
 
-	if(brain.combat.in_combat || in_conversation || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	if(brain.is_in_combat() || in_conversation || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return FALSE
 
 	return TRUE

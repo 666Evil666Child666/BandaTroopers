@@ -13,7 +13,7 @@
 	if(!brain.halo_suicide_bomber)
 		return 0
 
-	if(!brain.combat.in_combat || !brain.orders.can_move_for_action())
+	if(!brain.halo_covenant_can_run_movement_action())
 		return 0
 
 	if(!get_charge_target(brain))
@@ -22,7 +22,7 @@
 	if(find_active_held_grenade())
 		return 80
 
-	if(!brain.inventory.has_equipment(HUMAN_AI_GRENADES))
+	if(!brain.halo_covenant_has_grenade_equipment())
 		return 0
 
 	return 70
@@ -35,7 +35,7 @@
 	if(!brain.has_valid_tied_human())
 		return ONGOING_ACTION_COMPLETED
 
-	brain.cover.end_cover()
+	brain.halo_covenant_end_cover()
 
 	var/obj/item/explosive/grenade/active_grenade = find_active_held_grenade()
 	if(!active_grenade)
@@ -68,7 +68,7 @@
 	return ONGOING_ACTION_UNFINISHED_BLOCK
 
 /datum/ai_action/unggoy_suicide_bomber/proc/get_charge_target(datum/human_ai_brain/brain)
-	return brain.targeting.current_target || brain.targeting.target_turf
+	return brain.halo_covenant_get_threat_atom()
 
 /datum/ai_action/unggoy_suicide_bomber/proc/find_active_held_grenade()
 	if(!brain?.has_valid_tied_human())
@@ -84,16 +84,10 @@
 			return right_grenade
 
 /datum/ai_action/unggoy_suicide_bomber/proc/find_stored_grenade(obj/item/explosive/grenade/excluding = null)
-	return brain.inventory.get_first_equipment_item(HUMAN_AI_GRENADES, excluding)
+	return brain.halo_covenant_get_stored_grenade(excluding)
 
 /datum/ai_action/unggoy_suicide_bomber/proc/clear_both_hands()
-	if(!brain || !brain.has_valid_tied_human())
-		return
-
-	brain.inventory.clear_main_hand()
-	brain.tied_controller.swap_hand()
-	brain.inventory.clear_main_hand()
-	brain.tied_controller.swap_hand()
+	brain?.halo_covenant_clear_both_hands()
 
 /datum/ai_action/unggoy_suicide_bomber/proc/prime_grenades()
 	if(!brain || !brain.has_valid_tied_human())
@@ -107,14 +101,14 @@
 	if(!first_grenade)
 		return FALSE
 
-	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, first_grenade)
+	brain.halo_covenant_equip_grenade(first_grenade)
 	if(QDELETED(first_grenade) || !brain.tied_controller.is_item_equipped_or_held(first_grenade))
 		return FALSE
 
 	var/obj/item/explosive/grenade/second_grenade = find_stored_grenade(first_grenade)
 	if(second_grenade)
 		brain.tied_controller.swap_hand()
-		brain.inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, second_grenade)
+		brain.halo_covenant_equip_grenade(second_grenade)
 		if(QDELETED(second_grenade) || !brain.tied_controller.is_item_equipped_or_held(second_grenade))
 			second_grenade = null
 		brain.tied_controller.swap_hand()
@@ -132,17 +126,4 @@
 	if(!brain || !brain.has_valid_tied_human())
 		return FALSE
 
-	var/turf/charge_turf = get_turf(charge_target)
-	if(brain.halo_unggoy_runtime)
-		charge_turf = brain.halo_covenant_get_cached_threat_turf()
-	if(!charge_turf)
-		return FALSE
-
-	if(!brain.navigation.move_to_next_turf(charge_turf))
-		return FALSE
-
-	if(!brain.has_valid_tied_human())
-		return FALSE
-
-	brain.tied_controller.face_atom(charge_target)
-	return TRUE
+	return brain.halo_covenant_move_to_atom(charge_target, brain.halo_unggoy_runtime)

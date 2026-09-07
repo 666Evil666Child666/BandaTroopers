@@ -46,16 +46,16 @@
 
 /// SS220 EDIT: delayed reset of active_grenade_found - gives throw-back action one scheduler tick to spawn before clearing
 /datum/human_ai_module/inventory/proc/clear_active_grenade_if_stale(obj/item/explosive/grenade/grenade)
-	if(brain.grenade.get_active_grenade() == grenade && !brain.action_runtime.has_ongoing_action(/datum/ai_action/throw_back_nade))
-		brain.grenade.clear_active_grenade()
+	if(brain.get_active_grenade() == grenade && !brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
+		brain.clear_active_grenade()
 
 /datum/human_ai_module/inventory/proc/item_search(list/things_around)
 	// SS220 EDIT - START: grenade threat must come only from the current local scan, not from stale refs.
 	// Preserve active_grenade_found across ticks if it is already the currently held, still-active timed grenade.
-	var/obj/item/explosive/grenade/active_grenade = brain.grenade.get_active_grenade()
+	var/obj/item/explosive/grenade/active_grenade = brain.get_active_grenade()
 	if(!active_grenade || QDELETED(active_grenade) || !active_grenade.active || (active_grenade.fuse_type != TIMED_FUSE) || !brain.tied_controller.is_item_equipped_or_held(active_grenade))
-		brain.grenade.clear_active_grenade()
-	var/can_handle_live_grenade = brain.grenade.can_throw_back() && !((brain.tied_controller.get_l_hand()?.flags_item & NODROP) && (brain.tied_controller.get_r_hand()?.flags_item & NODROP))
+		brain.clear_active_grenade()
+	var/can_handle_live_grenade = brain.can_throw_back_grenade() && !((brain.tied_controller.get_l_hand()?.flags_item & NODROP) && (brain.tied_controller.get_r_hand()?.flags_item & NODROP))
 	// SS220 EDIT - END
 	for(var/obj/item/thing in things_around)
 		if(!isturf(thing.loc))
@@ -107,7 +107,7 @@
 	if(nade.active && (nade.fuse_type == IMPACT_FUSE))
 		return HUMAN_AI_PICKUP_SCAN_STOP
 	if(nade.active && (nade.fuse_type == TIMED_FUSE) && can_handle_live_grenade) // SS220 EDIT: only enter throw-back mode if we can actually manipulate the grenade
-		brain.grenade.set_active_grenade(thing)
+		brain.set_active_grenade(nade)
 		return HUMAN_AI_PICKUP_SCAN_SKIP
 	return HUMAN_AI_PICKUP_SCAN_CONTINUE
 

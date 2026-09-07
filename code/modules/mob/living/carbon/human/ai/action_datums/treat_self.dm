@@ -6,20 +6,19 @@
 	if(brain.tied_controller.is_zombie())
 		return 0
 
-	if(brain.health.healing_someone)
+	if(brain.is_healing_someone())
 		return 0
 
-	var/should_fire_offscreen = (brain.targeting.has_target_turf() && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))
-	if(brain.targeting.has_current_target() || should_fire_offscreen)
+	if(brain.has_current_target() || brain.has_offscreen_fire_target())
 		return 0
 
-	if(brain.inventory.has_pickup_queue())
+	if(brain.has_pickup_queue())
 		return 0
 
-	if(!brain.inventory.has_equipment(HUMAN_AI_HEALTHITEMS))
+	if(!brain.has_equipment(HUMAN_AI_HEALTHITEMS))
 		return 0
 
-	if(brain.health.cant_be_treated_stacks >= brain.health.treatment_stack_threshold)
+	if(!brain.can_retry_self_treatment())
 		return 0
 
 	if(!brain.tied_controller.healing_start_check_self())
@@ -28,8 +27,7 @@
 	return 4
 
 /datum/ai_action/treat_self/Destroy(force, ...)
-	// brain.health.healing_someone = FALSE
-	brain?.health?.cancel_treatment() // SS220 EDIT: cancel the suspended operation, not just its busy flag
+	brain?.cancel_treatment() // SS220 EDIT: cancel the suspended operation, not just its busy flag
 	return ..()
 
 /datum/ai_action/treat_self/trigger_action()
@@ -37,21 +35,21 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
-	if(brain.targeting.has_current_target())
+	if(brain.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.inventory.has_equipment(HUMAN_AI_HEALTHITEMS))
+	if(!brain.has_equipment(HUMAN_AI_HEALTHITEMS))
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.tied_controller.is_on_fire())
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.health.healing_someone)
+	if(brain.is_healing_someone())
 		return ONGOING_ACTION_UNFINISHED
 
 	if(brain.tied_controller.healing_start_check_self())
 		if(!brain.tied_controller.start_healing_self())
-			brain.health.cant_be_treated_stacks++
+			brain.increment_treatment_stacks()
 		return ONGOING_ACTION_UNFINISHED
 
 	return ONGOING_ACTION_COMPLETED

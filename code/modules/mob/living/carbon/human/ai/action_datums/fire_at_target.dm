@@ -11,39 +11,39 @@
 	if(!brain.has_valid_tied_human()) // SS220 EDIT: upstream action glue must not schedule work for detached modular AI owners
 		return 0
 
-	if(!brain.combat.in_combat)
+	if(!brain.is_in_combat())
 		return 0
 
-	if(brain.guns.has_tried_reload())
+	if(brain.has_tried_reload())
 		return 0
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	if(!primary_weapon)
 		return 0
 
-	if(!COOLDOWN_FINISHED(brain.guns, stop_fire_cooldown))
+	if(!brain.can_start_fire())
 		return 0
 
-	var/turf/target_turf = brain.targeting.get_target_turf()
-	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
-	var/should_fire_offscreen = (target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen) && (gun_data.maximum_range > brain.profile.view_distance))
+	var/turf/target_turf = brain.get_target_turf()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
+	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf, gun_data)
 
-	if(!brain.targeting.has_current_target() && !should_fire_offscreen)
+	if(!brain.has_current_target() && !should_fire_offscreen)
 		return 0
 
-	if((brain.tied_controller.get_distance_to(target_turf) > brain.profile.view_distance) && !should_fire_offscreen)
+	if((brain.tied_controller.get_distance_to(target_turf) > brain.get_view_distance()) && !should_fire_offscreen)
 		return 0
 
-	if(brain.halo_should_defer_ranged_fire(brain.targeting.get_aim_target()))
+	if(brain.halo_should_defer_ranged_fire(brain.get_aim_target()))
 		return 0
 
 	if(!firing_line_check(brain, target_turf))
 		return 0
 
-	if(brain.guns.should_reload())
+	if(brain.should_reload())
 		return 0
 
-	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, brain.targeting.get_current_target(), target_turf)
+	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
 	var/datum/human_ai_firearm_handler/handler = context.get_handler()
 	var/can_queue_fire = handler?.can_queue_fire(context)
 	qdel(context)
@@ -66,7 +66,7 @@
 
 	if(brain.has_valid_tied_human())
 		brain.tied_controller.unregister_signal_for(src, COMSIG_MOB_FIRED_GUN)
-	brain.inventory.get_primary_weapon()?.set_target(null)
+	brain.get_primary_weapon()?.set_target(null)
 
 /datum/ai_action/fire_at_target/proc/clear_watched_turfs()
 	if(!length(watched_turfs))
@@ -80,34 +80,34 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
-	if(!primary_weapon || brain.grenade.has_active_grenade() || !COOLDOWN_FINISHED(brain.guns, stop_fire_cooldown))
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	if(!primary_weapon || brain.has_active_grenade() || !brain.can_start_fire())
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/target_turf = brain.targeting.get_target_turf()
-	var/should_fire_offscreen = (target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))
-	if(!brain.targeting.has_current_target() && !should_fire_offscreen)
+	var/turf/target_turf = brain.get_target_turf()
+	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf)
+	if(!brain.has_current_target() && !should_fire_offscreen)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.halo_should_defer_ranged_fire(brain.targeting.get_aim_target()))
+	if(brain.halo_should_defer_ranged_fire(brain.get_aim_target()))
 		return ONGOING_ACTION_COMPLETED
 
-	if(currently_firing || !COOLDOWN_FINISHED(brain.guns, fire_overload_cooldown))
+	if(currently_firing || !brain.can_continue_fire_burst())
 		return ONGOING_ACTION_UNFINISHED
 
-	brain.inventory.unholster_primary()
+	brain.unholster_primary()
 
-	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
-	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, brain.targeting.get_current_target(), target_turf)
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
+	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
 	var/datum/human_ai_firearm_handler/handler = context.get_handler()
 	if(!handler?.before_fire(context))
 		qdel(context)
 		return ONGOING_ACTION_COMPLETED
-	if(brain.guns.should_reload())
+	if(brain.should_reload())
 		qdel(context)
 		if(gun_data?.disposable)
 			brain.tied_controller.drop_held_item(primary_weapon)
-			brain.inventory.set_primary_weapon(null)
+			brain.set_primary_weapon(null)
 		return ONGOING_ACTION_COMPLETED
 
 	if((brain.tied_controller.get_distance_to(target_turf) > gun_data.maximum_range) && !should_fire_offscreen)
@@ -124,7 +124,7 @@
 	brain.tied_controller.register_signal_for(src, COMSIG_MOB_FIRED_GUN, PROC_REF(on_gun_fire), TRUE)
 
 	// Handling point-blank through attack()
-	var/atom/movable/current_target = brain.targeting.get_current_target()
+	var/atom/movable/current_target = brain.get_current_target()
 	if(current_target && (brain.tied_controller.get_distance_to(current_target) <= 1))
 		currently_firing = FALSE
 		primary_weapon.set_target(null)
@@ -147,7 +147,7 @@
 	var/list/turf_list = brain.tied_controller.get_line_from_current_turf_to(target)
 	for(var/turf/tile in turf_list)
 		var/tile_dist = brain.tied_controller.get_distance_to(tile)
-		if(tile_dist > brain.profile.view_distance)
+		if(tile_dist > brain.get_view_distance())
 			continue
 
 		if(tile.density)
@@ -169,7 +169,7 @@
 	for(var/i in 2 to length(turf_list))
 		var/turf/tile = turf_list[i]
 		var/tile_dist = brain.tied_controller.get_distance_to(tile)
-		if(tile_dist > brain.profile.view_distance)
+		if(tile_dist > brain.get_view_distance())
 			continue
 
 		var/list/turfs_to_check = list(tile)
@@ -193,7 +193,7 @@
 				if(possible_friendly.body_position == LYING_DOWN)
 					continue
 
-				if(brain.faction.faction_check(possible_friendly))
+				if(brain.is_friendly_target(possible_friendly))
 					return FALSE
 
 	return TRUE
@@ -212,7 +212,7 @@
 	if(H.body_position == LYING_DOWN)
 		return
 
-	if(brain.faction.faction_check(H))
+	if(brain.is_friendly_target(H))
 		stop_firing(brain)
 		qdel(src)
 
@@ -223,26 +223,25 @@
 		qdel(src)
 		return
 
-	var/turf/target_turf = brain.targeting.get_target_turf()
+	var/turf/target_turf = brain.get_target_turf()
 
 	brain.tied_controller.set_combat_intent()
 
-	brain.combat.shot_at = get_turf(target_turf)
+	brain.set_shot_at_turf(target_turf)
 	brain.tied_controller.face_atom(target_turf)
 
 	currently_firing = TRUE
 
-	var/datum/human_ai_firearm_profile/gun_data = brain.inventory.get_gun_data()
-	if(brain.guns.should_reload()) // note that bullet removal comes after comsig is triggered
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
+	if(brain.should_reload()) // note that bullet removal comes after comsig is triggered
 		if(gun_data?.disposable)
-			brain.tied_controller.drop_held_item(brain.inventory.get_primary_weapon())
-			brain.inventory.set_primary_weapon(null)
+			brain.drop_primary_weapon()
 		stop_firing(brain)
 		qdel(src)
 		return
 
-	var/should_fire_offscreen = (target_turf && !COOLDOWN_FINISHED(brain, targeting.fire_offscreen))
-	var/atom/movable/current_target = brain.targeting.get_current_target()
+	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf)
+	var/atom/movable/current_target = brain.get_current_target()
 	var/shoot_next = current_target
 
 	if(QDELETED(current_target))
@@ -256,13 +255,13 @@
 		var/mob/mob_target = current_target
 		if(mob_target.stat == DEAD)
 			stop_firing(brain)
-			brain.targeting.lose_target()
+			brain.lose_target()
 			qdel(src)
 			return
 
 		var/is_unconscious = (mob_target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in mob_target.effects_list))
-		if(!brain.profile.shoot_to_kill && is_unconscious)
-			brain.targeting.lose_target()
+		if(!brain.should_shoot_to_kill() && is_unconscious)
+			brain.lose_target()
 			qdel(src)
 			return
 
@@ -271,24 +270,23 @@
 		qdel(src)
 		return
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	var/count_shot_against_burst_limit = ((primary_weapon.gun_firemode == GUN_FIREMODE_AUTOMATIC) || gun_data.count_every_shot_toward_burst_limit)
 	if(count_shot_against_burst_limit)
 		rounds_burst_fired++
 
 	if(rounds_burst_fired >= gun_data.burst_amount_max)
-		var/short_action_delay = brain.profile.short_action_delay
-		COOLDOWN_START(brain.guns, fire_overload_cooldown, max(short_action_delay, short_action_delay * brain.profile.action_delay_mult))
+		brain.start_fire_overload_cooldown()
 		stop_firing(brain)
 		return
 
 	if((brain.tied_controller.get_distance_to(shoot_next) > gun_data.maximum_range) && !should_fire_offscreen)
-		brain.targeting.lose_target()
+		brain.lose_target()
 		stop_firing(brain)
 		qdel(src)
 		return
 
-	current_target = brain.targeting.get_current_target()
+	current_target = brain.get_current_target()
 	if(current_target && (brain.tied_controller.get_distance_to(current_target) <= 1))
 		currently_firing = FALSE
 		return
@@ -306,7 +304,7 @@
 		if(after_fire_result.callback)
 			addtimer(after_fire_result.callback, after_fire_result.callback_delay)
 		if(after_fire_result.cooldown)
-			COOLDOWN_START(brain.guns, stop_fire_cooldown, after_fire_result.cooldown)
+			brain.start_stop_fire_cooldown(after_fire_result.cooldown)
 		if(after_fire_result.interrupt_burst)
 			rounds_burst_fired = 0
 		if(after_fire_result.stop_fire)

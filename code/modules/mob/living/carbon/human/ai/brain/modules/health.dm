@@ -86,6 +86,14 @@
 	lose_injured_ally()
 	return ..()
 
+/datum/human_ai_module/health/reset_module()
+	cancel_treatment() // SS220 EDIT: reset invalidates suspended treatment before clearing actions
+	lose_injured_ally()
+
+/datum/human_ai_module/health/suspend_module(clear_inventory = FALSE)
+	lose_injured_ally()
+	cancel_treatment() // SS220 EDIT: resumed AI must not inherit an old treatment continuation
+
 /datum/human_ai_module/health/proc/set_injured_ally(mob/living/new_target)
 	if(!new_target)
 		return
@@ -112,14 +120,14 @@
 		if(brain.tied_controller.get_z() != possible_buddy.z)
 			continue
 
-		if(!brain.faction.faction_check(possible_buddy))
+		if(!brain.is_friendly_target(possible_buddy))
 			continue
 
-		if(!brain.tied_controller.is_in_view_of(possible_buddy, brain.profile.view_distance))
+		if(!brain.tied_controller.is_in_view_of(possible_buddy, brain.get_view_distance()))
 			continue
 
 		var/distance = brain.tied_controller.get_distance_to(possible_buddy)
-		if(distance > brain.profile.view_distance)
+		if(distance > brain.get_view_distance())
 			continue
 
 		if(!healing_start_check(possible_buddy))
@@ -208,23 +216,23 @@
 	qdel(treatment_check)
 
 /datum/human_ai_module/health/proc/use_treatment_item(mob/living/carbon/human/target, list/item_types, datum/callback/treatment_check)
-	var/obj/item/item = brain.inventory.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, target)
+	var/obj/item/item = brain.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, target)
 	if(!item)
 		return FALSE
-	brain.inventory.clear_main_hand()
-	if(!brain.inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
+	brain.clear_main_hand()
+	if(!brain.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
 		return FALSE
 
-	sleep(brain.profile.short_action_delay * brain.profile.action_delay_mult)
+	sleep(brain.get_action_delay())
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return FALSE
 	brain.tied_controller.ai_use(item, target)
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return TRUE
 
-	var/storage_slot = brain.inventory.storage_has_room(item)
+	var/storage_slot = brain.storage_has_room(item)
 	if(storage_slot)
-		brain.inventory.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
+		brain.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		brain.tied_controller.drop_held_item(item)
 	return TRUE

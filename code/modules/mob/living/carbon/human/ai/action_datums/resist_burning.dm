@@ -17,7 +17,7 @@
 		return ONGOING_ACTION_COMPLETED
 
 	if(locate(/obj/flamer_fire) in brain.tied_controller.get_current_turf())
-		brain.cover.try_cover()
+		brain.try_cover()
 		return ONGOING_ACTION_COMPLETED
 
 	brain.tied_controller.resist()

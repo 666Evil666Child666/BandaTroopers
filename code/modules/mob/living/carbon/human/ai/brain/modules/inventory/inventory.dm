@@ -59,6 +59,34 @@
 	clear_pickup_queue()
 	invalidate_nearby_item_search()
 
+/datum/human_ai_module/inventory/reset_module()
+	reset_inventory()
+
+/datum/human_ai_module/inventory/suspend_module(clear_inventory = FALSE)
+	if(clear_inventory)
+		reset_inventory()
+	else
+		invalidate_nearby_item_search()
+
+/datum/human_ai_module/inventory/resume_module(previous_lifecycle_state)
+	appraise_inventory()
+	invalidate_nearby_item_search()
+
+/datum/human_ai_module/inventory/process_module(delta_time)
+	if(!brain.tied_controller.is_zombie() && should_run_nearby_item_search())
+		item_search(brain.tied_controller.get_range(2))
+
+/datum/human_ai_module/inventory/on_target_changed(atom/movable/old_target, atom/movable/new_target)
+	invalidate_nearby_item_search()
+
+/datum/human_ai_module/inventory/on_combat_exit_started(should_holster_primary = TRUE)
+	if(should_holster_primary)
+		holster_primary()
+	holster_melee()
+
+/datum/human_ai_module/inventory/can_ignore_target_darkness()
+	return has_nightvision
+
 /datum/human_ai_module/inventory/proc/get_primary_weapon()
 	RETURN_TYPE(/obj/item/weapon/gun)
 	return primary_weapon

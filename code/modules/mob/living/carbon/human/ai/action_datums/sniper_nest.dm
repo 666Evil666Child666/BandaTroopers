@@ -5,31 +5,31 @@
 	var/initial_reload_line_chance
 
 /datum/ai_action/sniper_nest/get_weight(datum/human_ai_brain/brain)
-	if(!brain.emplacement.has_sniper_home())
+	if(!brain.has_sniper_home())
 		return 0
 
-	if(brain.guns.has_tried_reload())
+	if(brain.has_tried_reload())
 		return 0
 
-	if(brain.cover.has_cover())
+	if(brain.has_cover())
 		return 0
 
-	if(!brain.inventory.has_primary_weapon())
+	if(!brain.has_primary_weapon())
 		return 0
 
-	if(brain.health.healing_someone)
+	if(brain.is_healing_someone())
 		return 0
 
 	return 12
 
 /datum/ai_action/sniper_nest/Added()
-	initial_view = brain.profile.view_distance
-	initial_reload_line_chance = brain.communication.reload_line_chance
-	brain.communication.reload_line_chance = 0
+	initial_view = brain.get_view_distance()
+	initial_reload_line_chance = brain.get_reload_line_chance()
+	brain.set_reload_line_chance(0)
 
 /datum/ai_action/sniper_nest/Destroy(force, ...)
-	brain.profile.view_distance = initial_view
-	brain.communication.reload_line_chance = initial_reload_line_chance
+	brain.set_view_distance(initial_view)
+	brain.set_reload_line_chance(initial_reload_line_chance)
 	return ..()
 
 /datum/ai_action/sniper_nest/trigger_action()
@@ -37,29 +37,27 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
-	if(brain.guns.has_tried_reload() || brain.cover.has_cover() || brain.health.healing_someone)
+	if(brain.is_stationary_fire_blocked())
 		return ONGOING_ACTION_COMPLETED
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	if(!primary_weapon)
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/sniper_home = brain.emplacement.sniper_home
+	var/turf/sniper_home = brain.get_sniper_home()
 	if(QDELETED(sniper_home))
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.tied_controller.get_distance_to(sniper_home) > 0)
-		if(!brain.navigation.move_to_next_turf(sniper_home))
+		if(!brain.move_to_turf(sniper_home))
 			return ONGOING_ACTION_COMPLETED
 
 	if(!brain.tied_controller.get_distance_to(sniper_home))
-		brain.profile.view_distance = 30
-		brain.tied_controller.face_dir(brain.emplacement.sniper_dir)
+		brain.set_view_distance(30)
+		brain.tied_controller.face_dir(brain.get_sniper_dir())
 
-	if(!brain.guns.should_reload())
-		brain.inventory.unholster_primary()
-		brain.inventory.ensure_primary_hand(primary_weapon)
-		brain.inventory.wield_primary()
+	if(!brain.should_reload())
+		brain.prepare_primary_for_fire(primary_weapon)
 
 	return ONGOING_ACTION_UNFINISHED
 
@@ -134,6 +132,6 @@
 	arm_equipment(ai_human, sniper_equipment_presets[chosen_equipment_name], TRUE)
 
 	ai_comp.ai_brain.tied_controller.forceMove(home_turf)
-	ai_comp.ai_brain.emplacement.set_sniper_home(home_turf, get_cardinal_dir(home_turf, target_turf))
+	ai_comp.ai_brain.set_sniper_home(home_turf, get_cardinal_dir(home_turf, target_turf))
 
 	to_chat(usr, SPAN_NOTICE("Sniper has been created."))

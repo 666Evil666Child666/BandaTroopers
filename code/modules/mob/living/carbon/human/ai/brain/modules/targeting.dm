@@ -16,6 +16,41 @@
 	lose_target()
 	. = ..()
 
+/datum/human_ai_module/targeting/reset_module()
+	clear_target_turf()
+	lose_target()
+
+/datum/human_ai_module/targeting/suspend_module(clear_inventory = FALSE)
+	clear_target_turf()
+	lose_target()
+
+/datum/human_ai_module/targeting/process_module(delta_time)
+	if(!has_current_target())
+		set_target(get_target())
+
+/datum/human_ai_module/targeting/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
+	var/atom/firer = bullet?.firer
+	if(!firer)
+		return
+
+	if(brain.is_friendly_target(firer))
+		return
+
+	if(brain.tied_controller.get_distance_to(firer) <= brain.get_targeting_view_distance())
+		set_target(firer)
+	else
+		set_target_turf(get_turf(firer), 4 SECONDS)
+
+/datum/human_ai_module/targeting/on_combat_exit_started(should_holster_primary = TRUE)
+	lose_target()
+
+/datum/human_ai_module/targeting/on_combat_exit_finished(list/combat_exit_context)
+	if(combat_exit_context?["force_clear"])
+		lose_target()
+
+	if(combat_exit_context?["clear_target_turf"])
+		clear_target_turf()
+
 /datum/human_ai_module/targeting/proc/set_target(atom/movable/new_target)
 	lose_target()
 
@@ -38,7 +73,7 @@
 	target_turf = get_turf(current_target)
 
 	if(brain)
-		brain.inventory.invalidate_nearby_item_search()
+		brain.on_target_changed(null, current_target)
 
 /datum/human_ai_module/targeting/proc/set_target_turf(turf/new_target_turf, duration = 4 SECONDS)
 	if(!new_target_turf)
@@ -71,6 +106,7 @@
 	return current_target || target_turf
 
 /datum/human_ai_module/targeting/proc/lose_target()
+	var/atom/movable/old_target = current_target
 	if(current_target)
 		UnregisterSignal(current_target, COMSIG_PARENT_QDELETING)
 		UnregisterSignal(current_target, COMSIG_MOVABLE_MOVED)
@@ -88,7 +124,7 @@
 	target_turf = null
 
 	if(brain)
-		brain.inventory.invalidate_nearby_item_search()
+		brain.on_target_changed(old_target, null)
 
 /datum/human_ai_module/targeting/proc/on_target_delete(datum/source, force)
 	SIGNAL_HANDLER
@@ -112,7 +148,7 @@
 		return
 
 	if(current_target)
-		if(brain.tied_controller.is_in_view_of(current_target, brain.profile.view_distance))
+		if(brain.tied_controller.is_in_view_of(current_target, brain.get_targeting_view_distance()))
 			target_turf = get_turf(current_target)
 		else
 			COOLDOWN_START(src, fire_offscreen, 2 SECONDS)
@@ -129,11 +165,11 @@
 	var/list/dir_cone
 	var/rear_view_penalty = 0
 
-	if(brain.profile.scope_vision)
+	if(brain.has_scope_vision())
 		dir_cone = brain.tied_controller.get_reverse_dir_cone()
-		rear_view_penalty = brain.profile.view_distance / 7 - 1
+		rear_view_penalty = brain.get_targeting_view_distance() / 7 - 1
 
-	for(var/atom/movable/potential_target in brain.tied_controller.get_view(brain.profile.view_distance))
+	for(var/atom/movable/potential_target in brain.tied_controller.get_view(brain.get_targeting_view_distance()))
 		if(brain.tied_controller.is_puppet(potential_target))
 			continue
 
@@ -180,7 +216,7 @@
 	if(!is_valid_target_ref(target))
 		return FALSE
 
-	if(!brain.profile.scope_vision)
+	if(!brain.has_scope_vision())
 		return TRUE
 
 	if((distance > 7) && !(brain.tied_controller.get_direction_to(target) in dir_cone))
@@ -188,7 +224,7 @@
 
 	if(istype(target, /mob/living))
 		var/rear_view_check = (brain.tied_controller.get_direction_to(target) in brain.tied_controller.get_reverse_dir_cone())
-		if(rear_view_check && (distance > brain.profile.view_distance - rear_view_penalty))
+		if(rear_view_check && (distance > brain.get_targeting_view_distance() - rear_view_penalty))
 			return FALSE
 
 	return TRUE
@@ -218,7 +254,7 @@
 	if(defense.stat & DEFENSE_DESTROYED)
 		return FALSE
 
-	if(brain.tied_controller.faction_in(defense.faction_group))
+	if(brain.is_friendly_target(defense))
 		return FALSE
 
 	return path_check(defense)
@@ -230,7 +266,7 @@
 	if(vehicle.health <= 0)
 		return FALSE
 
-	if(brain.faction.faction_check(vehicle))
+	if(brain.is_friendly_target(vehicle))
 		return FALSE
 
 	return path_check(vehicle)
@@ -242,15 +278,15 @@
 	if(target.stat == DEAD)
 		return FALSE
 
-	if(!brain.profile.shoot_to_kill && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
+	if(!brain.should_shoot_to_kill() && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
 		return FALSE
 
-	if(brain.faction.faction_check(target))
+	if(brain.is_friendly_target(target))
 		return FALSE
 
 	var/distance = brain.tied_controller.get_distance_to(target)
 
-	if(!brain.inventory.has_nightvision && distance > 1 && !can_detect_living_target(target))
+	if(!brain.can_ignore_target_darkness() && distance > 1 && !can_detect_living_target(target))
 		return FALSE
 
 	if(HAS_TRAIT(target, TRAIT_CLOAKED) && brain.tied_controller.get_distance_to(target) > cloak_visible_range)
@@ -300,7 +336,7 @@
 			for(var/mob/living/carbon/human/possible_friendly in tile)
 				if(possible_friendly.body_position == LYING_DOWN)
 					continue
-				if(brain.faction.faction_check(possible_friendly))
+				if(brain.is_friendly_target(possible_friendly))
 					return FALSE
 
 		if(i <= 3)
@@ -313,7 +349,7 @@
 			for(var/mob/living/carbon/human/possible_friendly in neighbor)
 				if(possible_friendly.body_position == LYING_DOWN)
 					continue
-				if(brain.faction.faction_check(possible_friendly))
+				if(brain.is_friendly_target(possible_friendly))
 					return FALSE
 	return TRUE
 

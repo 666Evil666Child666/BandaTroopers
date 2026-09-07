@@ -3,8 +3,8 @@
 /datum/human_ai_module/inventory/proc/appraise_inventory(belt = TRUE, back = TRUE, pocket_l = TRUE, pocket_r = TRUE, armor = TRUE, uniform = TRUE)
 	recalculate_containers()
 
-	if(brain.faction.previous_faction != brain.tied_controller.get_faction())
-		brain.faction.previous_faction = brain.tied_controller.get_faction()
+	if(brain.get_previous_faction() != brain.tied_controller.get_faction())
+		brain.set_previous_faction(brain.tied_controller.get_faction())
 		var/datum/human_ai_faction/our_faction = SShuman_ai.human_ai_factions[brain.tied_controller.get_faction()]
 		our_faction?.apply_faction_data(brain)
 
@@ -17,7 +17,7 @@
 	if(isgun(brain.tied_controller.get_s_store()) && (brain.tied_controller.get_s_store() != primary_weapon))
 		add_secondary_weapon(brain.tied_controller.get_s_store())
 
-	brain.guns.clear_tried_reload() // We don't really need to do this in a smart way
+	brain.clear_tried_reload() // We don't really need to do this in a smart way
 	if(belt)
 		appraise_belt()
 

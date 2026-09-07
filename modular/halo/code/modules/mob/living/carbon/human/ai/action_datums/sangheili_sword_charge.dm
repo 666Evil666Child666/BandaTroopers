@@ -3,13 +3,13 @@
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
 
 /datum/ai_action/sangheili_sword_charge/Added()
-	brain.cover.end_cover()
+	brain.halo_covenant_end_cover()
 
 /datum/ai_action/sangheili_sword_charge/get_weight(datum/human_ai_brain/brain)
 	if(!brain.halo_sangheili_runtime)
 		return 0
 
-	if(!brain.combat.in_combat || !brain.orders.can_move_for_action() || brain.grenade.active_grenade_found)
+	if(!brain.halo_covenant_can_run_movement_action(TRUE))
 		return 0
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
@@ -36,12 +36,12 @@
 		return .
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.combat.in_combat || !brain.halo_sangheili_should_sword_charge(threat))
+	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.halo_covenant_can_run_movement_action(TRUE) || !brain.halo_sangheili_should_sword_charge(threat))
 		if(!brain.halo_sangheili_restore_ranged_state())
 			brain.halo_sangheili_holster_sword()
 		return ONGOING_ACTION_COMPLETED
 
-	brain.cover.end_cover()
+	brain.halo_covenant_end_cover()
 	brain.tied_controller.set_combat_intent()
 
 	var/obj/item/weapon/covenant/energy_sword/sword = brain.halo_sangheili_draw_sword()
@@ -56,12 +56,6 @@
 		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), threat, "", list())
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
-	var/turf/threat_turf = brain.halo_covenant_get_cached_threat_turf()
-	if(!threat_turf)
+	if(!brain.halo_covenant_move_to_threat(threat))
 		return ONGOING_ACTION_COMPLETED
-
-	if(!brain.navigation.move_to_next_turf(threat_turf))
-		return ONGOING_ACTION_COMPLETED
-
-	brain.tied_controller.face_atom(threat)
 	return ONGOING_ACTION_UNFINISHED_BLOCK

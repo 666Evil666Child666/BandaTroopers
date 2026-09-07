@@ -6,13 +6,13 @@
 	if(!brain.has_valid_tied_human()) // SS220 EDIT: upstream cover action must not score after modular owner teardown
 		return 0
 
-	if(!brain.cover.has_cover())
+	if(!brain.has_cover())
 		return 0
 
-	if(!brain.orders.can_move_for_action())
+	if(!brain.can_move_for_action())
 		return 0
 
-	if(brain.cover.is_in_cover() && !(brain.tied_controller.get_distance_to(brain.targeting.get_current_target()) > brain?.inventory?.get_gun_data()?.minimum_range))
+	if(brain.is_in_cover() && !(brain.tied_controller.get_distance_to(brain.get_current_target()) > brain.get_gun_data()?.minimum_range))
 		return 0
 
 	return 15
@@ -22,7 +22,7 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
-	var/turf/current_cover = brain.cover.get_current_cover()
+	var/turf/current_cover = brain.get_current_cover()
 	if(!current_cover)
 		return ONGOING_ACTION_COMPLETED
 
@@ -32,8 +32,8 @@
 #endif
 
 	if(brain.tied_controller.get_distance_from(current_cover) > 0)
-		if(!brain.navigation.move_to_next_turf(current_cover))
-			brain.cover.end_cover()
+		if(!brain.move_to_turf(current_cover))
+			brain.end_cover()
 			return ONGOING_ACTION_COMPLETED
 
 		if(!brain.can_continue_runtime_work())
@@ -42,5 +42,5 @@
 		if(brain.tied_controller.get_distance_from(current_cover) > 0)
 			return ONGOING_ACTION_UNFINISHED
 
-	brain.cover.enter_cover()
+	brain.enter_cover()
 	return ONGOING_ACTION_COMPLETED

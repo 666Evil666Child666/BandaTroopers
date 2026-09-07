@@ -7,10 +7,10 @@
 	var/throw_finished = FALSE // SS220 EDIT: transient async state completes the action on the next scheduler tick
 
 /datum/ai_action/throw_back_nade/get_weight(datum/human_ai_brain/brain)
-	if(!brain.grenade.can_throw_back()) // SS220 EDIT: modular HALO weak AI presets must not enter throw-back mode
+	if(!brain.can_throw_back_grenade()) // SS220 EDIT: modular HALO weak AI presets must not enter throw-back mode
 		return 0
 
-	var/obj/item/explosive/grenade/active_grenade_found = brain.grenade.get_active_grenade()
+	var/obj/item/explosive/grenade/active_grenade_found = brain.get_active_grenade()
 	if(QDELETED(active_grenade_found))
 		return 0
 
@@ -20,7 +20,7 @@
 	return 50
 
 /datum/ai_action/throw_back_nade/Destroy(force, ...)
-	brain.grenade.clear_active_grenade()
+	brain.clear_active_grenade()
 	throw_ready_time = 0
 	mid_throw = FALSE
 	throw_finished = FALSE
@@ -37,7 +37,7 @@
 	if(mid_throw)
 		return ONGOING_ACTION_UNFINISHED
 
-	var/obj/item/explosive/grenade/active_grenade_found = brain.grenade.get_active_grenade()
+	var/obj/item/explosive/grenade/active_grenade_found = brain.get_active_grenade()
 	var/datum/human_ai_throwable_context/context = new(brain, active_grenade_found)
 	context.min_safe_throw_distance = min_safe_throw_distance
 	var/result = GLOB.human_ai_grenade_throw_back_handler.continue_throw_back(context, src)

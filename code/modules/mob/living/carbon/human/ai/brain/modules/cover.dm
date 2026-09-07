@@ -32,6 +32,35 @@
 	current_cover = null
 	in_cover = FALSE
 
+/datum/human_ai_module/cover/reset_module()
+	end_cover()
+
+/datum/human_ai_module/cover/suspend_module(clear_inventory = FALSE)
+	end_cover()
+
+/datum/human_ai_module/cover/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
+	if(!from_direct_hit || !bullet?.firer)
+		return
+
+	react_to_incoming_fire(bullet.angle, bullet.firer)
+
+/datum/human_ai_module/cover/on_combat_exit_finished(list/combat_exit_context)
+	if(combat_exit_context?["force_clear"])
+		end_cover()
+		return
+
+	if(has_cover())
+		if(!prob(peek_cover_chance))
+			combat_exit_context["clear_target_turf"] = TRUE
+		end_cover()
+	else
+		combat_exit_context["clear_target_turf"] = TRUE
+
+/datum/human_ai_module/cover/on_combat_entered(was_in_combat)
+	var/atom/movable/current_target = brain.get_current_target()
+	if(isxeno(current_target))
+		try_cover(brain.tied_controller.get_angle_from(current_target), current_target)
+
 /datum/human_ai_module/cover/proc/react_to_incoming_fire(angle, atom/firer)
 	if(!brain?.has_valid_tied_human())
 		return
@@ -46,7 +75,7 @@
 	if(!COOLDOWN_FINISHED(src, cover_search_cooldown))
 		return
 
-	if(!(cover_without_gun || brain.inventory.has_primary_weapon()))
+	if(!(cover_without_gun || brain.has_primary_weapon()))
 		return
 
 	COOLDOWN_START(src, cover_search_cooldown, 10 SECONDS)
@@ -87,10 +116,10 @@
 
 /// If an AI decides to go into cover, any squadmates in their view range will process on the same view dictionary so as to help with performance
 /datum/human_ai_module/cover/proc/squad_cover_processing(list/turf_dict)
-	if(!brain.squad.squad_id)
+	if(!brain.get_squad_id())
 		return
 
-	var/datum/human_ai_squad/squad = SShuman_ai.squad_id_dict["[brain.squad.squad_id]"]
+	var/datum/human_ai_squad/squad = brain.get_squad_datum()
 	if(!squad)
 		return
 
@@ -101,14 +130,14 @@
 		if(!squaddie.has_valid_tied_human())
 			continue
 
-		if(brain.tied_controller.get_distance_to(squaddie.tied_controller.get_current_turf()) > brain.profile.view_distance)
+		if(brain.tied_controller.get_distance_to(squaddie.tied_controller.get_current_turf()) > brain.get_view_distance())
 			continue
 
 		if(squaddie.tied_controller.is_incapacitated())
 			continue
 
-		COOLDOWN_START(squaddie.cover, cover_search_cooldown, 15 SECONDS)
-		squaddie.cover.cover_processing(turf_dict, TRUE)
+		squaddie.start_cover_search_cooldown(15 SECONDS)
+		squaddie.apply_cover_processing(turf_dict, TRUE)
 
 /// Recursively searches each tile nearby (up to 198 tiles, nearly BYOND's recursion limit) and determines how suitable it is as cover, giving it a numerical score and adding it to turf_dict
 /datum/human_ai_module/cover/proc/recursive_turf_cover_scan(turf/scan_turf, list/turf_dict, cover_dir, first_iteration = TRUE)
@@ -133,13 +162,13 @@
 
 	var/obj/item/explosive/mine/mine = locate() in scan_turf.contents
 	if(mine)
-		if(!brain.faction.faction_check(mine.iff_signal))
+		if(!brain.is_friendly_target(mine.iff_signal))
 			turf_dict[scan_turf] -= 50
 		else
 			turf_dict[scan_turf] -= 5 // even if it's our mine, we don't really want to stand on it
 
 	turf_dict[scan_turf] -= brain.tied_controller.get_distance_to(scan_turf)
-	var/atom/movable/current_target = brain.targeting.get_current_target()
+	var/atom/movable/current_target = brain.get_current_target()
 	if(current_target) // Might be smarter to hide in a different direction
 		turf_dict[scan_turf] += get_dist(current_target, scan_turf) * 0.5
 

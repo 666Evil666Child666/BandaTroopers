@@ -1,6 +1,7 @@
 /datum/human_ai_brain
 	var/halo_sangheili_runtime = FALSE
 	var/halo_unggoy_runtime = FALSE
+	var/datum/human_ai_module/halo_covenant/halo_covenant_module
 	var/halo_unggoy_role
 	var/halo_unggoy_panic_health_pct = 0
 	var/halo_unggoy_panics_without_leader = FALSE
@@ -25,6 +26,148 @@
 	var/atom/halo_cached_threat_atom
 	var/turf/halo_cached_threat_turf
 	var/halo_ranged_fire_backoff_until = 0
+
+/datum/human_ai_brain/proc/halo_finalize_human_ai_brain(mob/living/carbon/human/new_human)
+	if(!halo_runtime_uses_projectile_pressure_controls())
+		return
+
+	if(!halo_covenant_module)
+		halo_covenant_module = register_extension_module(new /datum/human_ai_module/halo_covenant(src))
+	setup_lifecycle_modules()
+	halo_configure_covenant_module_lists()
+
+/datum/human_ai_brain/proc/halo_configure_covenant_module_lists()
+	if(!halo_covenant_module)
+		return
+
+	reset_modules_after_wake_clear += halo_covenant_module
+	combat_exit_finished_modules += halo_covenant_module
+	combat_exit_force_clear_modules += halo_covenant_module
+
+/datum/human_ai_module/halo_covenant/reset_module()
+	brain.invalidate_halo_runtime_caches()
+	brain.halo_sangheili_clear_melee_commit(FALSE)
+
+/datum/human_ai_module/halo_covenant/on_combat_exit_finished(list/combat_exit_context)
+	if(brain.halo_sangheili_should_preserve_drawn_sword())
+		brain.halo_sangheili_clear_melee_commit(FALSE)
+		return
+	if(brain.halo_sangheili_melee_committed || brain.halo_sangheili_drawn_sword)
+		brain.halo_sangheili_holster_sword()
+
+/datum/human_ai_brain/proc/halo_covenant_can_run_movement_action(block_active_grenade = FALSE)
+	if(!combat.in_combat || !orders.can_move_for_action())
+		return FALSE
+	if(block_active_grenade && grenade.active_grenade_found)
+		return FALSE
+	return TRUE
+
+/datum/human_ai_brain/proc/halo_covenant_has_pending_cover()
+	return cover.current_cover && !cover.in_cover
+
+/datum/human_ai_brain/proc/halo_covenant_has_cover()
+	return cover.current_cover ? TRUE : FALSE
+
+/datum/human_ai_brain/proc/halo_covenant_end_cover()
+	cover.end_cover()
+
+/datum/human_ai_brain/proc/halo_covenant_try_cover_retreat(atom/threat)
+	if(!cover.current_cover)
+		cover.try_cover(tied_controller.get_angle_from(threat), threat)
+
+	var/turf/cover_turf = get_turf(cover.current_cover)
+	if(!cover_turf)
+		return FALSE
+
+	if(tied_controller.get_distance_to(cover_turf) > 0)
+		if(!navigation.move_to_next_turf(cover_turf))
+			cover.end_cover()
+			return FALSE
+
+		return TRUE
+
+	cover.in_cover = TRUE
+	tied_controller.face_atom(threat)
+	return TRUE
+
+/datum/human_ai_brain/proc/halo_covenant_step_away_from_threat(atom/threat, turf/anchor = null, anchor_weight = 0)
+	var/turf/threat_turf = halo_covenant_get_cached_threat_turf()
+	if(!has_valid_tied_human() || !threat_turf)
+		return FALSE
+
+	var/turf/best_destination
+	var/best_score = -INFINITY
+
+	for(var/direction in GLOB.cardinals)
+		var/turf/destination = tied_controller.get_step_in_dir(direction)
+		if(!destination || destination.density)
+			continue
+
+		var/score = get_dist(destination, threat_turf) * 3
+		if(anchor)
+			score -= get_dist(destination, anchor) * anchor_weight
+
+		if(score > best_score)
+			best_score = score
+			best_destination = destination
+
+	if(!best_destination && anchor && (tied_controller.get_distance_to(anchor) > 0))
+		best_destination = anchor
+
+	if(!best_destination)
+		return FALSE
+
+	if(!navigation.move_to_next_turf(best_destination))
+		return FALSE
+
+	tied_controller.face_atom(threat)
+	return TRUE
+
+/datum/human_ai_brain/proc/halo_covenant_move_to_threat(atom/threat)
+	var/turf/threat_turf = halo_covenant_get_cached_threat_turf()
+	if(!threat_turf)
+		return FALSE
+
+	if(!navigation.move_to_next_turf(threat_turf))
+		return FALSE
+
+	tied_controller.face_atom(threat)
+	return TRUE
+
+/datum/human_ai_brain/proc/halo_covenant_move_to_atom(atom/target, use_cached_threat_turf = FALSE)
+	if(!has_valid_tied_human() || !target)
+		return FALSE
+
+	var/turf/target_turf = use_cached_threat_turf ? halo_covenant_get_cached_threat_turf() : get_turf(target)
+	if(!target_turf)
+		return FALSE
+
+	if(!navigation.move_to_next_turf(target_turf))
+		return FALSE
+
+	if(!has_valid_tied_human())
+		return FALSE
+
+	tied_controller.face_atom(target)
+	return TRUE
+
+/datum/human_ai_brain/proc/halo_covenant_has_grenade_equipment()
+	return inventory.has_equipment(HUMAN_AI_GRENADES)
+
+/datum/human_ai_brain/proc/halo_covenant_get_stored_grenade(obj/item/explosive/grenade/excluding = null)
+	return inventory.get_first_equipment_item(HUMAN_AI_GRENADES, excluding)
+
+/datum/human_ai_brain/proc/halo_covenant_clear_both_hands()
+	if(!has_valid_tied_human())
+		return
+
+	inventory.clear_main_hand()
+	tied_controller.swap_hand()
+	inventory.clear_main_hand()
+	tied_controller.swap_hand()
+
+/datum/human_ai_brain/proc/halo_covenant_equip_grenade(obj/item/explosive/grenade/grenade_item)
+	return inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, grenade_item)
 
 /datum/human_ai_brain/proc/halo_covenant_get_threat_atom()
 	return targeting.current_target || targeting.target_turf
@@ -622,16 +765,3 @@
 		return TRUE
 
 	return FALSE
-
-/datum/human_ai_brain/reset_ai()
-	. = ..()
-	invalidate_halo_runtime_caches()
-	halo_sangheili_clear_melee_commit(FALSE)
-
-/datum/human_ai_brain/exit_combat()
-	. = ..()
-	if(halo_sangheili_should_preserve_drawn_sword())
-		halo_sangheili_clear_melee_commit(FALSE)
-		return
-	if(halo_sangheili_melee_committed || halo_sangheili_drawn_sword)
-		halo_sangheili_holster_sword()

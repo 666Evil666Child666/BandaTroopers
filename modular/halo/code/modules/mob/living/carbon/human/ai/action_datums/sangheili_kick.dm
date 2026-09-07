@@ -9,7 +9,7 @@
 	if(!brain.halo_sangheili_runtime)
 		return 0
 
-	if(!brain.combat.in_combat || !brain.orders.can_move_for_action() || brain.grenade.active_grenade_found)
+	if(!brain.halo_covenant_can_run_movement_action(TRUE))
 		return 0
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
@@ -40,10 +40,10 @@
 		return .
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.combat.in_combat)
+	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.halo_covenant_can_run_movement_action(TRUE))
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.cover.current_cover && !brain.cover.in_cover)
+	if(brain.halo_covenant_has_pending_cover())
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.halo_sangheili_should_sword_charge(threat))
@@ -56,7 +56,7 @@
 		return ONGOING_ACTION_COMPLETED
 
 	brain.tied_controller.set_combat_intent()
-	brain.cover.end_cover()
+	brain.halo_covenant_end_cover()
 	brain.halo_sangheili_holster_sword()
 	brain.halo_covenant_clear_hands()
 
@@ -68,12 +68,6 @@
 			INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), threat, "", list())
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
-	var/turf/threat_turf = brain.halo_covenant_get_cached_threat_turf()
-	if(!threat_turf)
+	if(!brain.halo_covenant_move_to_threat(threat))
 		return ONGOING_ACTION_COMPLETED
-
-	if(!brain.navigation.move_to_next_turf(threat_turf))
-		return ONGOING_ACTION_COMPLETED
-
-	brain.tied_controller.face_atom(threat)
 	return ONGOING_ACTION_UNFINISHED_BLOCK

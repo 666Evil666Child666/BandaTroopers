@@ -11,6 +11,12 @@
 /datum/human_ai_module/grenade/proc/reset_grenade()
 	active_grenade_found = null // SS220 EDIT: reset stale grenade threat state so AI can leave throw-back mode cleanly
 
+/datum/human_ai_module/grenade/reset_module()
+	reset_grenade()
+
+/datum/human_ai_module/grenade/suspend_module(clear_inventory = FALSE)
+	reset_grenade()
+
 /datum/human_ai_module/grenade/proc/get_active_grenade()
 	RETURN_TYPE(/obj/item/explosive/grenade)
 	return active_grenade_found
@@ -37,15 +43,4 @@
 	if(!brain)
 		return FALSE
 
-	for(var/datum/ai_action/ongoing_action as anything in brain.action_runtime.ongoing_actions)
-		if(istype(ongoing_action, /datum/ai_action/throw_grenade))
-			var/datum/ai_action/throw_grenade/throw_grenade_action = ongoing_action
-			if(throw_grenade_action.mid_throw)
-				return TRUE
-
-		if(istype(ongoing_action, /datum/ai_action/throw_back_nade))
-			var/datum/ai_action/throw_back_nade/throw_back_action = ongoing_action
-			if(throw_back_action.mid_throw)
-				return TRUE
-
-	return FALSE
+	return brain.has_ongoing_throw_action_in_progress()

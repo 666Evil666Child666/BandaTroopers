@@ -5,31 +5,31 @@
 	var/initial_reload_line_chance
 
 /datum/ai_action/machinegunner_nest/get_weight(datum/human_ai_brain/brain)
-	if(!brain.emplacement.has_machinegunner_home())
+	if(!brain.has_machinegunner_home())
 		return 0
 
-	if(brain.guns.has_tried_reload())
+	if(brain.has_tried_reload())
 		return 0
 
-	if(brain.cover.has_cover())
+	if(brain.has_cover())
 		return 0
 
-	if(!brain.inventory.has_primary_weapon())
+	if(!brain.has_primary_weapon())
 		return 0
 
-	if(brain.health.healing_someone)
+	if(brain.is_healing_someone())
 		return 0
 
 	return 12
 
 /datum/ai_action/machinegunner_nest/Added()
-	initial_view = brain.profile.view_distance
-	initial_reload_line_chance = brain.communication.reload_line_chance
-	brain.communication.reload_line_chance = 0
+	initial_view = brain.get_view_distance()
+	initial_reload_line_chance = brain.get_reload_line_chance()
+	brain.set_reload_line_chance(0)
 
 /datum/ai_action/machinegunner_nest/Destroy(force, ...)
-	brain.profile.view_distance = initial_view
-	brain.communication.reload_line_chance = initial_reload_line_chance
+	brain.set_view_distance(initial_view)
+	brain.set_reload_line_chance(initial_reload_line_chance)
 	return ..()
 
 /datum/ai_action/machinegunner_nest/trigger_action()
@@ -37,29 +37,27 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
-	if(brain.guns.has_tried_reload() || brain.cover.has_cover() || brain.health.healing_someone)
+	if(brain.is_stationary_fire_blocked())
 		return ONGOING_ACTION_COMPLETED
 
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	if(!primary_weapon)
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/machinegunner_home = brain.emplacement.machinegunner_home
+	var/turf/machinegunner_home = brain.get_machinegunner_home()
 	if(QDELETED(machinegunner_home))
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.tied_controller.get_distance_to(machinegunner_home) > 0)
-		if(!brain.navigation.move_to_next_turf(machinegunner_home))
+		if(!brain.move_to_turf(machinegunner_home))
 			return ONGOING_ACTION_COMPLETED
 
 	if(!brain.tied_controller.get_distance_to(machinegunner_home))
-		brain.profile.view_distance = 30
-		brain.tied_controller.face_dir(brain.emplacement.machinegunner_dir)
+		brain.set_view_distance(30)
+		brain.tied_controller.face_dir(brain.get_machinegunner_dir())
 
-	if(!brain.guns.should_reload())
-		brain.inventory.unholster_primary()
-		brain.inventory.ensure_primary_hand(primary_weapon)
-		brain.inventory.wield_primary()
+	if(!brain.should_reload())
+		brain.prepare_primary_for_fire(primary_weapon)
 
 	return ONGOING_ACTION_UNFINISHED
 
@@ -139,6 +137,6 @@
 	arm_equipment(ai_human, machinegunner_equipment_presets[chosen_equipment_name], TRUE)
 
 	ai_comp.ai_brain.tied_controller.forceMove(home_turf)
-	ai_comp.ai_brain.emplacement.set_machinegunner_home(home_turf, get_cardinal_dir(home_turf, target_turf))
+	ai_comp.ai_brain.set_machinegunner_home(home_turf, get_cardinal_dir(home_turf, target_turf))
 
 	to_chat(usr, SPAN_NOTICE("machinegunner has been created."))

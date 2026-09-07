@@ -28,6 +28,8 @@
 		call(equipment_preset, "modular_apply_human_ai_brain_overrides")(ai_brain, ai_human)
 	if(hascall(ai_brain, "modular_finalize_human_ai_brain"))
 		call(ai_brain, "modular_finalize_human_ai_brain")(ai_human)
+	if(hascall(ai_brain, "halo_finalize_human_ai_brain"))
+		call(ai_brain, "halo_finalize_human_ai_brain")(ai_human)
 	GLOB.ai_humans += ai_human
 	ai_brain.tied_controller.mark_ai_controlled()
 

@@ -153,10 +153,19 @@
 		return
 	emit_ai_voiceline(pick(enter_combat_lines))
 
+/datum/human_ai_module/communication/on_combat_entered(was_in_combat)
+	if(was_in_combat)
+		return
+
+	say_in_combat_line()
+
 /datum/human_ai_module/communication/proc/say_exit_combat_line(chance = exit_combat_line_chance)
 	if(!length(exit_combat_lines) || !prob(chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return
 	emit_ai_voiceline(pick(exit_combat_lines))
+
+/datum/human_ai_module/communication/on_combat_exit_started(should_holster_primary = TRUE)
+	say_exit_combat_line()
 
 /datum/human_ai_module/communication/proc/on_squad_member_death(mob/living/carbon/human/dead_member)
 	if(!length(squad_member_death_lines) || !prob(squad_member_death_line_chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
@@ -169,7 +178,7 @@
 	emit_ai_voiceline(pick(grenade_thrown_lines))
 
 /datum/human_ai_module/communication/proc/say_reload_line(chance = reload_line_chance)
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	if(!length(reload_lines) || !prob(chance) || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT) || !primary_weapon)
 		return
 	if(istype(primary_weapon.current_mag, /obj/item/ammo_magazine/internal))

@@ -12,6 +12,15 @@
 
 	ongoing_actions.Cut()
 
+/datum/human_ai_module/action_runtime/reset_module()
+	clear_actions()
+
+/datum/human_ai_module/action_runtime/suspend_module(clear_inventory = FALSE)
+	clear_actions()
+
+/datum/human_ai_module/action_runtime/process_module(delta_time)
+	return process_actions(delta_time)
+
 /datum/human_ai_module/action_runtime/proc/has_ongoing_action(path)
 	if(!ispath(path))
 		return FALSE
@@ -29,7 +38,7 @@
 		if(is_type_in_list(ongoing_action, allowed_actions))
 			allowed_actions -= ongoing_action.type
 
-	var/grenade_throw_in_progress = brain.grenade.has_throw_in_progress()
+	var/grenade_throw_in_progress = brain.has_throw_in_progress()
 
 	// Create assoc list of selected AI actions and their weight
 	var/list/possible_actions = list()

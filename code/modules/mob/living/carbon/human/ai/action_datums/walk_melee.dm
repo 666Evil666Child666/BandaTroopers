@@ -3,16 +3,16 @@
 	action_flags = ACTION_USING_LEGS
 
 /datum/ai_action/walk_melee/get_weight(datum/human_ai_brain/brain)
-	if(!brain.targeting.has_current_target())
+	if(!brain.has_current_target())
 		return 0
 
-	if(!brain.orders.can_move_for_action())
+	if(!brain.can_move_for_action())
 		return 0
 
-	if(brain.emplacement.has_sniper_home())
+	if(brain.has_sniper_home())
 		return 0
 
-	if(!brain.guns.has_tried_reload() && (brain.inventory.has_primary_weapon() || brain.inventory.has_secondary_weapons()))
+	if(brain.can_use_ranged_weapon())
 		return 0
 
 	return 3
@@ -22,17 +22,17 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
-	var/atom/movable/current_target = brain.targeting.get_current_target()
+	var/atom/movable/current_target = brain.get_current_target()
 	if(!current_target)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.grenade.has_active_grenade())
+	if(brain.has_active_grenade())
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.cover.has_cover() && !brain.cover.is_in_cover())
+	if(brain.has_pending_cover())
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.guns.has_tried_reload() && (brain.inventory.has_primary_weapon() || brain.inventory.has_secondary_weapons()))
+	if(brain.can_use_ranged_weapon())
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.tied_controller.get_distance_to(current_target) <= 1)
@@ -40,7 +40,7 @@
 		GLOB.human_ai_melee_handler.attack(context)
 		qdel(context)
 
-	if(!brain.navigation.move_to_next_turf(get_turf(current_target)))
+	if(!brain.move_to_atom(current_target))
 		return ONGOING_ACTION_COMPLETED
 
 	return ONGOING_ACTION_COMPLETED

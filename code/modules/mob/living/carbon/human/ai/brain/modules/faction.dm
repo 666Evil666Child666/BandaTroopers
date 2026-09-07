@@ -59,3 +59,9 @@
 		for(var/faction in defense_attacker.faction_group)
 			if(faction in neutral_factions)
 				on_neutral_faction_betray(faction)
+
+/datum/human_ai_module/faction/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
+	if(!bullet?.firer)
+		return
+
+	react_to_attacker_faction(bullet.firer)

@@ -15,8 +15,11 @@
 /datum/human_ai_module/guns/proc/clear_tried_reload()
 	tried_reload = FALSE
 
+/datum/human_ai_module/guns/resume_module(previous_lifecycle_state)
+	clear_tried_reload()
+
 /datum/human_ai_module/guns/proc/should_reload()
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	if(!primary_weapon)
 		return FALSE
 

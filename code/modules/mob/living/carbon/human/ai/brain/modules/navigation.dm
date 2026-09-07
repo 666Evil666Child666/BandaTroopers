@@ -37,6 +37,12 @@
 	reset_navigation_failures()
 	COOLDOWN_RESET(src, no_path_found_cooldown)
 
+/datum/human_ai_module/navigation/reset_module()
+	cancel_navigation()
+
+/datum/human_ai_module/navigation/suspend_module(clear_inventory = FALSE)
+	cancel_navigation()
+
 /datum/human_ai_module/navigation/Destroy(force, ...)
 	cancel_navigation()
 	return ..()
@@ -136,7 +142,7 @@
 	// SS220 EDIT: modular brains may observe or meter path requests without forking shared navigation flow
 	if(hascall(brain, "modular_on_navigation_path_queued"))
 		call(brain, "modular_on_navigation_path_queued")(destination, max_range)
-	brain.tied_controller.calculate_path_to(destination, max_range, CALLBACK(src, PROC_REF(set_path)), list(brain.targeting.get_current_target()))
+	brain.tied_controller.calculate_path_to(destination, max_range, CALLBACK(src, PROC_REF(set_path)), list(brain.get_current_target()))
 	current_path_target = destination
 	next_path_generation = world.time + path_update_period
 	return TRUE

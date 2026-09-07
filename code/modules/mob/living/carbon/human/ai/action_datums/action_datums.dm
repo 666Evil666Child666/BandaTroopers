@@ -47,8 +47,7 @@ GLOBAL_LIST_INIT_TYPED(AI_actions, /datum/ai_action, setup_ai_actions())
 	return
 
 /datum/ai_action/Destroy(force, ...)
-	if(brain?.action_runtime)
-		brain.action_runtime.ongoing_actions -= src
+	brain?.remove_ongoing_action(src)
 	brain = null
 	return ..()
 
