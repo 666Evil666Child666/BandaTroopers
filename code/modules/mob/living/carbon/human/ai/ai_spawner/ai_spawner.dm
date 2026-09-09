@@ -298,7 +298,8 @@
 					ai_human.set_species(expected_species)
 				var/final_species = species || ai_human.species?.name // SS220 EDIT: only refresh intrinsic equipment when the finished species remains the same
 				var/datum/human_ai_brain/ai_brain = ai_human.get_ai_brain()
-				var/datum/human_tied_controller/tied_controller = ai_brain?.tied_controller
+				var/datum/human_ai_context/setup_context = ai_brain?.create_context()
+				var/datum/human_tied_controller/tied_controller = setup_context?.controller
 				var/datum/human_tied_controller/temporary_tied_controller
 				if(!tied_controller)
 					temporary_tied_controller = new(null, ai_human)
@@ -375,6 +376,7 @@
 					if(!ai_component)
 						ai_component = ai_human.AddComponent(/datum/component/human_ai)
 					ai_component?.ai_brain?.inventory?.appraise_inventory(armor = TRUE)
+				qdel(setup_context)
 				QDEL_NULL(temporary_tied_controller)
 
 /client/proc/open_human_ai_spawner_panel()

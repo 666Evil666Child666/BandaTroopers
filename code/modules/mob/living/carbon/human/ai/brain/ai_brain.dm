@@ -85,7 +85,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	return ..()
 
 /datum/human_ai_brain/proc/has_valid_tied_human()
-	return tied_controller?.has_valid_tied_human()
+	return get_tied_controller()?.has_valid_tied_human()
 
 /datum/human_ai_brain/proc/create_module_config(module_config_type = /datum/human_ai_module_config/default)
 	if(!ispath(module_config_type, /datum/human_ai_module_config))
@@ -143,15 +143,16 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	process_active_ai(delta_time)
 
 /datum/human_ai_brain/proc/get_lifecycle_state()
-	if(!has_valid_tied_human())
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	if(!controller?.has_valid_tied_human())
 		return HUMAN_AI_LIFECYCLE_INVALID
-	if(tied_controller.is_dead())
+	if(controller.is_dead())
 		return HUMAN_AI_LIFECYCLE_DEAD
-	if(tied_controller.can_player_takeover_block_ai())
+	if(controller.can_player_takeover_block_ai())
 		return HUMAN_AI_LIFECYCLE_PLAYER_CONTROLLED
 	if(should_force_hardcrit_resting())
 		return HUMAN_AI_LIFECYCLE_HARDCRIT
-	if(tied_controller.is_incapacitated())
+	if(controller.is_incapacitated())
 		return HUMAN_AI_LIFECYCLE_INCAPACITATED
 	return HUMAN_AI_LIFECYCLE_ACTIVE
 
@@ -177,11 +178,12 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/suspend_for_death()
 	suspend_runtime()
-	if(!has_valid_tied_human() || !tied_controller.is_dead())
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	if(!controller?.has_valid_tied_human() || !controller.is_dead())
 		return
-	if(tied_controller.is_buckled()) // SS220 EDIT: death suspension releases forced-standing buckle state without deleting revive-capable brain
-		tied_controller.unbuckle()
-	tied_controller.force_prone()
+	if(controller.is_buckled()) // SS220 EDIT: death suspension releases forced-standing buckle state without deleting revive-capable brain
+		controller.unbuckle()
+	controller.force_prone()
 
 /datum/human_ai_brain/proc/suspend_for_player_control()
 	if(lifecycle_state == HUMAN_AI_LIFECYCLE_PLAYER_CONTROLLED)
@@ -193,15 +195,17 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/suspend_for_hardcrit()
 	suspend_runtime()
-	if(!has_valid_tied_human())
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	if(!controller?.has_valid_tied_human())
 		return
-	tied_controller.force_prone()
+	controller.force_prone()
 	if(inventory)
 		inventory.clear_pickup_queue()
 		inventory.invalidate_nearby_item_search()
 
 /datum/human_ai_brain/proc/resume_from_lifecycle_suspension(previous_lifecycle_state)
-	if(!has_valid_tied_human() || tied_controller.can_player_takeover_block_ai())
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	if(!controller?.has_valid_tied_human() || controller.can_player_takeover_block_ai())
 		return FALSE
 
 	if(previous_lifecycle_state == HUMAN_AI_LIFECYCLE_INVALID)
@@ -216,7 +220,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	invalidate_halo_runtime_caches()
 
 /datum/human_ai_brain/proc/should_force_hardcrit_resting()
-	return (tied_controller.has_effect(/datum/effects/crit) && tied_controller.has_status_flag(CANKNOCKOUT))
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	return (controller?.has_effect(/datum/effects/crit) && controller.has_status_flag(CANKNOCKOUT))
 
 /datum/human_ai_brain/proc/process_active_ai(delta_time)
 

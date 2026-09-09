@@ -1,11 +1,14 @@
 /datum/human_ai_module/inventory/proc/register_signals()
 	if(!brain.has_valid_tied_human())
 		return
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
 
-	brain.tied_controller.register_signal_for(src, COMSIG_HUMAN_EQUIPPED_ITEM, PROC_REF(on_item_equip))
-	brain.tied_controller.register_signal_for(src, COMSIG_HUMAN_UNEQUIPPED_ITEM, PROC_REF(on_item_unequip))
-	brain.tied_controller.register_signal_for(src, COMSIG_MOB_PICKUP_ITEM, PROC_REF(on_item_pickup))
-	brain.tied_controller.register_signal_for(src, COMSIG_MOB_DROP_ITEM, PROC_REF(on_item_drop))
+	controller.register_signal_for(src, COMSIG_HUMAN_EQUIPPED_ITEM, PROC_REF(on_item_equip))
+	controller.register_signal_for(src, COMSIG_HUMAN_UNEQUIPPED_ITEM, PROC_REF(on_item_unequip))
+	controller.register_signal_for(src, COMSIG_MOB_PICKUP_ITEM, PROC_REF(on_item_pickup))
+	controller.register_signal_for(src, COMSIG_MOB_DROP_ITEM, PROC_REF(on_item_drop))
 
 /datum/human_ai_module/inventory/proc/on_equipment_dropped(obj/item/source, mob/dropper)
 	SIGNAL_HANDLER
@@ -107,7 +110,8 @@
 /datum/human_ai_module/inventory/proc/on_item_drop(datum/source, obj/item/dropped)
 	SIGNAL_HANDLER
 	invalidate_inventory_runtime_caches()
-	if(brain.tied_controller.is_zombie())
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller || controller.is_zombie())
 		return
 
 	handle_dropped_primary_weapon(dropped)
@@ -119,7 +123,10 @@
 		return
 
 	var/datum/human_ai_firearm_profile/current_gun_data = gun_data
-	if(!(current_gun_data?.disposable && !brain.tied_controller.can_use_item(primary_weapon)))
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
+	if(!(current_gun_data?.disposable && !controller.can_use_item(primary_weapon)))
 		queue_pickup(dropped)
 	set_primary_weapon(null)
 

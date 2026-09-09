@@ -1,4 +1,5 @@
 /datum/human_ai_module/grenade
+	module_id = "grenade"
 	/// A nearby found active grenade which AI will try and toss back
 	var/obj/item/explosive/grenade/active_grenade_found
 	/// If TRUE, may enter the grenade throw-back action from nearby live grenades.

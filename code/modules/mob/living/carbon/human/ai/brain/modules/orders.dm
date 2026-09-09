@@ -1,4 +1,5 @@
 /datum/human_ai_module/orders
+	module_id = "orders"
 	/// A targeted turf that we should quickly approach
 	var/turf/quick_approach
 	/// If TRUE, the AI will not move at all

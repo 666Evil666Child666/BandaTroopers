@@ -7,7 +7,12 @@
 	var/mid_throw = FALSE // SS220 EDIT: transient async state keeps trigger_action() no-sleep while the real throw runs separately
 	var/throw_finished = FALSE // SS220 EDIT: transient async state completes the action on the next scheduler tick
 
-/datum/ai_action/throw_back_nade/get_weight(datum/human_ai_brain/brain)
+/datum/ai_action/throw_back_nade/get_context_weight(datum/human_ai_context/context)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return 0
+
 	if(!brain.can_throw_back_grenade()) // SS220 EDIT: modular HALO weak AI presets must not enter throw-back mode
 		return 0
 
@@ -15,13 +20,14 @@
 	if(QDELETED(active_grenade_found))
 		return 0
 
-	if(brain.tied_controller.get_distance_to(active_grenade_found) > 4)
+	if(controller.get_distance_to(active_grenade_found) > 4)
 		return 0
 
 	return 50
 
 /datum/ai_action/throw_back_nade/Destroy(force, ...)
-	brain.clear_active_grenade()
+	var/datum/human_ai_brain/brain = context?.brain
+	brain?.clear_active_grenade()
 	throw_ready_time = 0
 	mid_throw = FALSE
 	throw_finished = FALSE
@@ -32,6 +38,10 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
+	var/datum/human_ai_brain/brain = context?.brain
+	if(!brain)
+		return ONGOING_ACTION_COMPLETED
+
 	if(throw_finished)
 		return ONGOING_ACTION_COMPLETED
 
@@ -39,8 +49,8 @@
 		return ONGOING_ACTION_UNFINISHED
 
 	var/obj/item/explosive/grenade/active_grenade_found = brain.get_active_grenade()
-	var/datum/human_ai_throwable_context/context = new(brain, active_grenade_found)
-	context.min_safe_throw_distance = min_safe_throw_distance
-	var/result = GLOB.human_ai_grenade_throw_back_handler.continue_throw_back(context, src)
-	qdel(context)
+	var/datum/human_ai_throwable_context/throwable_context = new(brain, active_grenade_found)
+	throwable_context.min_safe_throw_distance = min_safe_throw_distance
+	var/result = GLOB.human_ai_grenade_throw_back_handler.continue_throw_back(throwable_context, src)
+	qdel(throwable_context)
 	return result

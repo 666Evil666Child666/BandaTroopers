@@ -1,4 +1,5 @@
 /datum/human_ai_module/conversation
+	module_id = "conversation"
 	required_module_types = list(/datum/human_ai_module/combat)
 
 	/// If TRUE, this AI is currently in a conversation with others
@@ -24,10 +25,11 @@
 	return prob(conversation_start_prob)
 
 /datum/human_ai_module/conversation/proc/can_participate()
-	if(!brain.can_continue_runtime_work())
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!context?.can_continue())
 		return FALSE
 
-	if(brain.is_in_combat() || in_conversation || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	if(brain.is_in_combat() || in_conversation || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return FALSE
 
 	return TRUE

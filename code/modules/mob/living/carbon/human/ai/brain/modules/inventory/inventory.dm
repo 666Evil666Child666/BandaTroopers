@@ -1,4 +1,5 @@
 /datum/human_ai_module/inventory
+	module_id = "inventory"
 	required_module_types = list(/datum/human_ai_module/faction)
 
 	/// If an AI takes out an item from their equipment_map, the place it was last stored is added to this dict
@@ -75,8 +76,9 @@
 	invalidate_nearby_item_search()
 
 /datum/human_ai_module/inventory/process_module(delta_time)
-	if(!brain.tied_controller.is_zombie() && should_run_nearby_item_search())
-		item_search(brain.tied_controller.get_range(2))
+	var/datum/human_tied_controller/controller = context?.controller
+	if(controller && !controller.is_zombie() && should_run_nearby_item_search())
+		item_search(controller.get_range(2))
 
 /datum/human_ai_module/inventory/on_target_changed(atom/movable/old_target, atom/movable/new_target)
 	invalidate_nearby_item_search()
@@ -137,18 +139,22 @@
 	return get_equipment_count(equipment_type)
 
 /datum/human_ai_module/inventory/proc/clear_main_hand()
-	var/obj/item/active_hand = brain.tied_controller.get_active_hand()
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
+
+	var/obj/item/active_hand = controller.get_active_hand()
 	if(!active_hand)
 		return
 
 	if(primary_weapon == active_hand)
 		if(!holster_primary())
-			brain.tied_controller.drop_held_item(active_hand)
+			controller.drop_held_item(active_hand)
 		return
 
 	var/storage_id = storage_has_room(active_hand)
 	if(!storage_id)
-		brain.tied_controller.drop_held_item(active_hand)
+		controller.drop_held_item(active_hand)
 		return
 
 	store_item(active_hand, storage_id)

@@ -57,12 +57,23 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 						other_brain.conversation?.end_conversation()
 					return
 
+				var/datum/human_ai_context/speaker_context = brain.create_context()
+				var/datum/human_tied_controller/speaker_controller = speaker_context.controller
+				if(!speaker_controller)
+					qdel(speaker_context)
+					for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
+						other_brain.conversation?.end_conversation()
+					return
+
 				for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
 					if(brain == other_brain)
 						continue
-					other_brain.tied_controller.turn_to_conversation_partner(brain.tied_controller)
+					var/datum/human_ai_context/listener_context = other_brain.create_context()
+					listener_context.controller?.turn_to_conversation_partner(speaker_controller)
+					qdel(listener_context)
 
-				brain.tied_controller.say(pick(splittext(copytext(string, 4), "||")))
+				speaker_controller.say(pick(splittext(copytext(string, 4), "||")))
+				qdel(speaker_context)
 
 			if("D")
 				sleep(text2num(copytext(string, 3)))
@@ -75,7 +86,10 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 	if(!brain)
 		return TRUE
 
-	return (brain.is_in_combat() || !brain.conversation?.in_conversation || brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_tied_controller/controller = context.controller
+	. = (brain.is_in_combat() || !brain.conversation?.in_conversation || !controller || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	qdel(context)
 
 /// Check to be overridden to see if an AI should be able to start a conversation
 /datum/human_ai_conversation/proc/conversation_allowed(datum/human_ai_brain/brain)
@@ -110,6 +124,10 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 	var/list/acceptable_factions
 
 /datum/human_ai_conversation/faction/conversation_allowed(datum/human_ai_brain/brain)
-	if(brain.tied_controller.faction_in(acceptable_factions))
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_tied_controller/controller = context.controller
+	if(controller?.faction_in(acceptable_factions))
+		qdel(context)
 		return ..()
+	qdel(context)
 	return FALSE

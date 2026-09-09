@@ -3,8 +3,13 @@
 	action_flags = ACTION_USING_HANDS
 	required_ai_modules = list(/datum/human_ai_module/health, /datum/human_ai_module/inventory, /datum/human_ai_module/targeting)
 
-/datum/ai_action/treat_self/get_weight(datum/human_ai_brain/brain)
-	if(brain.tied_controller.is_zombie())
+/datum/ai_action/treat_self/get_context_weight(datum/human_ai_context/context)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return 0
+
+	if(controller.is_zombie())
 		return 0
 
 	if(brain.is_healing_someone())
@@ -22,7 +27,7 @@
 	if(!brain.can_retry_self_treatment())
 		return 0
 
-	if(!brain.tied_controller.healing_start_check_self())
+	if(!controller.healing_start_check_self())
 		return 0
 
 	return 4
@@ -36,20 +41,25 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
+
 	if(brain.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
 	if(!brain.has_equipment(HUMAN_AI_HEALTHITEMS))
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.tied_controller.is_on_fire())
+	if(controller.is_on_fire())
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.is_healing_someone())
 		return ONGOING_ACTION_UNFINISHED
 
-	if(brain.tied_controller.healing_start_check_self())
-		if(!brain.tied_controller.start_healing_self())
+	if(controller.healing_start_check_self())
+		if(!controller.start_healing_self())
 			brain.increment_treatment_stacks()
 		return ONGOING_ACTION_UNFINISHED
 

@@ -7,10 +7,17 @@
 	if(!mouse_opacity || (level < 2))
 		return FALSE
 
-	if(!brain.inventory.unholster_any_weapon())
-		brain.tied_controller.set_combat_intent()
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_tied_controller/controller = context.controller
+	if(!controller)
+		qdel(context)
+		return FALSE
 
-	brain.tied_controller.click_atom(src)
+	if(!brain.unholster_any_weapon())
+		controller.set_combat_intent()
+
+	controller.click_atom(src)
+	qdel(context)
 	return TRUE
 
 
@@ -39,18 +46,18 @@
 //       MINERAL DOOR      //
 /////////////////////////////
 /obj/structure/mineral_door/human_ai_obstacle(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain, direction, turf/target)
-	if(!brain.inventory.has_primary_weapon())
+	if(!brain.has_primary_weapon())
 		return INFINITY
 
 	return DOOR_PENALTY
 
 /obj/structure/mineral_door/resin/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	var/obj/item/weapon/gun/primary_weapon = brain.inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	if(!primary_weapon)
 		return TRUE
 
-	brain.inventory.unholster_primary()
-	brain.inventory.ensure_primary_hand(primary_weapon)
+	brain.unholster_primary()
+	brain.ensure_primary_hand(primary_weapon)
 
 	return ..()
 
@@ -77,20 +84,24 @@
 	if(!(stat & NOPOWER))
 		return INFINITY
 
-	if(density && !operating && !unacidable && brain.inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
+	if(density && !operating && !unacidable && brain.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
 		return DOOR_PENALTY
 
 	return INFINITY
 
 /obj/structure/machinery/door/poddoor/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	if(!(stat & NOPOWER) || !brain.inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
+	if(!(stat & NOPOWER) || !brain.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
 		return
 
-	brain.inventory.holster_primary()
-	var/obj/item/crowbar = brain.inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
-	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
-	brain.tied_controller.do_click(src)
-	brain.inventory.store_item(crowbar, brain.inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
+	brain.holster_primary()
+	var/obj/item/crowbar = brain.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
+	brain.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_tied_controller/controller = context.controller
+	if(controller)
+		controller.do_click(src)
+	qdel(context)
+	brain.store_item(crowbar, brain.storage_has_room(crowbar), HUMAN_AI_TOOLS)
 
 /////////////////////////////
 //         AIRLOCK         //
@@ -103,8 +114,12 @@
 	if(locked || welded || (isElectrified() && !iszombie(ai_human)) || !arePowerSystemsOn() || panel_open)
 		return LOCKED_DOOR_PENALTY
 
-	if(!brain.tied_controller.can_access(src))
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_tied_controller/controller = context.controller
+	if(!controller || !controller.can_access(src))
+		qdel(context)
 		return LOCKED_DOOR_PENALTY
+	qdel(context)
 
 	return DOOR_PENALTY
 
@@ -118,16 +133,24 @@
 	if(layer == DOOR_OPEN_LAYER)
 		return
 
-	if(iszombie(ai_human))
-		brain.tied_controller.set_safe_intent()
-		brain.tied_controller.do_click(src)
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_tied_controller/controller = context.controller
+	if(!controller)
+		qdel(context)
 		return
 
-	brain.inventory.holster_primary()
-	var/obj/item/crowbar = brain.inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
-	brain.inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
-	brain.tied_controller.do_click(src)
-	brain.inventory.store_item(crowbar, brain.inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
+	if(iszombie(ai_human))
+		controller.set_safe_intent()
+		controller.do_click(src)
+		qdel(context)
+		return
+
+	brain.holster_primary()
+	var/obj/item/crowbar = brain.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
+	brain.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
+	controller.do_click(src)
+	qdel(context)
+	brain.store_item(crowbar, brain.storage_has_room(crowbar), HUMAN_AI_TOOLS)
 
 /////////////////////////////
 //         HUMANS         //
@@ -143,15 +166,19 @@
 	if(stat == DEAD)
 		return TRUE
 
-	if(brain.faction.faction_check(src))
+	if(brain.is_friendly_target(src))
 		if(!iszombie(ai_human))
 			var/random_intent = pick(INTENT_DISARM, INTENT_HARM, INTENT_HELP, INTENT_DISARM, INTENT_HARM) // lower chance of help intent
-			brain.tied_controller.set_raw_intent(random_intent)
+			var/datum/human_ai_context/context = brain.create_context()
+			var/datum/human_tied_controller/controller = context.controller
+			if(controller)
+				controller.set_raw_intent(random_intent)
+			qdel(context)
 			if(get_ai_brain())
 				a_intent = random_intent
 		return TRUE
 
-	if((body_position == LYING_DOWN) && (brain.targeting.get_current_target() != src))
+	if((body_position == LYING_DOWN) && (brain.get_current_target() != src))
 		return TRUE
 
 	return ..()
@@ -167,7 +194,7 @@
 	return XENO_PENALTY
 
 /mob/living/carbon/xenomorph/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	if(brain.faction.faction_check(src))
+	if(brain.is_friendly_target(src))
 		return TRUE
 
 	return ..()
@@ -215,7 +242,11 @@
 	if(iszombie(ai_human))
 		return ..()
 	if(!closed) // this means it's closed
-		brain.tied_controller.do_click(src)
+		var/datum/human_ai_context/context = brain.create_context()
+		var/datum/human_tied_controller/controller = context.controller
+		if(controller)
+			controller.do_click(src)
+		qdel(context)
 	else
 		. = ..()
 	if(!closed)

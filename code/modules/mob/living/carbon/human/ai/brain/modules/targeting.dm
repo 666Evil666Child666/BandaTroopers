@@ -1,6 +1,7 @@
 #define EXTRA_CHECK_DISTANCE_MULTIPLIER 0.20
 
 /datum/human_ai_module/targeting
+	module_id = "targeting"
 	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/profile)
 
 	/// Ref to the currently focused (and shooting at) target
@@ -31,6 +32,10 @@
 		set_target(get_target())
 
 /datum/human_ai_module/targeting/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
+
 	var/atom/firer = bullet?.firer
 	if(!firer)
 		return
@@ -38,7 +43,7 @@
 	if(brain.is_friendly_target(firer))
 		return
 
-	if(brain.tied_controller.get_distance_to(firer) <= brain.get_targeting_view_distance())
+	if(controller.get_distance_to(firer) <= brain.get_targeting_view_distance())
 		set_target(firer)
 	else
 		set_target_turf(get_turf(firer), 4 SECONDS)
@@ -148,9 +153,13 @@
 	if(!brain || !brain.has_valid_tied_human())
 		target_turf = null
 		return
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		target_turf = null
+		return
 
 	if(current_target)
-		if(brain.tied_controller.is_in_view_of(current_target, brain.get_targeting_view_distance()))
+		if(controller.is_in_view_of(current_target, brain.get_targeting_view_distance()))
 			target_turf = get_turf(current_target)
 		else
 			COOLDOWN_START(src, fire_offscreen, 2 SECONDS)
@@ -158,6 +167,9 @@
 
 /datum/human_ai_module/targeting/proc/get_target()
 	if(!has_valid_owner())
+		return null
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
 		return null
 
 	var/list/viable_targets = list()
@@ -168,14 +180,14 @@
 	var/rear_view_penalty = 0
 
 	if(brain.has_scope_vision())
-		dir_cone = brain.tied_controller.get_reverse_dir_cone()
+		dir_cone = controller.get_reverse_dir_cone()
 		rear_view_penalty = brain.get_targeting_view_distance() / 7 - 1
 
-	for(var/atom/movable/potential_target in brain.tied_controller.get_view(brain.get_targeting_view_distance()))
-		if(brain.tied_controller.is_puppet(potential_target))
+	for(var/atom/movable/potential_target in controller.get_view(brain.get_targeting_view_distance()))
+		if(controller.is_puppet(potential_target))
 			continue
 
-		var/distance = brain.tied_controller.get_distance_to(potential_target)
+		var/distance = controller.get_distance_to(potential_target)
 
 		if(!can_acquire_from_direction(potential_target, distance, dir_cone, rear_view_penalty))
 			continue
@@ -214,6 +226,9 @@
 /datum/human_ai_module/targeting/proc/can_acquire_from_direction(atom/movable/target, distance, list/dir_cone, rear_view_penalty)
 	if(!has_valid_owner())
 		return FALSE
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
 
 	if(!is_valid_target_ref(target))
 		return FALSE
@@ -221,11 +236,11 @@
 	if(!brain.has_scope_vision())
 		return TRUE
 
-	if((distance > 7) && !(brain.tied_controller.get_direction_to(target) in dir_cone))
+	if((distance > 7) && !(controller.get_direction_to(target) in dir_cone))
 		return FALSE
 
 	if(istype(target, /mob/living))
-		var/rear_view_check = (brain.tied_controller.get_direction_to(target) in brain.tied_controller.get_reverse_dir_cone())
+		var/rear_view_check = (controller.get_direction_to(target) in controller.get_reverse_dir_cone())
 		if(rear_view_check && (distance > brain.get_targeting_view_distance() - rear_view_penalty))
 			return FALSE
 
@@ -274,6 +289,10 @@
 	return path_check(vehicle)
 
 /datum/human_ai_module/targeting/proc/can_target_mob(mob/living/target)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
+
 	if(!istype(target))
 		return FALSE
 
@@ -286,12 +305,12 @@
 	if(brain.is_friendly_target(target))
 		return FALSE
 
-	var/distance = brain.tied_controller.get_distance_to(target)
+	var/distance = controller.get_distance_to(target)
 
 	if(!brain.can_ignore_target_darkness() && distance > 1 && !can_detect_living_target(target))
 		return FALSE
 
-	if(HAS_TRAIT(target, TRAIT_CLOAKED) && brain.tied_controller.get_distance_to(target) > cloak_visible_range)
+	if(HAS_TRAIT(target, TRAIT_CLOAKED) && controller.get_distance_to(target) > cloak_visible_range)
 		return FALSE
 
 	if(!path_check(target))
@@ -309,11 +328,14 @@
 /datum/human_ai_module/targeting/proc/path_check(atom/movable/target)
 	if(!has_valid_owner())
 		return FALSE
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
 
 	if(!is_valid_target_ref(target))
 		return FALSE
 
-	var/turf/source_turf = brain.tied_controller.get_current_turf()
+	var/turf/source_turf = controller.get_current_turf()
 	var/turf/target_turf = get_turf(target)
 	if(!source_turf || !target_turf)
 		return FALSE
@@ -324,7 +346,7 @@
 		if(tile.density)
 			return FALSE
 		for(var/atom/movable/obstacle in tile)
-			if(obstacle.density && obstacle != target && !brain.tied_controller.is_puppet(obstacle) && !istype(obstacle, /mob))
+			if(obstacle.density && obstacle != target && !controller.is_puppet(obstacle) && !istype(obstacle, /mob))
 				if(istype(obstacle, /obj/structure/window) || istype(obstacle, /obj/structure/grille) || istype(obstacle, /obj/structure/barricade))
 					continue
 				return FALSE

@@ -83,15 +83,19 @@
 
 	if(!length(item_types) || !equipment_type || !(equipment_type in equipment_map))
 		return null
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return null
 
 	for(var/obj/item/item as anything in equipment_map[equipment_type])
-		if(is_type_in_list(item, item_types) && brain.tied_controller.can_use_item(item, use_target))
+		if(is_type_in_list(item, item_types) && controller.can_use_item(item, use_target))
 			return item
 
 	return null
 
 /datum/human_ai_module/inventory/proc/can_item_supply_ammo_for_weapon(obj/item/item, obj/item/weapon/gun/weapon)
-	if(!item || !weapon || !brain.tied_controller.can_use_item(item))
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!item || !weapon || !controller?.can_use_item(item))
 		return FALSE
 
 	var/obj/item/ammo_magazine/magazine = item
@@ -148,7 +152,8 @@
 	return null
 
 /datum/human_ai_module/inventory/proc/can_item_supply_grenade(obj/item/item, obj/item/weapon/gun/launcher/grenade/grenade_launcher)
-	if(!item || !brain.tied_controller.can_use_item(item))
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!item || !controller?.can_use_item(item))
 		return FALSE
 
 	var/obj/item/explosive/grenade/grenade = item

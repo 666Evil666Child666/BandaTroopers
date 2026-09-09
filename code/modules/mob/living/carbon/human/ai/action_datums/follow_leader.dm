@@ -4,7 +4,12 @@
 	required_ai_modules = list(/datum/human_ai_module/squad, /datum/human_ai_module/navigation, /datum/human_ai_module/combat, /datum/human_ai_module/inventory)
 	var/follow_distance = 1
 
-/datum/ai_action/follow_leader/get_weight(datum/human_ai_brain/brain)
+/datum/ai_action/follow_leader/get_context_weight(datum/human_ai_context/context)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return 0
+
 	if(brain.is_in_cover())
 		return 0
 
@@ -21,13 +26,17 @@
 	if(!length(squad_members))
 		return 0
 
-	var/datum/human_tied_controller/squad_leader_controller = brain.get_squad_leader()?.tied_controller
+	var/datum/human_ai_context/squad_leader_context = brain.get_squad_leader()?.create_context()
+	var/datum/human_tied_controller/squad_leader_controller = squad_leader_context?.controller
 	if(!squad_leader_controller?.has_valid_tied_human())
+		qdel(squad_leader_context)
 		return 0
 
-	if(brain.tied_controller.get_distance_to_controller(squad_leader_controller) <= (1 + length(squad_members) / 2))
+	if(controller.get_distance_to_controller(squad_leader_controller) <= (1 + length(squad_members) / 2))
+		qdel(squad_leader_context)
 		return 0
 
+	qdel(squad_leader_context)
 	return 5
 
 /datum/ai_action/follow_leader/Added()
@@ -41,18 +50,28 @@
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
 
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
+
 	if(brain.is_in_combat() || brain.has_pickup_queue())
 		return ONGOING_ACTION_COMPLETED
 
-	var/datum/human_tied_controller/squad_leader_controller = brain.get_squad_leader()?.tied_controller
+	var/datum/human_ai_context/squad_leader_context = brain.get_squad_leader()?.create_context()
+	var/datum/human_tied_controller/squad_leader_controller = squad_leader_context?.controller
 	if(!squad_leader_controller)
+		qdel(squad_leader_context)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.tied_controller.get_distance_to_controller(squad_leader_controller) > follow_distance)
+	if(controller.get_distance_to_controller(squad_leader_controller) > follow_distance)
 		if(!brain.move_to_turf(squad_leader_controller.get_current_turf()))
+			qdel(squad_leader_context)
 			return ONGOING_ACTION_COMPLETED
 
-		if(brain.tied_controller.get_distance_to_controller(squad_leader_controller) > follow_distance)
+		if(controller.get_distance_to_controller(squad_leader_controller) > follow_distance)
+			qdel(squad_leader_context)
 			return ONGOING_ACTION_UNFINISHED
 
+	qdel(squad_leader_context)
 	return ONGOING_ACTION_COMPLETED

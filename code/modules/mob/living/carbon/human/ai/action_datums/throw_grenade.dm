@@ -7,7 +7,12 @@
 	var/throw_finished = FALSE
 	var/throw_range_override = null
 
-/datum/ai_action/throw_grenade/get_weight(datum/human_ai_brain/brain)
+/datum/ai_action/throw_grenade/get_context_weight(datum/human_ai_context/context)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return 0
+
 	if(!brain.can_throw_grenades())
 		return 0
 
@@ -24,22 +29,27 @@
 	if(!brain.has_primary_weapon())
 		return 10
 
-	if(locate(/turf/closed) in brain.tied_controller.get_line_to(target_turf))
+	if(locate(/turf/closed) in controller.get_line_to(target_turf))
 		return 10
 
 	return 0
 
-/datum/ai_action/throw_grenade/get_conflicts(datum/human_ai_brain/brain)
+/datum/ai_action/throw_grenade/get_context_conflicts(datum/human_ai_context/context)
 	. = ..()
 	. += /datum/ai_action/chase_target
 	. += /datum/ai_action/sniper_nest
 
 /datum/ai_action/throw_grenade/Added()
-	var/datum/human_ai_throwable_context/context = new(brain)
-	throwing = GLOB.human_ai_grenade_throw_handler.prepare_grenade_for_throw(context, brain.find_grenade_for_throw())
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain)
+		return
+
+	var/datum/human_ai_throwable_context/throwable_context = new(brain)
+	throwing = GLOB.human_ai_grenade_throw_handler.prepare_grenade_for_throw(throwable_context, brain.find_grenade_for_throw())
 	throw_range_override = isnum(throwing?.throw_range) ? throwing.throw_range : null
-	log_game("AI GRENADE: throw action created - grenade=[throwing] ([throwing?.type]), available=[brain?.get_equipment_summary(HUMAN_AI_GRENADES)], throw_range=[throw_range_override], mob=[brain?.tied_controller?.get_key_name()]")
-	qdel(context)
+	log_game("AI GRENADE: throw action created - grenade=[throwing] ([throwing?.type]), available=[brain.get_equipment_summary(HUMAN_AI_GRENADES)], throw_range=[throw_range_override], mob=[controller?.get_key_name()]")
+	qdel(throwable_context)
 	cancel_conflicting_actions()
 
 /datum/ai_action/throw_grenade/Destroy(force, ...)
@@ -50,15 +60,21 @@
 	return ..()
 
 /datum/ai_action/throw_grenade/proc/cancel_conflicting_actions()
+	var/datum/human_ai_brain/brain = context?.brain
 	if(!brain)
 		return
 
-	brain.cancel_ongoing_actions_by_type(get_conflicts(brain), src)
+	brain.cancel_ongoing_actions_by_type(get_context_conflicts(context), src)
 
 /datum/ai_action/throw_grenade/trigger_action()
 	. = ..()
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
+
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain)
+		return ONGOING_ACTION_COMPLETED
 
 	if(throw_finished)
 		return ONGOING_ACTION_COMPLETED
@@ -68,15 +84,15 @@
 
 	var/turf/target_turf = brain.get_target_turf()
 	if(QDELETED(throwing) || !target_turf)
-		log_game("AI GRENADE: throw action aborted - grenade missing or no target, QDELETED=[QDELETED(throwing)], target=[target_turf], mob=[brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: throw action aborted - grenade missing or no target, QDELETED=[QDELETED(throwing)], target=[target_turf], mob=[controller?.get_key_name()]")
 		return ONGOING_ACTION_COMPLETED
 
-	var/datum/human_ai_throwable_context/context = new(brain, throwing, brain.get_current_target(), target_turf, throw_range_override)
+	var/datum/human_ai_throwable_context/throwable_context = new(brain, throwing, brain.get_current_target(), target_turf, throw_range_override)
 	cancel_conflicting_actions() // SS220 EDIT: cancel any already-running move/fire/reload actions before the grenade is primed
-	if(!GLOB.human_ai_grenade_throw_handler.start_throw(context, src))
-		qdel(context)
+	if(!GLOB.human_ai_grenade_throw_handler.start_throw(throwable_context, src))
+		qdel(throwable_context)
 		return ONGOING_ACTION_COMPLETED
 
-	throw_range_override = context.throw_range_override
-	qdel(context)
+	throw_range_override = throwable_context.throw_range_override
+	qdel(throwable_context)
 	return ONGOING_ACTION_UNFINISHED_BLOCK

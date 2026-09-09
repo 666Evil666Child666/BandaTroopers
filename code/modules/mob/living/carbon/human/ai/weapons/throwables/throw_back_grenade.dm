@@ -190,19 +190,19 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 	return ONGOING_ACTION_UNFINISHED
 
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/async_throw_grenade(datum/ai_action/throw_back_nade/action, datum/weakref/puppet_ref, obj/item/explosive/grenade/grenade, turf/place_to_throw)
-	log_game("AI GRENADE: throw-back async throw started - grenade=[grenade], target=[place_to_throw], mob=[action?.brain?.tied_controller?.get_key_name()]")
+	log_game("AI GRENADE: throw-back async throw started - grenade=[grenade], target=[place_to_throw], mob=[action?.context?.controller?.get_key_name()]")
 	if(!action || QDELETED(action))
 		return
 
 	var/datum/human_ai_throwable_context/context = new(action.brain, grenade, null, place_to_throw)
 	if(!context?.is_valid() || !context.controller.matches_identity_ref(puppet_ref))
-		log_game("AI GRENADE: throw-back async throw aborted - brain invalid or mismatch, mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: throw-back async throw aborted - brain invalid or mismatch, mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		reset_action(action)
 		return
 
 	if(QDELETED(grenade) || !grenade.active || !context.controller.is_item_equipped_or_held(grenade) || !place_to_throw)
-		log_game("AI GRENADE: throw-back async throw aborted - grenade invalid or missing, grenade=[grenade], active=[grenade?.active], loc=[grenade?.loc], target=[place_to_throw], mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: throw-back async throw aborted - grenade invalid or missing, grenade=[grenade], active=[grenade?.active], loc=[grenade?.loc], target=[place_to_throw], mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		reset_action(action)
 		return

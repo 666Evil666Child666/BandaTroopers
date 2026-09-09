@@ -1,6 +1,22 @@
 // Human AI module-facing facade procs.
 // These wrappers are grouped by the module/theme they expose so callers do not need to know the brain's internal module layout.
 
+// ==================== Modules ====================
+// Generic lookup helpers for partial module compositions.
+/datum/human_ai_brain/proc/get_module(module_type)
+	if(!module_config)
+		return null
+	return module_config.get_module_by_type(src, module_type)
+
+/datum/human_ai_brain/proc/has_module(module_type)
+	return !!get_module(module_type)
+
+/datum/human_ai_brain/proc/get_module_by_id(module_id)
+	return module_config?.get_module_by_id(module_id)
+
+/datum/human_ai_brain/proc/create_context()
+	return new /datum/human_ai_context(src)
+
 // ==================== Action runtime ====================
 // Action queue, action blacklists, and currently running action state.
 /datum/human_ai_brain/proc/cancel_ongoing_actions_by_type(list/action_types, datum/ai_action/except_action = null)
@@ -269,6 +285,12 @@
 /datum/human_ai_brain/proc/cancel_treatment()
 	health?.cancel_treatment()
 
+/datum/human_ai_brain/proc/healing_start_check(mob/living/carbon/human/target)
+	return health?.healing_start_check(target)
+
+/datum/human_ai_brain/proc/start_healing(mob/living/carbon/human/target)
+	return health?.start_healing(target)
+
 /datum/human_ai_brain/proc/increment_treatment_stacks()
 	health?.increment_treatment_stacks()
 
@@ -321,6 +343,9 @@
 /datum/human_ai_brain/proc/unholster_primary()
 	return inventory?.unholster_primary()
 
+/datum/human_ai_brain/proc/holster_primary()
+	return inventory?.holster_primary()
+
 /datum/human_ai_brain/proc/ensure_primary_hand(obj/item/held_item)
 	return inventory?.ensure_primary_hand(held_item)
 
@@ -354,6 +379,10 @@
 /datum/human_ai_brain/proc/find_ammo_for_weapon(obj/item/weapon/gun/weapon)
 	RETURN_TYPE(/obj/item)
 	return inventory?.find_ammo_for_weapon(weapon)
+
+/datum/human_ai_brain/proc/find_equipment_by_trait(tool_trait, equipment_type)
+	RETURN_TYPE(/obj/item)
+	return inventory?.find_equipment_by_trait(tool_trait, equipment_type)
 
 /datum/human_ai_brain/proc/can_item_supply_ammo_for_weapon(obj/item/item, obj/item/weapon/gun/weapon)
 	return inventory?.can_item_supply_ammo_for_weapon(item, weapon)
@@ -392,6 +421,9 @@
 
 /datum/human_ai_brain/proc/equip_item_from_equipment_map(equipment_type, obj/item/item)
 	return inventory?.equip_item_from_equipment_map(equipment_type, item)
+
+/datum/human_ai_brain/proc/appraise_inventory(belt = TRUE, back = TRUE, pocket_l = TRUE, pocket_r = TRUE, armor = TRUE, uniform = TRUE)
+	inventory?.appraise_inventory(belt, back, pocket_l, pocket_r, armor, uniform)
 
 /datum/human_ai_brain/proc/set_nearby_item_search_interval(interval)
 	if(!inventory)
@@ -432,6 +464,12 @@
 
 /datum/human_ai_brain/proc/clear_quick_approach()
 	orders?.clear_quick_approach()
+
+/datum/human_ai_brain/proc/set_quick_approach(turf/new_turf)
+	orders?.set_quick_approach(new_turf)
+
+/datum/human_ai_brain/proc/set_hold_position(new_value)
+	orders?.set_hold_position(new_value)
 
 // ==================== Profile ====================
 // Generic timing, vision, and combat profile values.
@@ -479,6 +517,12 @@
 /datum/human_ai_brain/proc/set_squad_id(new_squad_id)
 	if(squad)
 		squad.squad_id = new_squad_id
+
+/datum/human_ai_brain/proc/can_assign_squad()
+	return squad?.can_assign_squad
+
+/datum/human_ai_brain/proc/add_to_squad(new_squad_id)
+	return squad?.add_to_squad(new_squad_id)
 
 /datum/human_ai_brain/proc/get_squad_datum()
 	RETURN_TYPE(/datum/human_ai_squad)

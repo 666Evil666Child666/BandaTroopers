@@ -50,8 +50,11 @@
 /// Reapplies the faction's data to all AI that belong to this faction
 /datum/human_ai_faction/proc/reapply_faction_data()
 	for(var/datum/human_ai_brain/brain in GLOB.human_ai_brains)
-		if(brain.tied_controller?.faction_matches(faction))
+		var/datum/human_ai_context/context = brain.create_context()
+		var/datum/human_tied_controller/controller = context.controller
+		if(controller?.faction_matches(faction))
 			apply_faction_data(brain)
+		qdel(context)
 
 /// Given a faction string, makes this faction friendly to them.
 /datum/human_ai_faction/proc/add_friendly_faction(faction)

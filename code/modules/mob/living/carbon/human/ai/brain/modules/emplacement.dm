@@ -1,4 +1,5 @@
 /datum/human_ai_module/emplacement
+	module_id = "emplacement"
 	var/turf/sniper_home
 	var/sniper_dir = SOUTH
 	var/turf/machinegunner_home

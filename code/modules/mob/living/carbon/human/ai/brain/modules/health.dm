@@ -1,4 +1,5 @@
 /datum/human_ai_module/health
+	module_id = "health"
 	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/inventory, /datum/human_ai_module/profile)
 
 	/// What items the AI considers when trying to heal brute damage
@@ -111,24 +112,28 @@
 	found_injured_ally = null
 
 /datum/human_ai_module/health/proc/get_injured_ally()
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return null
+
 	var/list/viable_targets = list()
 	var/atom/movable/closest_target
 	var/smallest_distance = INFINITY
 
 	for(var/mob/living/carbon/human/possible_buddy as anything in GLOB.alive_human_list)
-		if(brain.tied_controller.is_puppet(possible_buddy))
+		if(controller.is_puppet(possible_buddy))
 			continue
 
-		if(brain.tied_controller.get_z() != possible_buddy.z)
+		if(controller.get_z() != possible_buddy.z)
 			continue
 
 		if(!brain.is_friendly_target(possible_buddy))
 			continue
 
-		if(!brain.tied_controller.is_in_view_of(possible_buddy, brain.get_view_distance()))
+		if(!controller.is_in_view_of(possible_buddy, brain.get_view_distance()))
 			continue
 
-		var/distance = brain.tied_controller.get_distance_to(possible_buddy)
+		var/distance = controller.get_distance_to(possible_buddy)
 		if(distance > brain.get_view_distance())
 			continue
 
@@ -218,6 +223,10 @@
 	qdel(treatment_check)
 
 /datum/human_ai_module/health/proc/use_treatment_item(mob/living/carbon/human/target, list/item_types, datum/callback/treatment_check)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
+
 	var/obj/item/item = brain.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, target)
 	if(!item)
 		return FALSE
@@ -228,7 +237,7 @@
 	sleep(brain.get_action_delay())
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return FALSE
-	brain.tied_controller.ai_use(item, target)
+	controller.ai_use(item, target)
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return TRUE
 
@@ -236,6 +245,6 @@
 	if(storage_slot)
 		brain.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
-		brain.tied_controller.drop_held_item(item)
+		controller.drop_held_item(item)
 	return TRUE
 // SS220 EDIT - END

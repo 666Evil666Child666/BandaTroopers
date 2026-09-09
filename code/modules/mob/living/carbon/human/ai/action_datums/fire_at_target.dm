@@ -8,7 +8,12 @@
 	var/currently_firing
 	var/list/watched_turfs = list()
 
-/datum/ai_action/fire_at_target/get_weight(datum/human_ai_brain/brain)
+/datum/ai_action/fire_at_target/get_context_weight(datum/human_ai_context/context)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return 0
+
 	if(!brain.has_valid_tied_human()) // SS220 EDIT: upstream action glue must not schedule work for detached modular AI owners
 		return 0
 
@@ -32,41 +37,43 @@
 	if(!brain.has_current_target() && !should_fire_offscreen)
 		return 0
 
-	if((brain.tied_controller.get_distance_to(target_turf) > brain.get_view_distance()) && !should_fire_offscreen)
+	if((controller.get_distance_to(target_turf) > brain.get_view_distance()) && !should_fire_offscreen)
 		return 0
 
 	if(brain.halo_should_defer_ranged_fire(brain.get_aim_target()))
 		return 0
 
-	if(!firing_line_check(brain, target_turf))
+	if(!firing_line_check(context, target_turf))
 		return 0
 
 	if(brain.should_reload())
 		return 0
 
-	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
-	var/datum/human_ai_firearm_handler/handler = context.get_handler()
-	var/can_queue_fire = handler?.can_queue_fire(context)
-	qdel(context)
+	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
+	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
+	var/can_queue_fire = handler?.can_queue_fire(firearm_context)
+	qdel(firearm_context)
 	if(!can_queue_fire)
 		return 0
 
 	return 10
 
 /datum/ai_action/fire_at_target/Destroy(force, ...)
-	stop_firing(brain)
+	stop_firing()
 	return ..()
 
-/datum/ai_action/fire_at_target/proc/stop_firing(datum/human_ai_brain/brain)
+/datum/ai_action/fire_at_target/proc/stop_firing()
 	currently_firing = FALSE
 	rounds_burst_fired = 0
 	clear_watched_turfs()
 
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
 	if(!brain)
 		return
 
-	if(brain.has_valid_tied_human())
-		brain.tied_controller.unregister_signal_for(src, COMSIG_MOB_FIRED_GUN)
+	if(controller && brain.has_valid_tied_human())
+		controller.unregister_signal_for(src, COMSIG_MOB_FIRED_GUN)
 	brain.get_primary_weapon()?.set_target(null)
 
 /datum/ai_action/fire_at_target/proc/clear_watched_turfs()
@@ -80,6 +87,11 @@
 	. = ..()
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
+
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
 
 	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	if(!primary_weapon || brain.has_active_grenade() || !brain.can_start_fire())
@@ -99,55 +111,57 @@
 	brain.unholster_primary()
 
 	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
-	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
-	var/datum/human_ai_firearm_handler/handler = context.get_handler()
-	if(!handler?.before_fire(context))
-		qdel(context)
+	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
+	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
+	if(!handler?.before_fire(firearm_context))
+		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
 	if(brain.should_reload())
-		qdel(context)
+		qdel(firearm_context)
 		if(gun_data?.disposable)
-			brain.tied_controller.drop_held_item(primary_weapon)
+			controller.drop_held_item(primary_weapon)
 			brain.set_primary_weapon(null)
 		return ONGOING_ACTION_COMPLETED
 
-	if((brain.tied_controller.get_distance_to(target_turf) > gun_data.maximum_range) && !should_fire_offscreen)
-		qdel(context)
+	if((controller.get_distance_to(target_turf) > gun_data.maximum_range) && !should_fire_offscreen)
+		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!firing_line_check(brain, target_turf))
-		qdel(context)
+	if(!firing_line_check(context, target_turf))
+		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
 
-	brain.tied_controller.face_atom(target_turf)
-	brain.tied_controller.set_combat_intent()
+	controller.face_atom(target_turf)
+	controller.set_combat_intent()
 
-	brain.tied_controller.register_signal_for(src, COMSIG_MOB_FIRED_GUN, PROC_REF(on_gun_fire), TRUE)
+	controller.register_signal_for(src, COMSIG_MOB_FIRED_GUN, PROC_REF(on_gun_fire), TRUE)
 
 	// Handling point-blank through attack()
 	var/atom/movable/current_target = brain.get_current_target()
-	if(current_target && (brain.tied_controller.get_distance_to(current_target) <= 1))
+	if(current_target && (controller.get_distance_to(current_target) <= 1))
 		currently_firing = FALSE
 		primary_weapon.set_target(null)
-		qdel(context)
-		INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), current_target, "", list())
+		qdel(firearm_context)
+		INVOKE_ASYNC(controller, TYPE_PROC_REF(/datum/human_tied_controller, do_click), current_target, "", list())
 		return ONGOING_ACTION_UNFINISHED
 
-	if(!handler.fire(context))
-		qdel(context)
+	if(!handler.fire(firearm_context))
+		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
-	var/keep_fire_action_active = handler.keeps_fire_action_active(context)
-	qdel(context)
+	var/keep_fire_action_active = handler.keeps_fire_action_active(firearm_context)
+	qdel(firearm_context)
 	if(!keep_fire_action_active)
 		return ONGOING_ACTION_COMPLETED
 	return ONGOING_ACTION_UNFINISHED
 
-/datum/ai_action/fire_at_target/proc/firing_line_check(datum/human_ai_brain/brain, atom/target, listen = FALSE)
-	if(!brain?.can_continue_runtime_work()) // SS220 EDIT: avoid post-lifecycle signal work from upstream firing callbacks
+/datum/ai_action/fire_at_target/proc/firing_line_check(datum/human_ai_context/context, atom/target, listen = FALSE)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain?.can_continue_runtime_work() || !controller) // SS220 EDIT: avoid post-lifecycle signal work from upstream firing callbacks
 		return FALSE
-	var/list/turf_list = brain.tied_controller.get_line_from_current_turf_to(target)
+	var/list/turf_list = controller.get_line_from_current_turf_to(target)
 	for(var/turf/tile in turf_list)
-		var/tile_dist = brain.tied_controller.get_distance_to(tile)
+		var/tile_dist = controller.get_distance_to(tile)
 		if(tile_dist > brain.get_view_distance())
 			continue
 
@@ -169,7 +183,7 @@
 	var/list/checked_turfs = list()
 	for(var/i in 2 to length(turf_list))
 		var/turf/tile = turf_list[i]
-		var/tile_dist = brain.tied_controller.get_distance_to(tile)
+		var/tile_dist = controller.get_distance_to(tile)
 		if(tile_dist > brain.get_view_distance())
 			continue
 
@@ -188,7 +202,7 @@
 				watched_turfs += T
 
 			for(var/mob/living/possible_friendly in T)
-				if(brain.tied_controller.is_puppet(possible_friendly))
+				if(controller.is_puppet(possible_friendly))
 					continue
 
 				if(possible_friendly.body_position == LYING_DOWN)
@@ -201,9 +215,11 @@
 
 /datum/ai_action/fire_at_target/proc/cheap_friendly_check(datum/source, atom/movable/entering)
 	SIGNAL_HANDLER
-	if(!brain?.can_continue_runtime_work())
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain?.can_continue_runtime_work() || !controller)
 		return
-	if(brain.tied_controller.is_puppet(entering))
+	if(controller.is_puppet(entering))
 		return
 
 	if(!istype(entering, /mob/living))
@@ -214,22 +230,24 @@
 		return
 
 	if(brain.is_friendly_target(H))
-		stop_firing(brain)
+		stop_firing()
 		qdel(src)
 
 /datum/ai_action/fire_at_target/proc/on_gun_fire(datum/source, obj/item/weapon/gun/fired)
 	SIGNAL_HANDLER
 
-	if(!brain?.can_continue_runtime_work()) // SS220 EDIT: late gun callbacks can outlive active AI control for a tick
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain?.can_continue_runtime_work() || !controller) // SS220 EDIT: late gun callbacks can outlive active AI control for a tick
 		qdel(src)
 		return
 
 	var/turf/target_turf = brain.get_target_turf()
 
-	brain.tied_controller.set_combat_intent()
+	controller.set_combat_intent()
 
 	brain.set_shot_at_turf(target_turf)
-	brain.tied_controller.face_atom(target_turf)
+	controller.face_atom(target_turf)
 
 	currently_firing = TRUE
 
@@ -237,7 +255,7 @@
 	if(brain.should_reload()) // note that bullet removal comes after comsig is triggered
 		if(gun_data?.disposable)
 			brain.drop_primary_weapon()
-		stop_firing(brain)
+		stop_firing()
 		qdel(src)
 		return
 
@@ -247,7 +265,7 @@
 
 	if(QDELETED(current_target))
 		if(!should_fire_offscreen)
-			stop_firing(brain)
+			stop_firing()
 			qdel(src)
 			return
 		shoot_next = target_turf
@@ -255,7 +273,7 @@
 	else if(ismob(current_target))
 		var/mob/mob_target = current_target
 		if(mob_target.stat == DEAD)
-			stop_firing(brain)
+			stop_firing()
 			brain.lose_target()
 			qdel(src)
 			return
@@ -267,7 +285,7 @@
 			return
 
 	if(brain.halo_should_defer_ranged_fire(shoot_next))
-		stop_firing(brain)
+		stop_firing()
 		qdel(src)
 		return
 
@@ -278,29 +296,29 @@
 
 	if(rounds_burst_fired >= gun_data.burst_amount_max)
 		brain.start_fire_overload_cooldown()
-		stop_firing(brain)
+		stop_firing()
 		return
 
-	if((brain.tied_controller.get_distance_to(shoot_next) > gun_data.maximum_range) && !should_fire_offscreen)
+	if((controller.get_distance_to(shoot_next) > gun_data.maximum_range) && !should_fire_offscreen)
 		brain.lose_target()
-		stop_firing(brain)
+		stop_firing()
 		qdel(src)
 		return
 
 	current_target = brain.get_current_target()
-	if(current_target && (brain.tied_controller.get_distance_to(current_target) <= 1))
+	if(current_target && (controller.get_distance_to(current_target) <= 1))
 		currently_firing = FALSE
 		return
 
-	if(!firing_line_check(brain, shoot_next, listen = TRUE))
-		stop_firing(brain)
+	if(!firing_line_check(context, shoot_next, listen = TRUE))
+		stop_firing()
 		qdel(src)
 		return
 
-	var/datum/human_ai_firearm_context/context = new(primary_weapon, brain, current_target, target_turf)
-	var/datum/human_ai_firearm_handler/handler = context.get_handler()
-	var/datum/human_ai_firearm_result/after_fire_result = handler?.after_fire(context)
-	qdel(context)
+	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, current_target, target_turf)
+	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
+	var/datum/human_ai_firearm_result/after_fire_result = handler?.after_fire(firearm_context)
+	qdel(firearm_context)
 	if(after_fire_result)
 		if(after_fire_result.callback)
 			addtimer(after_fire_result.callback, after_fire_result.callback_delay)
@@ -310,7 +328,7 @@
 			rounds_burst_fired = 0
 		if(after_fire_result.stop_fire)
 			currently_firing = FALSE
-			stop_firing(brain)
+			stop_firing()
 		if(after_fire_result.handled)
 			return
 
@@ -325,7 +343,7 @@
 	primary_weapon?.set_target(shoot_next)
 
 /datum/ai_action/fire_at_target/proc/delayed_start_fire(obj/item/weapon/gun/primary_weapon, atom/movable/current_target)
-	if(!brain?.can_continue_runtime_work() || QDELETED(primary_weapon))
+	if(!context?.can_continue() || QDELETED(primary_weapon))
 		return FALSE
 	primary_weapon.start_fire(null, current_target, null, null, null, TRUE)
 	return TRUE

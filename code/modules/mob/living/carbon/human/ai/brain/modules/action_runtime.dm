@@ -1,5 +1,5 @@
 /datum/human_ai_module/action_runtime
-	required_module_types = list(/datum/human_ai_module/combat)
+	module_id = "action_runtime"
 
 	/// List of whitelisted/blacklisted action datums
 	var/list/action_whitelist = null
@@ -34,6 +34,11 @@
 	return FALSE
 
 /datum/human_ai_module/action_runtime/proc/process_actions(delta_time)
+	var/datum/human_ai_context/runtime_context = brain.create_context()
+	if(!runtime_context.can_continue())
+		qdel(runtime_context)
+		return FALSE
+
 	// List all allowed action types for AI to consider
 	var/list/allowed_actions = action_whitelist ? action_whitelist.Copy() : GLOB.AI_actions.Copy() // SS220 EDIT: runtime selection must not mutate preset whitelists
 	allowed_actions -= action_blacklist
@@ -50,7 +55,7 @@
 		// SS220 EDIT: skip hand-using actions while a grenade throw is in async flight
 		if(grenade_throw_in_progress && (glob_ref.action_flags & ACTION_USING_HANDS))
 			continue
-		var/weight = glob_ref.get_weight(brain)
+		var/weight = glob_ref.get_context_weight(runtime_context)
 		if(weight) // No weight means we shouldn't consider this action at all
 			possible_actions[action_type] = weight
 
@@ -61,7 +66,7 @@
 	for(var/action_type as anything in sorted_actions)
 		var/datum/ai_action/possible_action = GLOB.AI_actions[action_type]
 
-		var/list/conflicting_actions = possible_action.get_conflicts(brain)
+		var/list/conflicting_actions = possible_action.get_context_conflicts(runtime_context)
 		for(var/datum/ai_action/ongoing_action as anything in ongoing_actions)
 			if(ongoing_action.type in conflicting_actions)
 				possible_action = null
@@ -72,7 +77,7 @@
 
 		ongoing_actions += new action_type(brain)
 #if defined(TESTING) && defined(HUMAN_AI_TESTING)
-		message_admins("action of type [action_type] was added to [brain.tied_controller.get_real_name()]")
+		message_admins("action of type [action_type] was added to [runtime_context.controller.get_real_name()]")
 #endif
 
 	for(var/datum/ai_action/action as anything in ongoing_actions)
@@ -85,8 +90,10 @@
 		var/retval = action.trigger_action()
 		switch(retval)
 			if(ONGOING_ACTION_UNFINISHED_BLOCK)
+				qdel(runtime_context)
 				return TRUE
 			if(ONGOING_ACTION_COMPLETED)
 				qdel(action)
 
+	qdel(runtime_context)
 	return FALSE

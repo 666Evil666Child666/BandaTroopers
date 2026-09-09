@@ -8,23 +8,28 @@
 	required_ai_modules = list(/datum/human_ai_module/inventory, /datum/human_ai_module/navigation)
 	var/obj/item/to_pickup
 
-/datum/ai_action/item_pickup/get_weight(datum/human_ai_brain/brain)
+/datum/ai_action/item_pickup/get_context_weight(datum/human_ai_context/context)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return 0
+
 	if(brain.is_looting_disabled())
 		return 0
 
 	if(!brain.has_pickup_queue())
 		return 0
 
-	if(brain.tied_controller.has_trait_from(TRAIT_UNDENSE, LYING_DOWN_TRAIT))
+	if(controller.has_trait_from(TRAIT_UNDENSE, LYING_DOWN_TRAIT))
 		return 0
 
-	if(brain.tied_controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	if(controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return 0
 
-	if(brain.tied_controller.get_l_hand()?.flags_item & NODROP)
+	if(controller.get_l_hand()?.flags_item & NODROP)
 		return 0
 
-	if(brain.tied_controller.get_r_hand()?.flags_item & NODROP)
+	if(controller.get_r_hand()?.flags_item & NODROP)
 		return 0
 
 	if(!brain.has_primary_weapon())
@@ -47,6 +52,11 @@
 	. = ..()
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
+
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
 
 	if(is_pickup_target_invalid())
 		cleanup_pickup_target()
@@ -72,7 +82,7 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/storage_spot = brain.storage_has_room(to_pickup)
-	if(!storage_spot || !brain.tied_controller.can_use_item_on_self(to_pickup))
+	if(!storage_spot || !controller.can_use_item_on_self(to_pickup))
 		cleanup_pickup_target()
 		return ONGOING_ACTION_COMPLETED
 
@@ -84,34 +94,51 @@
 	return QDELETED(to_pickup) || !isturf(to_pickup.loc)
 
 /datum/ai_action/item_pickup/proc/cleanup_pickup_target()
+	var/datum/human_ai_brain/brain = context?.brain
+	if(!brain)
+		return
+
 	brain.UnregisterSignal(to_pickup, COMSIG_PARENT_QDELETING)
 	brain.unqueue_pickup(to_pickup)
 
 /datum/ai_action/item_pickup/proc/approach_pickup_target()
-	if(brain.tied_controller.get_distance_to(to_pickup) <= 1)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return HUMAN_AI_PICKUP_APPROACH_FAILED
+
+	if(controller.get_distance_to(to_pickup) <= 1)
 		return HUMAN_AI_PICKUP_APPROACH_IN_RANGE
 
 	if(!brain.move_to_atom(to_pickup))
 		cleanup_pickup_target()
 		return HUMAN_AI_PICKUP_APPROACH_FAILED
 
-	if(brain.tied_controller.get_distance_to(to_pickup) > 1)
+	if(controller.get_distance_to(to_pickup) > 1)
 		return HUMAN_AI_PICKUP_APPROACH_MOVING
 
 	return HUMAN_AI_PICKUP_APPROACH_IN_RANGE
 
 /datum/ai_action/item_pickup/proc/prepare_hands_for_pickup(obj/item/weapon/gun/primary_weapon)
-	if(primary_weapon)
-		brain.tied_controller.unwield_weapon(primary_weapon)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
 
-	if(brain.tied_controller.get_held_item())
-		brain.tied_controller.swap_hand()
+	if(primary_weapon)
+		controller.unwield_weapon(primary_weapon)
+
+	if(controller.get_held_item())
+		controller.swap_hand()
 
 /datum/ai_action/item_pickup/proc/try_pickup_primary_weapon()
 	if(!isgun(to_pickup))
 		return FALSE
 
-	brain.tied_controller.put_in_hands(to_pickup, TRUE)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
+
+	controller.put_in_hands(to_pickup, TRUE)
 	var/obj/item/weapon/gun/primary = to_pickup
 	// We do the three below lines to make it so that the AI can immediately pick up a gun and open fire. This ensures that we don't need to account for this possibility when firing.
 	primary.wield_time = world.time
@@ -132,19 +159,29 @@
 	return try_equip_pickup_storage_to_slot(/obj/item/storage/pouch, HUMAN_AI_STORAGE_RIGHT_POCKET, WEAR_R_STORE)
 
 /datum/ai_action/item_pickup/proc/try_equip_pickup_storage_to_slot(storage_type, container_id, wear_slot)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return FALSE
+
 	if(!istype(to_pickup, storage_type) || brain.has_container_ref(container_id))
 		return FALSE
 
-	brain.tied_controller.put_in_hands(to_pickup, TRUE)
-	INVOKE_ASYNC(brain.tied_controller, TYPE_PROC_REF(/datum/human_tied_controller, equip_to_slot), to_pickup, wear_slot)
+	controller.put_in_hands(to_pickup, TRUE)
+	INVOKE_ASYNC(controller, TYPE_PROC_REF(/datum/human_tied_controller, equip_to_slot), to_pickup, wear_slot)
 	return TRUE
 
 /datum/ai_action/item_pickup/proc/try_store_pickup_item(storage_spot)
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return FALSE
+
 	var/list/equipment_types = brain.get_pickup_storage_equipment_types(to_pickup)
 	if(!length(equipment_types))
 		return FALSE
 
-	brain.tied_controller.put_in_hands(to_pickup, TRUE)
+	controller.put_in_hands(to_pickup, TRUE)
 	if(brain.store_item_as_types(to_pickup, storage_spot, equipment_types) && (HUMAN_AI_AMMUNITION in equipment_types))
 		brain.clear_tried_reload() // not appraising inventory there, let's say we can reload now
 	return TRUE

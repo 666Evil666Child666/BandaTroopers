@@ -32,7 +32,9 @@
 	ai_in_squad += adding
 
 	adding.set_current_order(current_order)
-	adding.tied_controller.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_squad_member_death))
+	var/datum/human_ai_context/adding_context = adding.create_context()
+	adding_context.controller?.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_squad_member_death))
+	qdel(adding_context)
 	RegisterSignal(adding, COMSIG_PARENT_QDELETING, PROC_REF(on_squad_member_delete))
 
 /datum/human_ai_squad/proc/remove_from_squad(datum/human_ai_brain/removing)
@@ -42,8 +44,9 @@
 	removing.set_squad_id(null)
 	removing.set_squad_leader_status(FALSE)
 	ai_in_squad -= removing
-	if(removing.tied_controller)
-		removing.tied_controller.unregister_signal_for(src, COMSIG_MOB_DEATH)
+	var/datum/human_ai_context/removing_context = removing.create_context()
+	removing_context.controller?.unregister_signal_for(src, COMSIG_MOB_DEATH)
+	qdel(removing_context)
 	UnregisterSignal(removing, COMSIG_PARENT_QDELETING)
 
 /datum/human_ai_squad/proc/set_current_order(datum/ai_order/order)
@@ -73,12 +76,17 @@
 		set_squad_leader(null)
 
 	for(var/datum/human_ai_brain/squaddie as anything in ai_in_squad)
-		if(squaddie?.tied_controller.can_player_takeover_block_ai())
+		var/datum/human_ai_context/squaddie_context = squaddie?.create_context()
+		var/datum/human_tied_controller/squaddie_controller = squaddie_context?.controller
+		if(squaddie_controller?.can_player_takeover_block_ai())
+			qdel(squaddie_context)
 			continue
 
-		if(squaddie.tied_controller.is_incapacitated())
+		if(!squaddie_controller || squaddie_controller.is_incapacitated())
+			qdel(squaddie_context)
 			continue
 
+		qdel(squaddie_context)
 		squaddie.on_squad_member_death(dead_mob)
 
 /datum/human_ai_squad/proc/on_squad_member_delete(datum/human_ai_brain/deleting)
@@ -91,6 +99,7 @@
 	remove_current_order()
 
 /datum/human_ai_module/squad
+	module_id = "squad"
 	required_module_types = list(/datum/human_ai_module/targeting, /datum/human_ai_module/profile)
 
 	/// Numeric ID of the squad this AI is in, if any
@@ -126,6 +135,9 @@
 /datum/human_ai_module/squad/on_combat_entered(was_in_combat)
 	if(!squad_id)
 		return
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
 
 	var/datum/human_ai_squad/squad_datum = SShuman_ai.squad_id_dict["[squad_id]"]
 	for(var/datum/human_ai_brain/squaddie as anything in squad_datum.ai_in_squad)
@@ -133,8 +145,12 @@
 			continue
 		if(squaddie.has_target_turf())
 			continue
-		if(squaddie.tied_controller.get_distance_to_controller(brain.tied_controller) > squaddie.get_view_distance())
+		var/datum/human_ai_context/squaddie_context = squaddie.create_context()
+		var/datum/human_tied_controller/squaddie_controller = squaddie_context.controller
+		if(!squaddie_controller || squaddie_controller.get_distance_to_controller(controller) > squaddie.get_view_distance())
+			qdel(squaddie_context)
 			continue
+		qdel(squaddie_context)
 		var/atom/movable/current_target = brain.get_current_target()
 		if(!squaddie.can_target(current_target))
 			continue

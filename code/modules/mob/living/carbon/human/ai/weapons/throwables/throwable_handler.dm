@@ -78,13 +78,13 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 	return new /datum/human_ai_throwable_context(action.brain, grenade, action.brain.get_current_target(), target_turf, throw_range_override)
 
 /datum/human_ai_throwable_handler/grenade/proc/async_prime_and_throw(datum/ai_action/throw_grenade/action, datum/weakref/puppet_ref, obj/item/explosive/grenade/grenade, turf/target_turf, throw_range_override)
-	log_game("AI GRENADE: async throw started - grenade=[grenade] ([grenade?.type]), target=[target_turf], mob=[action?.brain?.tied_controller?.get_key_name()]")
+	log_game("AI GRENADE: async throw started - grenade=[grenade] ([grenade?.type]), target=[target_turf], mob=[action?.context?.controller?.get_key_name()]")
 	if(!action || QDELETED(action))
 		return
 
 	var/datum/human_ai_throwable_context/context = build_async_context(action, grenade, target_turf, throw_range_override)
 	if(!context?.can_continue_throw() || !context.controller.matches_identity_ref(puppet_ref))
-		log_game("AI GRENADE: async throw aborted - brain invalid or puppet mismatch, mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: async throw aborted - brain invalid or puppet mismatch, mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		finish_async_throw(action)
 		return
@@ -95,28 +95,28 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 	qdel(context)
 	context = build_async_context(action, grenade, target_turf, throw_range_override)
 	if(!context?.can_continue_throw() || !context.controller.matches_identity_ref(puppet_ref))
-		log_game("AI GRENADE: async throw aborted after pre-hold - brain invalid or mismatch, mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: async throw aborted after pre-hold - brain invalid or mismatch, mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		finish_async_throw(action)
 		return
 
 	if(!try_hold_throwable(context) || !context.can_throw_to_target())
-		log_game("AI GRENADE: async throw aborted - hold or target check failed, grenade=[grenade], mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: async throw aborted - hold or target check failed, grenade=[grenade], mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		finish_async_throw(action)
 		return
 
 	var/turf/final_target_turf = context.resolve_throw_target()
 	if(!final_target_turf)
-		log_game("AI GRENADE: async throw aborted - no valid throw target, target=[target_turf], mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: async throw aborted - no valid throw target, target=[target_turf], mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		finish_async_throw(action)
 		return
 
 	context.controller.prime_grenade(grenade)
-	log_game("AI GRENADE: grenade primed - grenade=[grenade], target=[final_target_turf], mob=[action?.brain?.tied_controller?.get_key_name()]")
+	log_game("AI GRENADE: grenade primed - grenade=[grenade], target=[final_target_turf], mob=[action?.context?.controller?.get_key_name()]")
 	if(QDELETED(grenade) || !grenade.active)
-		log_game("AI GRENADE: async throw aborted after prime - QDELETED=[QDELETED(grenade)], active=[grenade?.active], mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: async throw aborted after prime - QDELETED=[QDELETED(grenade)], active=[grenade?.active], mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		finish_async_throw(action)
 		return
@@ -128,13 +128,13 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 	qdel(context)
 	context = build_async_context(action, grenade, target_turf, throw_range_override)
 	if(!context?.can_continue_throw() || QDELETED(grenade) || !context.controller.is_item_equipped_or_held(grenade))
-		log_game("AI GRENADE: async throw aborted after post-prime hold - grenade lost, QDELETED=[QDELETED(grenade)], loc=[grenade?.loc], mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: async throw aborted after post-prime hold - grenade lost, QDELETED=[QDELETED(grenade)], loc=[grenade?.loc], mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		finish_async_throw(action)
 		return
 
 	if(!try_hold_throwable(context))
-		log_game("AI GRENADE: async throw aborted - final hold failed, grenade=[grenade], mob=[action?.brain?.tied_controller?.get_key_name()]")
+		log_game("AI GRENADE: async throw aborted - final hold failed, grenade=[grenade], mob=[action?.context?.controller?.get_key_name()]")
 		qdel(context)
 		finish_async_throw(action)
 		return

@@ -2,28 +2,35 @@
 /datum/human_ai_module/inventory/proc/holster_melee()
 	if(!drawn_melee_weapon)
 		return TRUE
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
 
-	if(!brain.tied_controller.is_item_equipped_or_held(drawn_melee_weapon))
+	if(!controller.is_item_equipped_or_held(drawn_melee_weapon))
 		on_melee_dropped()
 		return TRUE
 
-	if(brain.tied_controller.can_insert_into_shoes(drawn_melee_weapon))
-		return brain.tied_controller.attempt_insert_into_shoes(drawn_melee_weapon)
+	if(controller.can_insert_into_shoes(drawn_melee_weapon))
+		return controller.attempt_insert_into_shoes(drawn_melee_weapon)
 
-	brain.tied_controller.drop_held_item(drawn_melee_weapon)
+	controller.drop_held_item(drawn_melee_weapon)
 	return FALSE
 
 /// Melee system currently only supports bootknives.
 /datum/human_ai_module/inventory/proc/unholster_melee()
-	if(brain.tied_controller.has_item_in_hands())
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
+
+	if(controller.has_item_in_hands())
 		return TRUE
 
-	var/cur_hand = brain.tied_controller.get_active_hand()
+	var/cur_hand = controller.get_active_hand()
 	if(cur_hand)
-		brain.tied_controller.drop_held_item(cur_hand)
+		controller.drop_held_item(cur_hand)
 
-	if(brain.tied_controller.get_shoes())
-		var/obj/item/melee_weapon = brain.tied_controller.remove_item_from_shoes()
+	if(controller.get_shoes())
+		var/obj/item/melee_weapon = controller.remove_item_from_shoes()
 		drawn_melee_weapon = melee_weapon
 		RegisterSignal(drawn_melee_weapon, COMSIG_ITEM_DROPPED, PROC_REF(on_melee_dropped))
 		return melee_weapon

@@ -50,12 +50,16 @@
 		brain.clear_active_grenade()
 
 /datum/human_ai_module/inventory/proc/item_search(list/things_around)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
+
 	// SS220 EDIT - START: grenade threat must come only from the current local scan, not from stale refs.
 	// Preserve active_grenade_found across ticks if it is already the currently held, still-active timed grenade.
 	var/obj/item/explosive/grenade/active_grenade = brain.get_active_grenade()
-	if(!active_grenade || QDELETED(active_grenade) || !active_grenade.active || (active_grenade.fuse_type != TIMED_FUSE) || !brain.tied_controller.is_item_equipped_or_held(active_grenade))
+	if(!active_grenade || QDELETED(active_grenade) || !active_grenade.active || (active_grenade.fuse_type != TIMED_FUSE) || !controller.is_item_equipped_or_held(active_grenade))
 		brain.clear_active_grenade()
-	var/can_handle_live_grenade = brain.can_throw_back_grenade() && !((brain.tied_controller.get_l_hand()?.flags_item & NODROP) && (brain.tied_controller.get_r_hand()?.flags_item & NODROP))
+	var/can_handle_live_grenade = brain.can_throw_back_grenade() && !((controller.get_l_hand()?.flags_item & NODROP) && (controller.get_r_hand()?.flags_item & NODROP))
 	// SS220 EDIT - END
 	for(var/obj/item/thing in things_around)
 		if(!isturf(thing.loc))
@@ -82,7 +86,7 @@
 			queue_pickup(thing)
 
 		var/storage_spot = storage_has_room(thing)
-		if(!storage_spot || !brain.tied_controller.can_use_item_on_self(thing))
+		if(!storage_spot || !controller.can_use_item_on_self(thing))
 			continue
 
 		if(thing.flags_human_ai & HEALING_ITEM)

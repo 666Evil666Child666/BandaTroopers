@@ -3,8 +3,9 @@
 	action_flags = ACTION_USING_MOUTH
 	required_ai_modules = list(/datum/human_ai_module/conversation)
 
-/datum/ai_action/converse/get_weight(datum/human_ai_brain/brain)
-	if(!brain.can_try_start_conversation())
+/datum/ai_action/converse/get_context_weight(datum/human_ai_context/context)
+	var/datum/human_ai_brain/brain = context?.brain
+	if(!brain?.can_try_start_conversation())
 		return 0
 
 	return 1
@@ -14,8 +15,13 @@
 	if(.)
 		return .
 
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
+
 	var/list/ai_nearby = list()
-	for(var/mob/living/carbon/human/nearby_human in brain.tied_controller.get_view(2))
+	for(var/mob/living/carbon/human/nearby_human in controller.get_view(2))
 		var/datum/human_ai_brain/other_brain = nearby_human.get_ai_brain()
 		if(!other_brain?.can_participate_in_conversation())
 			continue

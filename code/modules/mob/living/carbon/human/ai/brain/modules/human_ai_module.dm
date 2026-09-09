@@ -1,12 +1,17 @@
 /datum/human_ai_module
 	var/datum/human_ai_brain/brain
+	var/datum/human_ai_context/context
+	var/module_id
 	var/list/required_module_types = list()
 
 /datum/human_ai_module/New(datum/human_ai_brain/new_brain)
 	. = ..()
 	brain = new_brain
+	if(brain)
+		context = brain.create_context()
 
 /datum/human_ai_module/Destroy(force, ...)
+	QDEL_NULL(context)
 	brain = null
 	return ..()
 

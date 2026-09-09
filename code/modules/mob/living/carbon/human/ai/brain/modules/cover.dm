@@ -1,4 +1,5 @@
 /datum/human_ai_module/cover
+	module_id = "cover"
 	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/targeting, /datum/human_ai_module/profile, /datum/human_ai_module/inventory)
 
 	/// If TRUE, AI is currently in some form of cover
@@ -59,9 +60,13 @@
 		combat_exit_context["clear_target_turf"] = TRUE
 
 /datum/human_ai_module/cover/on_combat_entered(was_in_combat)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
+
 	var/atom/movable/current_target = brain.get_current_target()
 	if(isxeno(current_target))
-		try_cover(brain.tied_controller.get_angle_from(current_target), current_target)
+		try_cover(controller.get_angle_from(current_target), current_target)
 
 /datum/human_ai_module/cover/proc/react_to_incoming_fire(angle, atom/firer)
 	if(!brain?.has_valid_tied_human())
@@ -86,8 +91,11 @@
 
 	var/list/turf_dict = list()
 	var/cover_dir = reverse_direction(angle2dir4ai(angle))
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
 
-	recursive_turf_cover_scan(brain.tied_controller.get_current_turf(), turf_dict, cover_dir)
+	recursive_turf_cover_scan(controller.get_current_turf(), turf_dict, cover_dir)
 
 #ifdef TESTING
 	addtimer(CALLBACK(src, PROC_REF(clear_cover_value_debug), turf_dict.Copy()), 60 SECONDS)
@@ -100,6 +108,10 @@
 	end_cover()
 
 /datum/human_ai_module/cover/proc/cover_processing(list/turf_dict, from_squad = FALSE)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
+
 	var/most_weight = -INFINITY
 	var/turf/best_cover
 	for(var/turf/T as anything in turf_dict)
@@ -108,7 +120,7 @@
 			most_weight = weight
 			best_cover = T
 
-	if(best_cover && best_cover != brain.tied_controller.get_current_turf())
+	if(best_cover && best_cover != controller.get_current_turf())
 		turf_dict -= best_cover
 		// insert cover atom deletion/move comsigs here
 		current_cover = best_cover
@@ -124,6 +136,9 @@
 	var/datum/human_ai_squad/squad = brain.get_squad_datum()
 	if(!squad)
 		return
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
 
 	for(var/datum/human_ai_brain/squaddie as anything in squad.ai_in_squad)
 		if(squaddie == brain)
@@ -132,17 +147,26 @@
 		if(!squaddie.has_valid_tied_human())
 			continue
 
-		if(brain.tied_controller.get_distance_to(squaddie.tied_controller.get_current_turf()) > brain.get_view_distance())
+		var/datum/human_ai_context/squaddie_context = squaddie.create_context()
+		var/datum/human_tied_controller/squaddie_controller = squaddie_context.controller
+		if(!squaddie_controller || controller.get_distance_to(squaddie_controller.get_current_turf()) > brain.get_view_distance())
+			qdel(squaddie_context)
 			continue
 
-		if(squaddie.tied_controller.is_incapacitated())
+		if(squaddie_controller.is_incapacitated())
+			qdel(squaddie_context)
 			continue
 
+		qdel(squaddie_context)
 		squaddie.start_cover_search_cooldown(15 SECONDS)
 		squaddie.apply_cover_processing(turf_dict, TRUE)
 
 /// Recursively searches each tile nearby (up to 198 tiles, nearly BYOND's recursion limit) and determines how suitable it is as cover, giving it a numerical score and adding it to turf_dict
 /datum/human_ai_module/cover/proc/recursive_turf_cover_scan(turf/scan_turf, list/turf_dict, cover_dir, first_iteration = TRUE)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
+
 	if(length(turf_dict) > 198) // Slightly lower than byond recursion limit (200)
 		return FALSE // abort if the room is too large
 
@@ -169,7 +193,7 @@
 		else
 			turf_dict[scan_turf] -= 5 // even if it's our mine, we don't really want to stand on it
 
-	turf_dict[scan_turf] -= brain.tied_controller.get_distance_to(scan_turf)
+	turf_dict[scan_turf] -= controller.get_distance_to(scan_turf)
 	var/atom/movable/current_target = brain.get_current_target()
 	if(current_target) // Might be smarter to hide in a different direction
 		turf_dict[scan_turf] += get_dist(current_target, scan_turf) * 0.5

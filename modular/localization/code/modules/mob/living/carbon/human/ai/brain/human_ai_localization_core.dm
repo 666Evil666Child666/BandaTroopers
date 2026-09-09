@@ -104,11 +104,13 @@
 		faction_datum.reapply_faction_data()
 
 /datum/modpack/localization/proc/halo_ai_apply_default_fallback_to_brain(datum/human_ai_brain/brain)
-	if(!brain)
+	if(!brain?.communication)
 		return
 
 	var/datum/human_ai_faction/faction_datum
-	var/faction = brain.tied_controller?.get_faction()
+	var/datum/human_ai_context/context = brain.create_context()
+	var/faction = context.controller?.get_faction()
+	qdel(context)
 	if(SShuman_ai && faction)
 		faction_datum = SShuman_ai.human_ai_factions[faction]
 

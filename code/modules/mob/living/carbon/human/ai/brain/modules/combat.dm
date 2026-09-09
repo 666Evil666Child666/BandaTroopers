@@ -1,4 +1,5 @@
 /datum/human_ai_module/combat
+	module_id = "combat"
 	required_module_types = list(/datum/human_ai_module/targeting)
 
 	/// Ref to the last turf that the AI shot at

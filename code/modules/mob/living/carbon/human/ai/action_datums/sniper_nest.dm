@@ -5,7 +5,11 @@
 	var/initial_view
 	var/initial_reload_line_chance
 
-/datum/ai_action/sniper_nest/get_weight(datum/human_ai_brain/brain)
+/datum/ai_action/sniper_nest/get_context_weight(datum/human_ai_context/context)
+	var/datum/human_ai_brain/brain = context?.brain
+	if(!brain)
+		return 0
+
 	if(!brain.has_sniper_home())
 		return 0
 
@@ -24,19 +28,30 @@
 	return 12
 
 /datum/ai_action/sniper_nest/Added()
+	var/datum/human_ai_brain/brain = context?.brain
+	if(!brain)
+		return
+
 	initial_view = brain.get_view_distance()
 	initial_reload_line_chance = brain.get_reload_line_chance()
 	brain.set_reload_line_chance(0)
 
 /datum/ai_action/sniper_nest/Destroy(force, ...)
-	brain.set_view_distance(initial_view)
-	brain.set_reload_line_chance(initial_reload_line_chance)
+	var/datum/human_ai_brain/brain = context?.brain
+	if(brain)
+		brain.set_view_distance(initial_view)
+		brain.set_reload_line_chance(initial_reload_line_chance)
 	return ..()
 
 /datum/ai_action/sniper_nest/trigger_action()
 	. = ..()
 	if(. == ONGOING_ACTION_COMPLETED)
 		return .
+
+	var/datum/human_ai_brain/brain = context?.brain
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
 
 	if(brain.is_stationary_fire_blocked())
 		return ONGOING_ACTION_COMPLETED
@@ -49,13 +64,13 @@
 	if(QDELETED(sniper_home))
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.tied_controller.get_distance_to(sniper_home) > 0)
+	if(controller.get_distance_to(sniper_home) > 0)
 		if(!brain.move_to_turf(sniper_home))
 			return ONGOING_ACTION_COMPLETED
 
-	if(!brain.tied_controller.get_distance_to(sniper_home))
+	if(!controller.get_distance_to(sniper_home))
 		brain.set_view_distance(30)
-		brain.tied_controller.face_dir(brain.get_sniper_dir())
+		controller.face_dir(brain.get_sniper_dir())
 
 	if(!brain.should_reload())
 		brain.prepare_primary_for_fire(primary_weapon)
@@ -132,7 +147,14 @@
 		return
 	arm_equipment(ai_human, sniper_equipment_presets[chosen_equipment_name], TRUE)
 
-	ai_comp.ai_brain.tied_controller.forceMove(home_turf)
+	var/datum/human_ai_context/setup_context = ai_comp.ai_brain.create_context()
+	var/datum/human_tied_controller/controller = setup_context.controller
+	if(!controller)
+		qdel(setup_context)
+		qdel(ai_human)
+		return
+	controller.forceMove(home_turf)
+	qdel(setup_context)
 	ai_comp.ai_brain.set_sniper_home(home_turf, get_cardinal_dir(home_turf, target_turf))
 
 	to_chat(usr, SPAN_NOTICE("Sniper has been created."))

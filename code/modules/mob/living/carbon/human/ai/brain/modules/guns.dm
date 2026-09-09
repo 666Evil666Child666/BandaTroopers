@@ -1,4 +1,5 @@
 /datum/human_ai_module/guns
+	module_id = "guns"
 	required_module_types = list(/datum/human_ai_module/inventory)
 
 	/// If we've tried to reload (and failed) with our current inventory

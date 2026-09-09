@@ -24,10 +24,14 @@
 /datum/human_ai_module/inventory/proc/get_next_secondary_weapon()
 	RETURN_TYPE(/obj/item/weapon/gun)
 
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return null
+
 	var/obj/item/weapon/gun/best_secondary
 	var/best_secondary_weight = 0
 	for(var/obj/item/weapon/gun/secondary as anything in secondary_weapons)
-		if(!can_select_firearm(secondary) || !brain.tied_controller.can_use_item(secondary))
+		if(!can_select_firearm(secondary) || !controller.can_use_item(secondary))
 			continue
 
 		var/datum/human_ai_firearm_context/context = new(secondary, brain)
@@ -43,19 +47,20 @@
 
 /// Unholsters the AI's primary weapon, dropping anything that might obstruct it.
 /datum/human_ai_module/inventory/proc/unholster_primary()
-	if(!primary_weapon || !brain.can_continue_runtime_work())
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!primary_weapon || !brain.can_continue_runtime_work() || !controller)
 		return FALSE
-	if(brain.tied_controller.get_l_hand() == primary_weapon || brain.tied_controller.get_r_hand() == primary_weapon)
+	if(controller.get_l_hand() == primary_weapon || controller.get_r_hand() == primary_weapon)
 		return ensure_primary_hand(primary_weapon)
 
-	var/cur_hand = brain.tied_controller.get_active_hand()
+	var/cur_hand = controller.get_active_hand()
 	if(cur_hand)
-		if(!brain.tied_controller.drop_held_item(cur_hand))
+		if(!controller.drop_held_item(cur_hand))
 			return FALSE
 
-	if(!brain.tied_controller.u_equip(primary_weapon))
+	if(!controller.u_equip(primary_weapon))
 		return FALSE
-	if(!brain.tied_controller.put_in_active_hand(primary_weapon))
+	if(!controller.put_in_active_hand(primary_weapon))
 		return FALSE
 
 	primary_weapon.guaranteed_delay_time = world.time
@@ -65,11 +70,12 @@
 
 /// Tells the AI to wield their primary weapon, can be called if they aren't holding it or if they are already wielding it
 /datum/human_ai_module/inventory/proc/wield_primary()
-	if(!primary_weapon || !brain.can_continue_runtime_work())
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!primary_weapon || !brain.can_continue_runtime_work() || !controller)
 		return FALSE
 	if(!ensure_primary_hand(primary_weapon))
 		return FALSE
-	return brain.tied_controller.wield(primary_weapon)
+	return controller.wield(primary_weapon)
 
 /// wield_primary() with a delay inbuilt
 /datum/human_ai_module/inventory/proc/wield_primary_sleep()
@@ -84,42 +90,51 @@
 
 /// Tells the AI to unwield *something*, prioritizing melee
 /datum/human_ai_module/inventory/proc/unholster_any_weapon()
-	if(brain.tied_controller.is_zombie())
-		var/cur_hand = brain.tied_controller.get_active_hand()
+	var/datum/human_tied_controller/controller = src.context?.controller
+	if(!controller)
+		return FALSE
+
+	if(controller.is_zombie())
+		var/cur_hand = controller.get_active_hand()
 		if(isnull(cur_hand)) //Check if we have a hand. If not try the other one? Claws are stuck to hands so if this is null we've lost the hand
-			var/obj/limb/hand/r_hand/right_hand	= brain.tied_controller.get_limb("r_hand")
-			var/obj/limb/hand/l_hand/left_hand = brain.tied_controller.get_limb("l_hand")
+			var/obj/limb/hand/r_hand/right_hand	= controller.get_limb("r_hand")
+			var/obj/limb/hand/l_hand/left_hand = controller.get_limb("l_hand")
 			if(!(left_hand.status & LIMB_DESTROYED) || !(right_hand.status & LIMB_DESTROYED)) //We have hands?
-				brain.tied_controller.swap_hand()
-				cur_hand = brain.tied_controller.get_active_hand()
+				controller.swap_hand()
+				cur_hand = controller.get_active_hand()
 			else
 				return FALSE
 	if(unholster_melee())
-		brain.tied_controller.set_grab_intent()
+		controller.set_grab_intent()
 		return TRUE
 	if(primary_weapon)
 		unholster_primary()
 		ensure_primary_hand(primary_weapon)
 		wield_primary()
-		brain.tied_controller.set_grab_intent()
+		controller.set_grab_intent()
 		return TRUE
 	// insert any viable weapon slot macros in here
 
 /// Holsters the AI's primary weapon if possible
 /datum/human_ai_module/inventory/proc/holster_primary()
-	if(brain.tied_controller.get_s_store() || (brain.tied_controller.get_l_hand() != primary_weapon && brain.tied_controller.get_r_hand() != primary_weapon))
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
+
+	if(controller.get_s_store() || (controller.get_l_hand() != primary_weapon && controller.get_r_hand() != primary_weapon))
 		return FALSE
 
 	if(!ensure_primary_hand(primary_weapon)) // SS220 EDIT: unwield expects the fake offhand to be the inactive hand
 		return FALSE
-	if((primary_weapon.flags_item & TWOHANDED) && (primary_weapon.flags_item & WIELDED) && !brain.tied_controller.unwield_weapon(primary_weapon))
+	if((primary_weapon.flags_item & TWOHANDED) && (primary_weapon.flags_item & WIELDED) && !controller.unwield_weapon(primary_weapon))
 		return FALSE
-	return brain.tied_controller.equip_to_slot_if_possible(primary_weapon, WEAR_J_STORE, TRUE)
+	return controller.equip_to_slot_if_possible(primary_weapon, WEAR_J_STORE, TRUE)
 
 /// Assuming an item is in the AI's hands, this ensures it is their actively selected hand
 /datum/human_ai_module/inventory/proc/ensure_primary_hand(obj/item/held_item)
-	if(!held_item || !brain.can_continue_runtime_work())
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!held_item || !brain.can_continue_runtime_work() || !controller)
 		return FALSE
-	if(brain.tied_controller.get_inactive_hand() == held_item)
-		brain.tied_controller.swap_hand()
-	return brain.tied_controller.get_active_hand() == held_item
+	if(controller.get_inactive_hand() == held_item)
+		controller.swap_hand()
+	return controller.get_active_hand() == held_item

@@ -9,7 +9,7 @@
 
 /datum/human_ai_weapon_context/New(datum/human_ai_brain/new_ai, obj/item/new_weapon_item = null, atom/movable/new_current_target = null, turf/new_target_turf = null)
 	AI = new_ai
-	controller = AI?.tied_controller
+	controller = AI?.get_tied_controller()
 	weapon_item = new_weapon_item
 	current_target = new_current_target
 	target_turf = new_target_turf

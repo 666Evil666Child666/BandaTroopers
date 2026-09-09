@@ -1,4 +1,5 @@
 /datum/human_ai_module/perception
+	module_id = "perception"
 	required_module_types = list(/datum/human_ai_module/combat)
 
 	/// Nearby turfs that we're watching for bullets
@@ -33,12 +34,16 @@
 /datum/human_ai_module/perception/proc/register_signals()
 	if(!brain?.has_valid_tied_human())
 		return
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
 
-	brain.tied_controller.register_signal_for(src, COMSIG_HUMAN_BULLET_ACT, PROC_REF(on_shot))
+	controller.register_signal_for(src, COMSIG_HUMAN_BULLET_ACT, PROC_REF(on_shot))
 
 /datum/human_ai_module/perception/proc/unregister_signals()
-	if(brain?.tied_controller)
-		brain.tied_controller.unregister_signal_for(src, COMSIG_HUMAN_BULLET_ACT)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(controller)
+		controller.unregister_signal_for(src, COMSIG_HUMAN_BULLET_ACT)
 
 /datum/human_ai_module/perception/proc/setup_detection_radius()
 	if(!brain?.has_valid_tied_human())
@@ -47,8 +52,11 @@
 
 	if(length(detection_turfs))
 		clear_detection_radius()
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
 
-	for(var/turf/open/floor in brain.tied_controller.get_range(1))
+	for(var/turf/open/floor in controller.get_range(1))
 		RegisterSignal(floor, COMSIG_TURF_ENTERED, PROC_REF(on_detection_turf_enter))
 		detection_turfs += floor
 
@@ -69,7 +77,8 @@
 	if(!can_process_detection())
 		return
 
-	if(brain.tied_controller.is_puppet(entering))
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller || controller.is_puppet(entering))
 		return
 
 	if(!istype(entering, /obj/projectile))

@@ -1,4 +1,5 @@
 /datum/human_ai_module/profile
+	module_id = "profile"
 	var/micro_action_delay = 0.2 SECONDS
 	var/short_action_delay = 0.5 SECONDS
 	var/medium_action_delay = 2 SECONDS

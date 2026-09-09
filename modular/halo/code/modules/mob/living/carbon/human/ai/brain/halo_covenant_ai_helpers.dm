@@ -27,6 +27,13 @@
 	var/turf/halo_cached_threat_turf
 	var/halo_ranged_fire_backoff_until = 0
 
+/datum/human_ai_brain/proc/halo_get_controller()
+	RETURN_TYPE(/datum/human_tied_controller)
+	var/datum/human_ai_context/context = create_context()
+	var/datum/human_tied_controller/controller = context?.controller
+	qdel(context)
+	return controller
+
 /datum/human_ai_brain/proc/halo_finalize_human_ai_brain(mob/living/carbon/human/new_human)
 	if(!halo_runtime_uses_projectile_pressure_controls())
 		return
@@ -74,15 +81,18 @@
 /datum/human_ai_brain/proc/halo_covenant_try_cover_retreat(atom/threat)
 	if(!cover)
 		return FALSE
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return FALSE
 
 	if(!get_current_cover())
-		try_cover(tied_controller.get_angle_from(threat), threat)
+		try_cover(controller.get_angle_from(threat), threat)
 
 	var/turf/cover_turf = get_turf(get_current_cover())
 	if(!cover_turf)
 		return FALSE
 
-	if(tied_controller.get_distance_to(cover_turf) > 0)
+	if(controller.get_distance_to(cover_turf) > 0)
 		if(!move_to_turf(cover_turf))
 			end_cover()
 			return FALSE
@@ -90,19 +100,22 @@
 		return TRUE
 
 	enter_cover()
-	tied_controller.face_atom(threat)
+	controller.face_atom(threat)
 	return TRUE
 
 /datum/human_ai_brain/proc/halo_covenant_step_away_from_threat(atom/threat, turf/anchor = null, anchor_weight = 0)
 	var/turf/threat_turf = halo_covenant_get_cached_threat_turf()
 	if(!has_valid_tied_human() || !threat_turf)
 		return FALSE
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return FALSE
 
 	var/turf/best_destination
 	var/best_score = -INFINITY
 
 	for(var/direction in GLOB.cardinals)
-		var/turf/destination = tied_controller.get_step_in_dir(direction)
+		var/turf/destination = controller.get_step_in_dir(direction)
 		if(!destination || destination.density)
 			continue
 
@@ -114,7 +127,7 @@
 			best_score = score
 			best_destination = destination
 
-	if(!best_destination && anchor && (tied_controller.get_distance_to(anchor) > 0))
+	if(!best_destination && anchor && (controller.get_distance_to(anchor) > 0))
 		best_destination = anchor
 
 	if(!best_destination)
@@ -123,7 +136,7 @@
 	if(!move_to_turf(best_destination))
 		return FALSE
 
-	tied_controller.face_atom(threat)
+	controller.face_atom(threat)
 	return TRUE
 
 /datum/human_ai_brain/proc/halo_covenant_move_to_threat(atom/threat)
@@ -134,7 +147,10 @@
 	if(!move_to_turf(threat_turf))
 		return FALSE
 
-	tied_controller.face_atom(threat)
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return FALSE
+	controller.face_atom(threat)
 	return TRUE
 
 /datum/human_ai_brain/proc/halo_covenant_move_to_atom(atom/target, use_cached_threat_turf = FALSE)
@@ -151,7 +167,10 @@
 	if(!has_valid_tied_human())
 		return FALSE
 
-	tied_controller.face_atom(target)
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return FALSE
+	controller.face_atom(target)
 	return TRUE
 
 /datum/human_ai_brain/proc/halo_covenant_has_grenade_equipment()
@@ -165,9 +184,12 @@
 		return
 
 	clear_main_hand()
-	tied_controller.swap_hand()
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return
+	controller.swap_hand()
 	clear_main_hand()
-	tied_controller.swap_hand()
+	controller.swap_hand()
 
 /datum/human_ai_brain/proc/halo_covenant_equip_grenade(obj/item/explosive/grenade/grenade_item)
 	return equip_item_from_equipment_map(HUMAN_AI_GRENADES, grenade_item)
@@ -235,13 +257,16 @@
 		return FALSE
 
 	var/datum/ammo/gun_ammo = halo_get_gun_combat_ammo(primary_weapon)
-	if(tied_controller.halo_should_backpressure_projectile_fire(threat, gun_ammo, queued_projectiles_override))
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return FALSE
+	if(controller.halo_should_backpressure_projectile_fire(threat, gun_ammo, queued_projectiles_override))
 		halo_ranged_fire_backoff_until = world.time + 0.6 SECONDS
 		halo_perf_bump_projectile_throttles()
 		return TRUE
 
 	// When the AI has only a remembered threat turf, still shed ranged pressure for HALO runtime loops.
-	if(!isturf(threat) || !tied_controller.halo_is_ai_only_human() || !halo_is_projectile_pressure_relevant_ammo(gun_ammo))
+	if(!isturf(threat) || !controller.halo_is_ai_only_human() || !halo_is_projectile_pressure_relevant_ammo(gun_ammo))
 		return FALSE
 
 	if(!halo_is_projectile_queue_soft_limited(queued_projectiles_override))
@@ -264,24 +289,27 @@
 /datum/human_ai_brain/proc/halo_covenant_clear_hands()
 	if(!has_valid_tied_human())
 		return FALSE
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return FALSE
 
-	if(!tied_controller.get_active_hand())
+	if(!controller.get_active_hand())
 		return TRUE
 
-	if(!tied_controller.get_inactive_hand())
-		tied_controller.swap_hand()
-		return !tied_controller.get_active_hand()
+	if(!controller.get_inactive_hand())
+		controller.swap_hand()
+		return !controller.get_active_hand()
 
 	clear_main_hand()
-	if(!tied_controller.get_active_hand())
+	if(!controller.get_active_hand())
 		return TRUE
 
-	tied_controller.swap_hand()
-	if(!tied_controller.get_active_hand())
+	controller.swap_hand()
+	if(!controller.get_active_hand())
 		return TRUE
 
 	clear_main_hand()
-	if(!tied_controller.get_active_hand())
+	if(!controller.get_active_hand())
 		return TRUE
 
 	return FALSE
@@ -300,9 +328,12 @@
 		return TRUE
 	if(!leader.has_valid_tied_human())
 		return FALSE
-	if(leader.tied_controller.is_dead())
+	var/datum/human_tied_controller/leader_controller = leader.halo_get_controller()
+	if(!leader_controller)
 		return FALSE
-	if(leader.tied_controller.is_incapacitated())
+	if(leader_controller.is_dead())
+		return FALSE
+	if(leader_controller.is_incapacitated())
 		return FALSE
 	return TRUE
 
@@ -314,7 +345,8 @@
 		return halo_cached_squad_anchor
 
 	var/datum/human_ai_brain/leader = halo_unggoy_get_squad_leader()
-	var/turf/anchor = leader?.tied_controller?.get_current_turf()
+	var/datum/human_tied_controller/leader_controller = leader?.halo_get_controller()
+	var/turf/anchor = leader_controller?.get_current_turf()
 	if(anchor)
 		halo_cached_squad_anchor_time = world.time
 		halo_cached_squad_anchor = anchor
@@ -333,12 +365,15 @@
 	for(var/datum/human_ai_brain/member as anything in squad_members)
 		if(!member?.has_valid_tied_human())
 			continue
+		var/datum/human_tied_controller/member_controller = member.halo_get_controller()
+		if(!member_controller)
+			continue
 
-		var/turf/member_turf = member.tied_controller.get_current_turf()
+		var/turf/member_turf = member_controller.get_current_turf()
 		if(!member_turf)
 			continue
 
-		if(member.tied_controller.is_dead() || member.tied_controller.is_incapacitated())
+		if(member_controller.is_dead() || member_controller.is_incapacitated())
 			continue
 
 		anchor_x += member_turf.x
@@ -358,7 +393,10 @@
 /datum/human_ai_brain/proc/halo_unggoy_get_health_pct()
 	if(!has_valid_tied_human())
 		return 1
-	return tied_controller.get_health_ratio()
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return 1
+	return controller.get_health_ratio()
 
 /datum/human_ai_brain/proc/halo_unggoy_should_panic()
 	if(!halo_unggoy_runtime || halo_unggoy_ignore_panic || !has_valid_tied_human())
@@ -409,18 +447,21 @@
 
 	if(istype(halo_sangheili_drawn_sword))
 		return halo_sangheili_drawn_sword
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return null
 
-	if(istype(tied_controller.get_l_hand(), /obj/item/weapon/covenant/energy_sword))
-		return tied_controller.get_l_hand()
+	if(istype(controller.get_l_hand(), /obj/item/weapon/covenant/energy_sword))
+		return controller.get_l_hand()
 
-	if(istype(tied_controller.get_r_hand(), /obj/item/weapon/covenant/energy_sword))
-		return tied_controller.get_r_hand()
+	if(istype(controller.get_r_hand(), /obj/item/weapon/covenant/energy_sword))
+		return controller.get_r_hand()
 
-	if(istype(tied_controller.get_s_store(), /obj/item/weapon/covenant/energy_sword))
-		return tied_controller.get_s_store()
+	if(istype(controller.get_s_store(), /obj/item/weapon/covenant/energy_sword))
+		return controller.get_s_store()
 
-	if(istype(tied_controller.get_belt(), /obj/item/storage))
-		return locate(/obj/item/weapon/covenant/energy_sword) in tied_controller.get_belt()
+	if(istype(controller.get_belt(), /obj/item/storage))
+		return locate(/obj/item/weapon/covenant/energy_sword) in controller.get_belt()
 
 	if(halo_sangheili_melee_committed)
 		halo_sangheili_clear_melee_commit()
@@ -433,7 +474,8 @@
 	if(!primary_weapon)
 		return TRUE
 
-	if(!tied_controller.can_ai_use_weapon(primary_weapon))
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller || !controller.can_ai_use_weapon(primary_weapon))
 		return TRUE
 
 	if(halo_covenant_weapon_is_cooling(primary_weapon))
@@ -459,7 +501,8 @@
 		halo_cached_ranged_fallback_available = FALSE
 		return FALSE
 
-	if(!tied_controller.can_ai_use_weapon(fallback_weapon))
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller || !controller.can_ai_use_weapon(fallback_weapon))
 		halo_cached_ranged_fallback_time = world.time
 		halo_cached_ranged_fallback_available = FALSE
 		return FALSE
@@ -498,7 +541,10 @@
 	if(!halo_sangheili_find_sword())
 		return FALSE
 
-	var/distance_to_threat = tied_controller.get_distance_to(threat)
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		return FALSE
+	var/distance_to_threat = controller.get_distance_to(threat)
 	if(distance_to_threat > halo_sangheili_sword_charge_range)
 		return FALSE
 
@@ -541,7 +587,8 @@
 	if(!has_valid_tied_human() || !threat)
 		return FALSE
 
-	return tied_controller.get_distance_to(threat) <= halo_sangheili_unarmed_commit_range
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	return controller && (controller.get_distance_to(threat) <= halo_sangheili_unarmed_commit_range)
 
 /datum/human_ai_brain/proc/on_halo_sangheili_sword_dropped()
 	SIGNAL_HANDLER
@@ -569,13 +616,15 @@
 	cancel_ongoing_actions_by_type(halo_sangheili_get_commit_action_blacklist())
 
 /datum/human_ai_brain/proc/halo_sangheili_owns_item(obj/item/item)
-	return tied_controller?.is_item_equipped_or_in_direct_storage(item)
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	return controller?.is_item_equipped_or_in_direct_storage(item)
 
 /datum/human_ai_brain/proc/halo_sangheili_begin_melee_commit(obj/item/weapon/covenant/energy_sword/sword)
 	if(halo_sangheili_melee_committed)
 		return TRUE
 
-	if(!has_valid_tied_human() || !sword || !tied_controller.is_item_equipped_or_held(sword))
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!has_valid_tied_human() || !sword || !controller?.is_item_equipped_or_held(sword))
 		return FALSE
 
 	halo_sangheili_melee_committed = TRUE
@@ -659,22 +708,26 @@
 	return sword
 
 /datum/human_ai_brain/proc/halo_sangheili_try_store_sword(obj/item/weapon/covenant/energy_sword/sword, storage_loc)
-	if(!has_valid_tied_human() || !sword || !tied_controller.is_item_equipped_or_held(sword))
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!has_valid_tied_human() || !sword || !controller?.is_item_equipped_or_held(sword))
 		return FALSE
 
 	switch(storage_loc)
 		if("belt")
-			if(istype(tied_controller.get_belt(), /obj/item/storage))
-				var/obj/item/storage/belt_storage = tied_controller.get_belt()
-				return tied_controller.attempt_item_insertion(belt_storage, sword)
+			if(istype(controller.get_belt(), /obj/item/storage))
+				var/obj/item/storage/belt_storage = controller.get_belt()
+				return controller.attempt_item_insertion(belt_storage, sword)
 		if("suit_slot")
-			if(!tied_controller.get_s_store())
-				return tied_controller.equip_to_slot_if_possible(sword, WEAR_J_STORE, TRUE)
+			if(!controller.get_s_store())
+				return controller.equip_to_slot_if_possible(sword, WEAR_J_STORE, TRUE)
 
 	return FALSE
 
 /datum/human_ai_brain/proc/halo_sangheili_draw_sword()
 	if(!has_valid_tied_human())
+		return null
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
 		return null
 
 	var/obj/item/weapon/covenant/energy_sword/sword = halo_sangheili_find_sword()
@@ -683,41 +736,41 @@
 
 	var/storage_loc = halo_sangheili_sword_storage_loc
 
-	if(sword == tied_controller.get_l_hand() || sword == tied_controller.get_r_hand())
-		if(tied_controller.get_inactive_hand() == sword)
-			tied_controller.swap_hand()
+	if(sword == controller.get_l_hand() || sword == controller.get_r_hand())
+		if(controller.get_inactive_hand() == sword)
+			controller.swap_hand()
 		halo_sangheili_track_drawn_sword(sword, storage_loc)
 		halo_sangheili_begin_melee_commit(sword)
 		if(!sword.activated && !sword.nonfunctional)
-			tied_controller.halo_set_sword_activation_state(sword, TRUE)
+			controller.halo_set_sword_activation_state(sword, TRUE)
 		ensure_primary_hand(sword)
 		return sword
 
 	if(!halo_covenant_clear_hands())
 		return null
 
-	if(sword == tied_controller.get_s_store())
+	if(sword == controller.get_s_store())
 		storage_loc = "suit_slot"
-		tied_controller.u_equip(sword)
-	else if(sword.loc == tied_controller.get_belt())
+		controller.u_equip(sword)
+	else if(sword.loc == controller.get_belt())
 		storage_loc = "belt"
-		var/obj/item/storage/belt_storage = tied_controller.get_belt()
-		tied_controller.remove_from_storage(belt_storage, sword)
+		var/obj/item/storage/belt_storage = controller.get_belt()
+		controller.remove_from_storage(belt_storage, sword)
 	else if(istype(sword.loc, /obj/item/storage))
 		var/obj/item/storage/storage = sword.loc
-		tied_controller.remove_from_storage(storage, sword)
+		controller.remove_from_storage(storage, sword)
 
-	if(!tied_controller.is_item_equipped_or_held(sword))
+	if(!controller.is_item_equipped_or_held(sword))
 		return null
 
-	if(!tied_controller.put_in_hands(sword, FALSE))
+	if(!controller.put_in_hands(sword, FALSE))
 		return null
 
 	halo_sangheili_track_drawn_sword(sword, storage_loc)
 	halo_sangheili_begin_melee_commit(sword)
 
 	if(!sword.activated && !sword.nonfunctional)
-		tied_controller.halo_set_sword_activation_state(sword, TRUE)
+		controller.halo_set_sword_activation_state(sword, TRUE)
 	ensure_primary_hand(sword)
 	return sword
 
@@ -730,10 +783,15 @@
 	if(!force && halo_sangheili_should_preserve_drawn_sword())
 		return FALSE
 
-	if(sword.activated)
-		tied_controller.halo_set_sword_activation_state(sword, FALSE)
+	var/datum/human_tied_controller/controller = halo_get_controller()
+	if(!controller)
+		on_halo_sangheili_sword_dropped()
+		return TRUE
 
-	if(!tied_controller.is_item_equipped_or_held(sword))
+	if(sword.activated)
+		controller.halo_set_sword_activation_state(sword, FALSE)
+
+	if(!controller.is_item_equipped_or_held(sword))
 		on_halo_sangheili_sword_dropped()
 		return TRUE
 

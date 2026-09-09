@@ -12,7 +12,7 @@
 /datum/human_ai_firearm_context/New(obj/item/weapon/gun/new_firearm, datum/human_ai_brain/new_ai, atom/movable/new_current_target = null, turf/new_target_turf = null, obj/item/ammo_magazine/new_mag = null, obj/item/new_reload_item = null)
 	firearm = new_firearm
 	AI = new_ai
-	controller = AI?.tied_controller
+	controller = AI?.get_tied_controller()
 	current_target = new_current_target
 	target_turf = new_target_turf
 	mag = new_mag
