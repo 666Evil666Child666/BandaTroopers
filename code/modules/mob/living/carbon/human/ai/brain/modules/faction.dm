@@ -66,6 +66,11 @@
 			if(faction in neutral_factions)
 				on_neutral_faction_betray(faction)
 
+/datum/human_ai_module/faction/on_ai_event(datum/human_ai_event/event)
+	if(event.event_type == HUMAN_AI_EVENT_PROJECTILE_THREAT)
+		var/obj/projectile/bullet = event.data?["bullet"]
+		on_projectile_threat(bullet, event.data?["from_direct_hit"])
+
 /datum/human_ai_module/faction/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
 	if(!bullet?.firer)
 		return

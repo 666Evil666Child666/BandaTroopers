@@ -22,22 +22,13 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_ai_module/orders/orders
 	var/datum/human_ai_module/profile/profile
 	var/datum/human_ai_module/emplacement/emplacement
+	var/datum/human_ai_module/admin/admin
 
-	var/list/datum/human_ai_module/reset_modules_before_wake_clear
-	var/list/datum/human_ai_module/reset_modules_after_wake_clear
-	var/list/datum/human_ai_module/suspend_modules_before_wake_clear
-	var/list/datum/human_ai_module/suspend_modules_after_wake_clear
-	var/list/datum/human_ai_module/resume_modules
 	var/list/datum/human_ai_module/process_modules_before_posture
 	var/list/datum/human_ai_module/process_modules_after_posture
-	var/list/datum/human_ai_module/target_change_modules
-	var/list/datum/human_ai_module/projectile_threat_modules
-	var/list/datum/human_ai_module/combat_entered_modules
-	var/list/datum/human_ai_module/combat_exit_started_modules
-	var/list/datum/human_ai_module/combat_exit_finished_modules
-	var/list/datum/human_ai_module/combat_exit_force_clear_modules
 	var/list/datum/human_ai_module/target_vision_modules
 	var/list/datum/human_ai_module/extension_modules
+	var/list/ai_event_subscribers
 
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
 	var/last_process_tick = -1 // SS220 EDIT: prevent signal-driven wake rethinks from re-entering the scheduler in the same tick
@@ -47,37 +38,27 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/New(mob/living/carbon/human/new_human)
 	. = ..()
 	tied_controller = new(src, new_human)
+	var/datum/human_tied_controller/controller = get_tied_controller()
 	module_config = create_module_config(new_human?.assigned_equipment_preset?.human_ai_module_config_type)
 	module_config.setup_brain(src, new_human)
 	setup_lifecycle_modules()
-	tied_controller.register_signal_for(src, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
-	tied_controller.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: HALO death guard should tear down AI and force corpses prone immediately
-	tied_controller.register_signal_for(src, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
-	tied_controller.register_signal_for(src, COMSIG_HUMAN_HANDCUFFED, PROC_REF(on_handcuffed))
-	tied_controller.register_signal_for(src, COMSIG_HUMAN_GET_AI_BRAIN, PROC_REF(get_ai_brain))
-	tied_controller.register_signal_for(src, COMSIG_HUMAN_SET_SPECIES, PROC_REF(on_species_change))
-	tied_controller.register_signal_for(src, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(on_body_position_change)) // SS220 EDIT: standing back up should wake shared human AI immediately
+	controller.register_signal_for(src, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
+	controller.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: HALO death guard should tear down AI and force corpses prone immediately
+	controller.register_signal_for(src, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
+	controller.register_signal_for(src, COMSIG_HUMAN_HANDCUFFED, PROC_REF(on_handcuffed))
+	controller.register_signal_for(src, COMSIG_HUMAN_GET_AI_BRAIN, PROC_REF(get_ai_brain))
+	controller.register_signal_for(src, COMSIG_HUMAN_SET_SPECIES, PROC_REF(on_species_change))
+	controller.register_signal_for(src, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(on_body_position_change)) // SS220 EDIT: standing back up should wake shared human AI immediately
 	GLOB.human_ai_brains += src
-	inventory?.appraise_inventory()
-	tied_controller.set_safe_intent()
+	emit_ai_event(HUMAN_AI_EVENT_INITIALIZED)
 
 /datum/human_ai_brain/Destroy(force, ...)
 	GLOB.human_ai_brains -= src
 	shutdown_runtime()
-	reset_modules_before_wake_clear = null
-	reset_modules_after_wake_clear = null
-	suspend_modules_before_wake_clear = null
-	suspend_modules_after_wake_clear = null
-	resume_modules = null
 	process_modules_before_posture = null
 	process_modules_after_posture = null
-	target_change_modules = null
-	projectile_threat_modules = null
-	combat_entered_modules = null
-	combat_exit_started_modules = null
-	combat_exit_finished_modules = null
-	combat_exit_force_clear_modules = null
 	target_vision_modules = null
+	ai_event_subscribers = null
 	module_config?.teardown_brain_modules(src)
 	QDEL_NULL(module_config)
 	QDEL_NULL(tied_controller)
@@ -104,11 +85,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	return module
 
 /datum/human_ai_brain/proc/reset_ai()
-	for(var/datum/human_ai_module/module as anything in reset_modules_before_wake_clear)
-		module.reset_module()
+	emit_ai_event(HUMAN_AI_EVENT_RESET_BEFORE_WAKE_CLEAR)
 	wake_rethink_queued_at = -1 // SS220 EDIT: reset must always cancel deferred wake-up recovery before owner teardown finishes
-	for(var/datum/human_ai_module/module as anything in reset_modules_after_wake_clear)
-		module.reset_module()
+	emit_ai_event(HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR)
 
 /datum/human_ai_brain/proc/shutdown_runtime()
 	if(runtime_shutdown_started)
@@ -169,15 +148,17 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		if(HUMAN_AI_LIFECYCLE_INCAPACITATED)
 			suspend_for_incapacitated()
 
-/datum/human_ai_brain/proc/suspend_runtime(clear_inventory = FALSE)
-	for(var/datum/human_ai_module/module as anything in suspend_modules_before_wake_clear)
-		module.suspend_module(clear_inventory)
+/datum/human_ai_brain/proc/suspend_runtime(new_lifecycle_state, clear_inventory = FALSE)
+	var/list/lifecycle_context = list(
+		"new_lifecycle_state" = new_lifecycle_state,
+		"clear_inventory" = clear_inventory,
+	)
+	emit_ai_event(HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_BEFORE_WAKE_CLEAR, lifecycle_context)
 	wake_rethink_queued_at = -1
-	for(var/datum/human_ai_module/module as anything in suspend_modules_after_wake_clear)
-		module.suspend_module(clear_inventory)
+	emit_ai_event(HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_AFTER_WAKE_CLEAR, lifecycle_context)
 
 /datum/human_ai_brain/proc/suspend_for_death()
-	suspend_runtime()
+	suspend_runtime(HUMAN_AI_LIFECYCLE_DEAD)
 	var/datum/human_tied_controller/controller = get_tied_controller()
 	if(!controller?.has_valid_tied_human() || !controller.is_dead())
 		return
@@ -188,20 +169,17 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/proc/suspend_for_player_control()
 	if(lifecycle_state == HUMAN_AI_LIFECYCLE_PLAYER_CONTROLLED)
 		return
-	suspend_runtime()
+	suspend_runtime(HUMAN_AI_LIFECYCLE_PLAYER_CONTROLLED)
 
 /datum/human_ai_brain/proc/suspend_for_incapacitated()
-	suspend_runtime()
+	suspend_runtime(HUMAN_AI_LIFECYCLE_INCAPACITATED)
 
 /datum/human_ai_brain/proc/suspend_for_hardcrit()
-	suspend_runtime()
+	suspend_runtime(HUMAN_AI_LIFECYCLE_HARDCRIT)
 	var/datum/human_tied_controller/controller = get_tied_controller()
 	if(!controller?.has_valid_tied_human())
 		return
 	controller.force_prone()
-	if(inventory)
-		inventory.clear_pickup_queue()
-		inventory.invalidate_nearby_item_search()
 
 /datum/human_ai_brain/proc/resume_from_lifecycle_suspension(previous_lifecycle_state)
 	var/datum/human_tied_controller/controller = get_tied_controller()
@@ -211,8 +189,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(previous_lifecycle_state == HUMAN_AI_LIFECYCLE_INVALID)
 		return FALSE
 
-	for(var/datum/human_ai_module/module as anything in resume_modules)
-		module.resume_module(previous_lifecycle_state)
+	emit_ai_event(HUMAN_AI_EVENT_LIFECYCLE_RESUMED, list(
+		"previous_lifecycle_state" = previous_lifecycle_state,
+	))
 	brain_resume_modular_runtime()
 	return TRUE
 
@@ -228,15 +207,19 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(process_active_module_list(process_modules_before_posture, delta_time))
 		return
 
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	if(!controller)
+		return
+
 	// SS220 EDIT - START: hardcrit AIs should keep resting until the crit loop and knockdown pressure are truly gone
-	if((tied_controller.get_stat() == CONSCIOUS) && tied_controller.is_resting() && !tied_controller.has_trait(TRAIT_FLOORED))
+	if((controller.get_stat() == CONSCIOUS) && controller.is_resting() && !controller.has_trait(TRAIT_FLOORED))
 		// SS220 EDIT - START: final stand-up gate must stay exactly aligned with the existing wake rethink eligibility rules
-		tied_controller.try_stand_up()
+		controller.try_stand_up()
 		// SS220 EDIT - END
 	// SS220 EDIT - END
 
-	if(tied_controller.is_buckled())
-		tied_controller.clear_buckle_state() // AI never buckle themselves into chairs at the moment, change if this becomes the case
+	if(controller.is_buckled())
+		controller.clear_buckle_state() // AI never buckle themselves into chairs at the moment, change if this becomes the case
 
 	if(process_active_module_list(process_modules_after_posture, delta_time))
 		return
@@ -248,53 +231,44 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	return FALSE
 
 /datum/human_ai_brain/proc/on_target_changed(atom/movable/old_target, atom/movable/new_target)
-	if(!target_change_modules)
-		return
-
-	for(var/datum/human_ai_module/module as anything in target_change_modules)
-		module.on_target_changed(old_target, new_target)
+	emit_ai_event(HUMAN_AI_EVENT_TARGET_CHANGED, list(
+		"old_target" = old_target,
+		"new_target" = new_target,
+	))
 
 /datum/human_ai_brain/proc/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
-	if(!projectile_threat_modules)
-		return
-
-	for(var/datum/human_ai_module/module as anything in projectile_threat_modules)
-		module.on_projectile_threat(bullet, from_direct_hit)
+	emit_ai_event(HUMAN_AI_EVENT_PROJECTILE_THREAT, list(
+		"bullet" = bullet,
+		"from_direct_hit" = from_direct_hit,
+	))
 
 /datum/human_ai_brain/proc/on_combat_entered(was_in_combat)
-	if(!combat_entered_modules)
-		return
-
-	for(var/datum/human_ai_module/module as anything in combat_entered_modules)
-		module.on_combat_entered(was_in_combat)
+	emit_ai_event(HUMAN_AI_EVENT_COMBAT_ENTERED, list(
+		"was_in_combat" = was_in_combat,
+	))
 
 /datum/human_ai_brain/proc/on_combat_exit_started()
-	if(!combat_exit_started_modules)
-		return
-
-	tied_controller.set_safe_intent()
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	controller?.set_safe_intent()
 	var/should_holster_primary = !emplacement?.has_sniper_home()
-	for(var/datum/human_ai_module/module as anything in combat_exit_started_modules)
-		module.on_combat_exit_started(should_holster_primary)
+	emit_ai_event(HUMAN_AI_EVENT_COMBAT_EXIT_STARTED, list(
+		"should_holster_primary" = should_holster_primary,
+	))
 
 /datum/human_ai_brain/proc/on_combat_exit_finished()
-	if(!combat_exit_finished_modules)
-		return
-
 	var/list/combat_exit_context = list("clear_target_turf" = FALSE)
-	for(var/datum/human_ai_module/module as anything in combat_exit_finished_modules)
-		module.on_combat_exit_finished(combat_exit_context)
+	emit_ai_event(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, list(
+		"combat_exit_context" = combat_exit_context,
+	))
 
 /datum/human_ai_brain/proc/on_combat_exit_force_cleared()
-	if(!combat_exit_force_clear_modules)
-		return
-
 	var/list/combat_exit_context = list(
 		"clear_target_turf" = TRUE,
 		"force_clear" = TRUE,
 	)
-	for(var/datum/human_ai_module/module as anything in combat_exit_force_clear_modules)
-		module.on_combat_exit_finished(combat_exit_context)
+	emit_ai_event(HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED, list(
+		"combat_exit_context" = combat_exit_context,
+	))
 
 /datum/human_ai_brain/proc/can_ignore_target_darkness()
 	if(!target_vision_modules)
@@ -311,7 +285,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	perception?.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
 	shutdown_runtime()
 	wake_rethink_queued_at = -1 // SS220 EDIT: owner delete must not leave a queued wake rethink pointing at a null tied human
-	tied_controller?.set_tied_human(null)
+	get_tied_controller()?.set_tied_human(null)
 
 /datum/human_ai_brain/proc/on_human_death(datum/source)
 	SIGNAL_HANDLER
@@ -320,24 +294,23 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/on_species_change(datum/source, new_species)
 	SIGNAL_HANDLER
-	if(!inventory)
-		return
-	if((new_species == SPECIES_YAUTJA) || (new_species == SPECIES_ZOMBIE))
-		inventory.set_looting_disabled(TRUE)
-	else
-		inventory.set_looting_disabled(FALSE)
+	emit_ai_event(HUMAN_AI_EVENT_SPECIES_CHANGED, list(
+		"new_species" = new_species,
+	))
 
 /datum/human_ai_brain/proc/on_body_position_change(datum/source, new_position, old_position)
 	SIGNAL_HANDLER
 	if((new_position != STANDING_UP) || (old_position != LYING_DOWN))
 		return
 
-	if(!tied_controller.can_stand_up())
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	if(!controller?.can_stand_up())
 		return
 
-	inventory?.invalidate_nearby_item_search() // SS220 EDIT: wake-up should immediately invalidate idle pickup/grenade scan throttles
-	if(targeting?.has_current_target())
-		targeting.update_target_pos() // SS220 EDIT: refresh transient combat targeting state after knockdown recovery
+	emit_ai_event(HUMAN_AI_EVENT_BODY_POSITION_CHANGED, list(
+		"new_position" = new_position,
+		"old_position" = old_position,
+	))
 
 	if((last_process_tick == world.time) || (wake_rethink_queued_at == world.time))
 		return
@@ -350,7 +323,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		return
 
 	wake_rethink_queued_at = -1
-	if(!tied_controller.can_stand_up())
+	var/datum/human_tied_controller/controller = get_tied_controller()
+	if(!controller?.can_stand_up())
 		return
 
 	if((last_process_tick == queued_tick) || (last_process_tick == world.time))
@@ -364,9 +338,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!has_valid_tied_human())
 		return
 
-	perception?.setup_detection_radius()
-
-	if(cover && inventory && cover.is_in_cover() && (tied_controller.get_distance_to(cover.get_current_cover()) > inventory.get_gun_data()?.minimum_range))
-		cover.end_cover()
-
-	targeting?.update_target_pos()
+	emit_ai_event(HUMAN_AI_EVENT_MOVED, list(
+		"oldloc" = oldloc,
+		"direction" = direction,
+		"forced" = forced,
+	))

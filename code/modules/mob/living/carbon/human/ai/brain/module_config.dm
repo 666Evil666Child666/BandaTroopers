@@ -48,6 +48,7 @@
 	brain.orders = null
 	brain.profile = null
 	brain.emplacement = null
+	brain.admin = null
 	brain.extension_modules = null
 
 // ==================== Process lists ====================
@@ -89,23 +90,28 @@
 	brain.inventory?.register_signals()
 
 /datum/human_ai_module_config/default/configure_lifecycle_module_lists(datum/human_ai_brain/brain)
-	brain.reset_modules_before_wake_clear = build_module_list(brain, list(/datum/human_ai_module/health, /datum/human_ai_module/navigation, /datum/human_ai_module/cover, /datum/human_ai_module/perception))
-	brain.reset_modules_after_wake_clear = build_module_list(brain, list(/datum/human_ai_module/combat, /datum/human_ai_module/grenade, /datum/human_ai_module/targeting, /datum/human_ai_module/inventory, /datum/human_ai_module/action_runtime))
-	brain.suspend_modules_before_wake_clear = build_module_list(brain, list(/datum/human_ai_module/navigation, /datum/human_ai_module/cover, /datum/human_ai_module/perception))
-	brain.suspend_modules_after_wake_clear = build_module_list(brain, list(/datum/human_ai_module/combat, /datum/human_ai_module/grenade, /datum/human_ai_module/targeting, /datum/human_ai_module/health, /datum/human_ai_module/action_runtime, /datum/human_ai_module/inventory))
-	brain.resume_modules = build_module_list(brain, list(/datum/human_ai_module/inventory, /datum/human_ai_module/guns))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_RESET_BEFORE_WAKE_CLEAR, list(/datum/human_ai_module/health, /datum/human_ai_module/navigation, /datum/human_ai_module/cover, /datum/human_ai_module/perception))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR, list(/datum/human_ai_module/combat, /datum/human_ai_module/grenade, /datum/human_ai_module/targeting, /datum/human_ai_module/inventory, /datum/human_ai_module/action_runtime))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_BEFORE_WAKE_CLEAR, list(/datum/human_ai_module/navigation, /datum/human_ai_module/cover, /datum/human_ai_module/perception))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_AFTER_WAKE_CLEAR, list(/datum/human_ai_module/combat, /datum/human_ai_module/grenade, /datum/human_ai_module/targeting, /datum/human_ai_module/health, /datum/human_ai_module/action_runtime, /datum/human_ai_module/inventory))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_LIFECYCLE_RESUMED, list(/datum/human_ai_module/inventory, /datum/human_ai_module/guns))
 
 /datum/human_ai_module_config/default/configure_process_module_lists(datum/human_ai_brain/brain)
 	brain.process_modules_before_posture = build_module_list(brain, list(/datum/human_ai_module/perception))
 	brain.process_modules_after_posture = build_module_list(brain, list(/datum/human_ai_module/targeting, /datum/human_ai_module/combat, /datum/human_ai_module/inventory, /datum/human_ai_module/action_runtime))
 
 /datum/human_ai_module_config/default/configure_event_module_lists(datum/human_ai_brain/brain)
-	brain.target_change_modules = build_module_list(brain, list(/datum/human_ai_module/inventory))
-	brain.projectile_threat_modules = build_module_list(brain, list(/datum/human_ai_module/combat, /datum/human_ai_module/faction, /datum/human_ai_module/targeting, /datum/human_ai_module/cover))
-	brain.combat_entered_modules = build_module_list(brain, list(/datum/human_ai_module/squad, /datum/human_ai_module/communication, /datum/human_ai_module/cover))
-	brain.combat_exit_started_modules = build_module_list(brain, list(/datum/human_ai_module/targeting, /datum/human_ai_module/communication, /datum/human_ai_module/inventory))
-	brain.combat_exit_finished_modules = build_module_list(brain, list(/datum/human_ai_module/cover, /datum/human_ai_module/targeting))
-	brain.combat_exit_force_clear_modules = build_module_list(brain, list(/datum/human_ai_module/targeting, /datum/human_ai_module/cover))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_INITIALIZED, list(/datum/human_ai_module/inventory, /datum/human_ai_module/admin))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_TARGET_CHANGED, list(/datum/human_ai_module/inventory))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_PROJECTILE_THREAT, list(/datum/human_ai_module/combat, /datum/human_ai_module/faction, /datum/human_ai_module/targeting, /datum/human_ai_module/cover))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_COMBAT_ENTERED, list(/datum/human_ai_module/squad, /datum/human_ai_module/communication, /datum/human_ai_module/cover))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_COMBAT_EXIT_STARTED, list(/datum/human_ai_module/targeting, /datum/human_ai_module/communication, /datum/human_ai_module/inventory))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, list(/datum/human_ai_module/cover, /datum/human_ai_module/targeting))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED, list(/datum/human_ai_module/targeting, /datum/human_ai_module/cover))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_HANDCUFFED, list(/datum/human_ai_module/admin))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_SPECIES_CHANGED, list(/datum/human_ai_module/inventory))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_BODY_POSITION_CHANGED, list(/datum/human_ai_module/inventory, /datum/human_ai_module/targeting))
+	register_module_list_for_event(brain, HUMAN_AI_EVENT_MOVED, list(/datum/human_ai_module/perception, /datum/human_ai_module/cover, /datum/human_ai_module/targeting))
 
 /datum/human_ai_module_config/default/configure_query_module_lists(datum/human_ai_brain/brain)
 	brain.target_vision_modules = build_module_list(brain, list(/datum/human_ai_module/inventory))

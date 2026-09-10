@@ -31,6 +31,20 @@
 	if(!has_current_target())
 		set_target(get_target())
 
+/datum/human_ai_module/targeting/on_ai_event(datum/human_ai_event/event)
+	switch(event.event_type)
+		if(HUMAN_AI_EVENT_PROJECTILE_THREAT)
+			var/obj/projectile/bullet = event.data?["bullet"]
+			on_projectile_threat(bullet, event.data?["from_direct_hit"])
+		if(HUMAN_AI_EVENT_COMBAT_EXIT_STARTED)
+			on_combat_exit_started(event.data?["should_holster_primary"])
+		if(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED)
+			on_combat_exit_finished(event.data?["combat_exit_context"])
+		if(HUMAN_AI_EVENT_BODY_POSITION_CHANGED)
+			on_body_position_changed(event.data?["new_position"], event.data?["old_position"])
+		if(HUMAN_AI_EVENT_MOVED)
+			on_moved(event.data?["oldloc"], event.data?["direction"], event.data?["forced"])
+
 /datum/human_ai_module/targeting/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
@@ -57,6 +71,13 @@
 
 	if(combat_exit_context?["clear_target_turf"])
 		clear_target_turf()
+
+/datum/human_ai_module/targeting/on_body_position_changed(new_position, old_position)
+	if(has_current_target())
+		update_target_pos() // SS220 EDIT: refresh transient combat targeting state after knockdown recovery
+
+/datum/human_ai_module/targeting/on_moved(atom/oldloc, direction, forced)
+	update_target_pos()
 
 /datum/human_ai_module/targeting/proc/set_target(atom/movable/new_target)
 	lose_target()

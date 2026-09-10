@@ -22,6 +22,13 @@
 	if(!length(detection_turfs))
 		setup_detection_radius()
 
+/datum/human_ai_module/perception/on_ai_event(datum/human_ai_event/event)
+	if(event.event_type == HUMAN_AI_EVENT_MOVED)
+		on_moved(event.data?["oldloc"], event.data?["direction"], event.data?["forced"])
+
+/datum/human_ai_module/perception/on_moved(atom/oldloc, direction, forced)
+	setup_detection_radius()
+
 /datum/human_ai_module/perception/proc/suspend()
 	clear_detection_radius()
 

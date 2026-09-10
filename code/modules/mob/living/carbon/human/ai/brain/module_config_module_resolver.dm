@@ -19,6 +19,7 @@
 		/datum/human_ai_module/orders,
 		/datum/human_ai_module/profile,
 		/datum/human_ai_module/emplacement,
+		/datum/human_ai_module/admin,
 		/datum/human_ai_module/perception,
 		/datum/human_ai_module/inventory,
 	)
@@ -26,6 +27,7 @@
 /datum/human_ai_module_config/proc/get_core_module_types()
 	return list(
 		/datum/human_ai_module/action_runtime,
+		/datum/human_ai_module/admin,
 	)
 
 // ==================== Action-driven composition ====================

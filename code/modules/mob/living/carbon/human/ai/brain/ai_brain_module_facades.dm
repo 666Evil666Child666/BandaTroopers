@@ -336,8 +336,9 @@
 
 /datum/human_ai_brain/proc/drop_primary_weapon()
 	var/obj/item/weapon/gun/primary_weapon = inventory?.get_primary_weapon()
+	var/datum/human_tied_controller/controller = get_tied_controller()
 	if(primary_weapon)
-		tied_controller.drop_held_item(primary_weapon)
+		controller?.drop_held_item(primary_weapon)
 	inventory?.set_primary_weapon(null)
 
 /datum/human_ai_brain/proc/unholster_primary()

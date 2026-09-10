@@ -156,6 +156,13 @@
 		return
 	emit_ai_voiceline(pick(enter_combat_lines))
 
+/datum/human_ai_module/communication/on_ai_event(datum/human_ai_event/event)
+	switch(event.event_type)
+		if(HUMAN_AI_EVENT_COMBAT_ENTERED)
+			on_combat_entered(event.data?["was_in_combat"])
+		if(HUMAN_AI_EVENT_COMBAT_EXIT_STARTED)
+			on_combat_exit_started(event.data?["should_holster_primary"])
+
 /datum/human_ai_module/communication/on_combat_entered(was_in_combat)
 	if(was_in_combat)
 		return

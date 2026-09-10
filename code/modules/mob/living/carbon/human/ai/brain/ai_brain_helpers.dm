@@ -16,8 +16,4 @@
 /// Announces whenever an AI is handcuffed so that GMs can force someone in or take over themselves
 /datum/human_ai_brain/proc/on_handcuffed(datum/source)
 	SIGNAL_HANDLER
-
-	if(tied_controller.is_stat_at_least(DEAD) || tied_controller.can_player_takeover_block_ai())
-		return
-
-	tied_controller.message_admins_for_puppet("AI human [tied_controller.get_real_name()] has been handcuffed while alive or unconscious.")
+	emit_ai_event(HUMAN_AI_EVENT_HANDCUFFED)

@@ -28,6 +28,23 @@
 #define HUMAN_AI_LIFECYCLE_INCAPACITATED "incapacitated"
 #define HUMAN_AI_LIFECYCLE_ACTIVE "active"
 
+#define HUMAN_AI_EVENT_TARGET_CHANGED "target_changed"
+#define HUMAN_AI_EVENT_PROJECTILE_THREAT "projectile_threat"
+#define HUMAN_AI_EVENT_COMBAT_ENTERED "combat_entered"
+#define HUMAN_AI_EVENT_COMBAT_EXIT_STARTED "combat_exit_started"
+#define HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED "combat_exit_finished"
+#define HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED "combat_exit_force_cleared"
+#define HUMAN_AI_EVENT_RESET_BEFORE_WAKE_CLEAR "reset_before_wake_clear"
+#define HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR "reset_after_wake_clear"
+#define HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_BEFORE_WAKE_CLEAR "lifecycle_suspended_before_wake_clear"
+#define HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_AFTER_WAKE_CLEAR "lifecycle_suspended_after_wake_clear"
+#define HUMAN_AI_EVENT_LIFECYCLE_RESUMED "lifecycle_resumed"
+#define HUMAN_AI_EVENT_BODY_POSITION_CHANGED "body_position_changed"
+#define HUMAN_AI_EVENT_MOVED "moved"
+#define HUMAN_AI_EVENT_HANDCUFFED "handcuffed"
+#define HUMAN_AI_EVENT_SPECIES_CHANGED "species_changed"
+#define HUMAN_AI_EVENT_INITIALIZED "initialized"
+
 #define HUMAN_AI_MAX_PATHFINDING_RANGE 45
 
 GLOBAL_LIST_EMPTY(ai_humans)

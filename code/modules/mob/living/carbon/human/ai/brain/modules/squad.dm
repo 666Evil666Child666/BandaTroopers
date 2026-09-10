@@ -132,6 +132,10 @@
 		current_order.brains -= brain
 	current_order = null
 
+/datum/human_ai_module/squad/on_ai_event(datum/human_ai_event/event)
+	if(event.event_type == HUMAN_AI_EVENT_COMBAT_ENTERED)
+		on_combat_entered(event.data?["was_in_combat"])
+
 /datum/human_ai_module/squad/on_combat_entered(was_in_combat)
 	if(!squad_id)
 		return

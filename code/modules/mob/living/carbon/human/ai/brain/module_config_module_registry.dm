@@ -68,6 +68,9 @@
 		if(/datum/human_ai_module/emplacement)
 			module = new /datum/human_ai_module/emplacement(brain)
 			brain.emplacement = module
+		if(/datum/human_ai_module/admin)
+			module = new /datum/human_ai_module/admin(brain)
+			brain.admin = module
 		if(/datum/human_ai_module/perception)
 			module = new /datum/human_ai_module/perception(brain)
 			brain.perception = module
@@ -103,3 +106,7 @@
 			module_list += module
 
 	return module_list
+
+/datum/human_ai_module_config/proc/register_module_list_for_event(datum/human_ai_brain/brain, event_type, list/module_types)
+	for(var/datum/human_ai_module/module as anything in build_module_list(brain, module_types))
+		brain.register_ai_event_subscriber(event_type, module)

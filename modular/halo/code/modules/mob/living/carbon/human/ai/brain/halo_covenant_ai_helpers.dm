@@ -47,13 +47,20 @@
 	if(!halo_covenant_module)
 		return
 
-	reset_modules_after_wake_clear += halo_covenant_module
-	combat_exit_finished_modules += halo_covenant_module
-	combat_exit_force_clear_modules += halo_covenant_module
+	register_ai_event_subscriber(HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR, halo_covenant_module)
+	register_ai_event_subscriber(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, halo_covenant_module)
+	register_ai_event_subscriber(HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED, halo_covenant_module)
 
 /datum/human_ai_module/halo_covenant/reset_module()
 	brain.invalidate_halo_runtime_caches()
 	brain.halo_sangheili_clear_melee_commit(FALSE)
+
+/datum/human_ai_module/halo_covenant/on_ai_event(datum/human_ai_event/event)
+	switch(event.event_type)
+		if(HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR)
+			on_reset()
+		if(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED)
+			on_combat_exit_finished(event.data?["combat_exit_context"])
 
 /datum/human_ai_module/halo_covenant/on_combat_exit_finished(list/combat_exit_context)
 	if(brain.halo_sangheili_should_preserve_drawn_sword())

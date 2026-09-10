@@ -41,6 +41,18 @@
 /datum/human_ai_module/cover/suspend_module(clear_inventory = FALSE)
 	end_cover()
 
+/datum/human_ai_module/cover/on_ai_event(datum/human_ai_event/event)
+	switch(event.event_type)
+		if(HUMAN_AI_EVENT_PROJECTILE_THREAT)
+			var/obj/projectile/bullet = event.data?["bullet"]
+			on_projectile_threat(bullet, event.data?["from_direct_hit"])
+		if(HUMAN_AI_EVENT_COMBAT_ENTERED)
+			on_combat_entered(event.data?["was_in_combat"])
+		if(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED)
+			on_combat_exit_finished(event.data?["combat_exit_context"])
+		if(HUMAN_AI_EVENT_MOVED)
+			on_moved(event.data?["oldloc"], event.data?["direction"], event.data?["forced"])
+
 /datum/human_ai_module/cover/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
 	if(!from_direct_hit || !bullet?.firer)
 		return
@@ -67,6 +79,14 @@
 	var/atom/movable/current_target = brain.get_current_target()
 	if(isxeno(current_target))
 		try_cover(controller.get_angle_from(current_target), current_target)
+
+/datum/human_ai_module/cover/on_moved(atom/oldloc, direction, forced)
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
+
+	if(is_in_cover() && brain?.inventory && (controller.get_distance_to(get_current_cover()) > brain.inventory.get_gun_data()?.minimum_range))
+		end_cover()
 
 /datum/human_ai_module/cover/proc/react_to_incoming_fire(angle, atom/firer)
 	if(!brain?.has_valid_tied_human())
