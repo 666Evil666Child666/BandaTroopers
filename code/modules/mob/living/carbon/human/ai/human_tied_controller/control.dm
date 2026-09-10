@@ -65,12 +65,6 @@
 /datum/human_tied_controller/proc/can_release_puppet()
 	return has_tied_human()
 
-// Behavior/migration helpers
-
-// Helper for reconstructing the old broad control gate during migration.
-/datum/human_tied_controller/proc/can_ai_control()
-	return can_mutate_puppet()
-
 // Puppet read primitives
 
 /datum/human_tied_controller/proc/is_dead()
@@ -178,6 +172,12 @@
 /datum/human_tied_controller/proc/is_on_fire()
 	return !!tied_human?.on_fire
 
+/datum/human_tied_controller/proc/is_bleeding()
+	return can_read_puppet() && tied_human.is_bleeding()
+
+/datum/human_tied_controller/proc/has_broken_limbs()
+	return can_read_puppet() && tied_human.has_broken_limbs()
+
 // Puppet mutation primitives
 
 /datum/human_tied_controller/proc/set_faction(new_faction)
@@ -190,3 +190,28 @@
 	if(!can_read_puppet() || !tied_human.maxHealth)
 		return 0
 	return tied_human.health / tied_human.maxHealth
+
+/datum/human_tied_controller/proc/get_brute_loss()
+	if(!can_read_puppet())
+		return 0
+	return tied_human.getBruteLoss()
+
+/datum/human_tied_controller/proc/get_fire_loss()
+	if(!can_read_puppet())
+		return 0
+	return tied_human.getFireLoss()
+
+/datum/human_tied_controller/proc/get_tox_loss()
+	if(!can_read_puppet())
+		return 0
+	return tied_human.getToxLoss()
+
+/datum/human_tied_controller/proc/get_oxy_loss()
+	if(!can_read_puppet())
+		return 0
+	return tied_human.getOxyLoss()
+
+/datum/human_tied_controller/proc/get_pain_percentage()
+	if(!can_read_puppet())
+		return 0
+	return tied_human.pain.get_pain_percentage()

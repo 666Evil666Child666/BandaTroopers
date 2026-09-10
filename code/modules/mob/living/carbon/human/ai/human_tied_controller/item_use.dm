@@ -101,15 +101,3 @@
 		return grenade
 
 	return null
-
-// Raw self-healing primitives
-
-/datum/human_tied_controller/proc/healing_start_check_self()
-	if(!can_read_puppet() || !brain)
-		return FALSE
-	return brain.healing_start_check(tied_human)
-
-/datum/human_tied_controller/proc/start_healing_self()
-	if(!can_directly_control() || !brain)
-		return FALSE
-	return brain.start_healing(tied_human)

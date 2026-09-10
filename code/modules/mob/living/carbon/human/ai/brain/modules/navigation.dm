@@ -206,7 +206,7 @@
 			return TRUE
 		following_path = TRUE
 
-	if(!controller.try_apply_move_delay())
+	if(!controller.can_move() || controller.has_move_delay() || !controller.apply_move_delay())
 		return TRUE
 	var/turf/start_turf = controller.get_current_turf()
 	var/list/path_before_move = current_path

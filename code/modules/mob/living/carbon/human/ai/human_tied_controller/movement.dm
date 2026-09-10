@@ -36,13 +36,6 @@
 	set_move_delay_until(world.time + get_current_move_delay() + consume_next_move_slowdown())
 	return TRUE
 
-// Behavior/migration helpers
-
-/datum/human_tied_controller/proc/try_apply_move_delay()
-	if(!can_move() || has_move_delay())
-		return FALSE
-	return apply_move_delay()
-
 // Raw movement primitives
 
 /datum/human_tied_controller/proc/get_move_direction(turf/target_turf)
@@ -83,7 +76,10 @@
 /datum/human_tied_controller/proc/get_distance_to_controller(datum/human_tied_controller/other_controller)
 	if(!can_read_puppet() || !other_controller?.can_read_puppet())
 		return INFINITY
-	return get_dist(tied_human, other_controller.tied_human)
+	var/turf/other_turf = other_controller.get_current_turf()
+	if(!other_turf)
+		return INFINITY
+	return get_dist(tied_human, other_turf)
 
 /datum/human_tied_controller/proc/get_distance_from(atom/source)
 	if(!can_read_puppet() || !source)
@@ -170,26 +166,6 @@
 		return FALSE
 	tied_human.forceMove(target_turf)
 	return TRUE
-
-// Behavior helper that combines movement checks, blockers, delay, and raw Move().
-/datum/human_tied_controller/proc/try_move(turf/target_turf, direction, interact_with_blockers = TRUE)
-	if(!can_move() || !target_turf || has_move_delay())
-		return FALSE
-	if(isnull(direction))
-		direction = get_move_direction(target_turf)
-	if(get_dist(target_turf, tied_human) == 1)
-		var/list/blockers = get_move_blockers(target_turf)
-		if(isnull(blockers))
-			return FALSE
-		for(var/a in blockers)
-			var/atom/obstacle = a
-			if(get_obstacle_cost(obstacle, direction, target_turf) == INFINITY)
-				return FALSE
-		if(interact_with_blockers)
-			act_on_blockers(blockers)
-	if(!apply_move_delay())
-		return FALSE
-	return Move(target_turf, direction)
 
 // Raw facing primitives
 

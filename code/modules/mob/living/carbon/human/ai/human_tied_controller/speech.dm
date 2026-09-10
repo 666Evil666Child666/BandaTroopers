@@ -9,5 +9,8 @@
 /datum/human_tied_controller/proc/turn_to_conversation_partner(datum/human_tied_controller/partner)
 	if(!can_directly_control() || !partner?.can_read_puppet())
 		return FALSE
-	tied_human.setDir(get_cardinal_dir(tied_human, partner.tied_human))
+	var/turf/partner_turf = partner.get_current_turf()
+	if(!partner_turf)
+		return FALSE
+	tied_human.setDir(get_cardinal_dir(tied_human, partner_turf))
 	return TRUE

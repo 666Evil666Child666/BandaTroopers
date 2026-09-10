@@ -156,6 +156,9 @@
 /datum/human_ai_module/health/proc/healing_start_check(mob/living/carbon/human/target)
 	return ((target.health / target.maxHealth) <= healing_start_threshold) || target.is_bleeding() || target.has_broken_limbs()
 
+/datum/human_ai_module/health/proc/healing_start_check_controller(datum/human_tied_controller/controller)
+	return controller && ((controller.get_health_ratio() <= healing_start_threshold) || controller.is_bleeding() || controller.has_broken_limbs())
+
 /datum/human_ai_module/health/proc/increment_treatment_stacks()
 	cant_be_treated_stacks++
 	addtimer(CALLBACK(src, PROC_REF(clear_treatment_stacks)), 5 SECONDS, TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
@@ -178,6 +181,17 @@
 
 /datum/human_ai_module/health/proc/get_treatment_check(mob/living/carbon/human/target)
 	return CALLBACK(src, PROC_REF(can_continue_treatment), target, treatment_generation)
+
+/datum/human_ai_module/health/proc/can_continue_self_treatment(datum/human_tied_controller/controller, treatment_id = null)
+	if(!isnull(treatment_id) && treatment_id != treatment_generation)
+		return FALSE
+	if(QDELETED(src) || !brain?.can_continue_runtime_work() || !controller?.can_read_puppet() || controller.is_dead())
+		cancel_treatment()
+		return FALSE
+	return TRUE
+
+/datum/human_ai_module/health/proc/get_self_treatment_check(datum/human_tied_controller/controller)
+	return CALLBACK(src, PROC_REF(can_continue_self_treatment), controller, treatment_generation)
 
 /datum/human_ai_module/health/proc/start_healing(mob/living/carbon/human/target)
 	set waitfor = FALSE
@@ -222,6 +236,49 @@
 		healing_someone = FALSE
 	qdel(treatment_check)
 
+/datum/human_ai_module/health/proc/start_healing_controller(datum/human_tied_controller/controller)
+	set waitfor = FALSE
+	if(!can_continue_self_treatment(controller) || healing_someone)
+		return FALSE
+
+	var/treatment_id = ++treatment_generation
+	var/datum/callback/treatment_check = get_self_treatment_check(controller)
+	healing_someone = TRUE
+	. = FALSE
+	// Keep self-treatment priority aligned with normal treatment.
+	for(var/stage in 1 to 7)
+		if(!treatment_check.Invoke())
+			break
+		var/list/item_types
+		switch(stage)
+			if(1)
+				if(controller.get_brute_loss() > damage_problem_threshold)
+					item_types = brute_heal_items
+			if(2)
+				if(controller.is_bleeding())
+					item_types = bleed_heal_items
+			if(3)
+				if(controller.has_broken_limbs())
+					item_types = bonebreak_heal_items
+			if(4)
+				if(controller.get_fire_loss() > damage_problem_threshold)
+					item_types = burn_heal_items
+			if(5)
+				if(controller.get_pain_percentage() > pain_percentage_threshold)
+					item_types = painkiller_items
+			if(6)
+				if(controller.get_tox_loss() > damage_problem_threshold)
+					item_types = tox_heal_items
+			if(7)
+				if(controller.get_oxy_loss() > damage_problem_threshold)
+					item_types = oxy_heal_items
+		if(item_types && use_self_treatment_item(controller, item_types, treatment_check))
+			. = TRUE
+
+	if(treatment_id == treatment_generation)
+		healing_someone = FALSE
+	qdel(treatment_check)
+
 /datum/human_ai_module/health/proc/use_treatment_item(mob/living/carbon/human/target, list/item_types, datum/callback/treatment_check)
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
@@ -238,6 +295,45 @@
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return FALSE
 	controller.ai_use(item, target)
+	if(!treatment_check.Invoke() || QDELETED(item))
+		return TRUE
+
+	var/storage_slot = brain.storage_has_room(item)
+	if(storage_slot)
+		brain.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
+	else
+		controller.drop_held_item(item)
+	return TRUE
+
+/datum/human_ai_module/health/proc/use_self_treatment_item(datum/human_tied_controller/controller, list/item_types, datum/callback/treatment_check)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!controller || !inventory)
+		return FALSE
+
+	var/obj/item/item
+	for(var/obj/item/potential_item as anything in inventory.iter_equipment_type(HUMAN_AI_HEALTHITEMS))
+		if(!potential_item)
+			continue
+		for(var/item_type as anything in item_types)
+			if(!istype(potential_item, item_type))
+				continue
+			if(!controller.can_use_item_on_self(potential_item))
+				continue
+			item = potential_item
+			break
+		if(item)
+			break
+
+	if(!item)
+		return FALSE
+	brain.clear_main_hand()
+	if(!brain.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
+		return FALSE
+
+	sleep(brain.get_action_delay())
+	if(!treatment_check.Invoke() || QDELETED(item))
+		return FALSE
+	controller.ai_use_on_self(item)
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return TRUE
 

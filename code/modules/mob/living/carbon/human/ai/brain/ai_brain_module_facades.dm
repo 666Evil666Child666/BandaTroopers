@@ -285,12 +285,6 @@
 /datum/human_ai_brain/proc/cancel_treatment()
 	health?.cancel_treatment()
 
-/datum/human_ai_brain/proc/healing_start_check(mob/living/carbon/human/target)
-	return health?.healing_start_check(target)
-
-/datum/human_ai_brain/proc/start_healing(mob/living/carbon/human/target)
-	return health?.start_healing(target)
-
 /datum/human_ai_brain/proc/increment_treatment_stacks()
 	health?.increment_treatment_stacks()
 

@@ -12,9 +12,6 @@
 	tied_human.a_intent = intent
 	return TRUE
 
-/datum/human_tied_controller/proc/a_intent_change(intent)
-	return set_intent(intent)
-
 /datum/human_tied_controller/proc/set_combat_intent()
 	return set_intent(INTENT_HARM)
 
@@ -64,26 +61,6 @@
 		return FALSE
 	face_atom(target)
 	return TRUE
-
-// Behavior/migration helpers
-
-// Helper for reconstructing the old ranged-click behavior during migration.
-/datum/human_tied_controller/proc/fire_click(atom/target)
-	if(!target)
-		return FALSE
-	set_combat_intent()
-	face_atom(target)
-	return do_click(target, "", list())
-
-// Helper for reconstructing the old melee-click behavior during migration.
-/datum/human_tied_controller/proc/melee_click(atom/target)
-	if(!target)
-		return FALSE
-	set_combat_intent()
-	if(do_click(target, "", list()))
-		face_atom(target)
-		return TRUE
-	return FALSE
 
 // Raw throw primitives
 
