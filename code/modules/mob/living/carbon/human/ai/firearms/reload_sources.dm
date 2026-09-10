@@ -3,15 +3,20 @@
 /datum/human_ai_firearm_handler/proc/can_reload_with(datum/human_ai_firearm_context/context, obj/item/item)
 	if(!can_use(context) || !item || !context.controller.can_use_item(item))
 		return FALSE
-	return context.AI.can_item_supply_ammo_for_weapon(item, context.firearm)
+	var/datum/human_ai_module/inventory/inventory = context.get_inventory()
+	return inventory?.can_item_supply_ammo_for_weapon(item, context.firearm)
 
 /datum/human_ai_firearm_handler/proc/find_reload_item(datum/human_ai_firearm_context/context)
 	RETURN_TYPE(/obj/item)
 	if(!context?.is_valid())
 		return null
 
+	var/datum/human_ai_module/inventory/inventory = context.get_inventory()
+	if(!inventory)
+		return null
+
 	for(var/equipment_type as anything in get_reload_equipment_types(context))
-		for(var/obj/item/item as anything in context.AI.iter_equipment_type(equipment_type))
+		for(var/obj/item/item as anything in inventory.iter_equipment_type(equipment_type))
 			if(can_reload_with(context, item))
 				return item
 
@@ -21,8 +26,12 @@
 	if(!context?.is_valid() || !item)
 		return null
 
+	var/datum/human_ai_module/inventory/inventory = context.get_inventory()
+	if(!inventory)
+		return null
+
 	for(var/equipment_type as anything in get_reload_equipment_types(context))
-		if(context.AI.has_equipment_item(item, equipment_type))
+		if(inventory.has_equipment_item(item, equipment_type))
 			return equipment_type
 
 	return null

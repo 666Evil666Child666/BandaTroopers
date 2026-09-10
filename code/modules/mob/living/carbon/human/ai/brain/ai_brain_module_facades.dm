@@ -272,7 +272,11 @@
 	guns?.clear_tried_reload()
 
 /datum/human_ai_brain/proc/can_use_ranged_weapon()
-	return guns && !guns.has_tried_reload() && (has_primary_weapon() || has_secondary_weapons())
+	var/datum/human_ai_context/context = create_context()
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	var/can_use_weapon = guns && !guns.has_tried_reload() && (inventory?.has_primary_weapon() || inventory?.has_secondary_weapons())
+	qdel(context)
+	return can_use_weapon
 
 // ==================== Health ====================
 // Treatment state and self-treatment retry helpers.
@@ -287,148 +291,6 @@
 
 /datum/human_ai_brain/proc/increment_treatment_stacks()
 	health?.increment_treatment_stacks()
-
-// ==================== Inventory ====================
-// Equipment maps, weapon slots, looting, pickup queues, and storage helpers.
-/datum/human_ai_brain/proc/get_equipment_summary(equipment_type)
-	return inventory?.get_equipment_summary(equipment_type)
-
-/datum/human_ai_brain/proc/has_equipment(equipment_type)
-	return inventory?.has_equipment(equipment_type)
-
-/datum/human_ai_brain/proc/has_equipment_item(obj/item/item, equipment_type)
-	return inventory?.has_equipment_item(item, equipment_type)
-
-/datum/human_ai_brain/proc/iter_equipment_type(equipment_type)
-	return inventory?.iter_equipment_type(equipment_type) || list()
-
-/datum/human_ai_brain/proc/get_first_equipment_item(equipment_type, obj/item/excluding = null)
-	RETURN_TYPE(/obj/item)
-	return inventory?.get_first_equipment_item(equipment_type, excluding)
-
-/datum/human_ai_brain/proc/has_pickup_queue()
-	return inventory?.has_pickup_queue()
-
-/datum/human_ai_brain/proc/get_next_pickup()
-	RETURN_TYPE(/obj/item)
-	return inventory?.get_next_pickup()
-
-/datum/human_ai_brain/proc/unqueue_pickup(obj/item/item)
-	inventory?.unqueue_pickup(item)
-
-/datum/human_ai_brain/proc/is_looting_disabled()
-	return inventory?.is_looting_disabled()
-
-/datum/human_ai_brain/proc/set_looting_disabled(disabled)
-	inventory?.set_looting_disabled(disabled)
-
-/datum/human_ai_brain/proc/has_primary_weapon()
-	return inventory?.has_primary_weapon()
-
-/datum/human_ai_brain/proc/set_primary_weapon(obj/item/weapon/gun/new_primary_weapon)
-	inventory?.set_primary_weapon(new_primary_weapon)
-
-/datum/human_ai_brain/proc/drop_primary_weapon()
-	var/obj/item/weapon/gun/primary_weapon = inventory?.get_primary_weapon()
-	var/datum/human_tied_controller/controller = get_tied_controller()
-	if(primary_weapon)
-		controller?.drop_held_item(primary_weapon)
-	inventory?.set_primary_weapon(null)
-
-/datum/human_ai_brain/proc/unholster_primary()
-	return inventory?.unholster_primary()
-
-/datum/human_ai_brain/proc/holster_primary()
-	return inventory?.holster_primary()
-
-/datum/human_ai_brain/proc/ensure_primary_hand(obj/item/held_item)
-	return inventory?.ensure_primary_hand(held_item)
-
-/datum/human_ai_brain/proc/wield_primary()
-	return inventory?.wield_primary()
-
-/datum/human_ai_brain/proc/wield_primary_sleep()
-	return inventory?.wield_primary_sleep()
-
-/datum/human_ai_brain/proc/unholster_any_weapon()
-	return inventory?.unholster_any_weapon()
-
-/datum/human_ai_brain/proc/has_secondary_weapons()
-	return inventory?.has_secondary_weapons()
-
-/datum/human_ai_brain/proc/get_next_secondary_weapon()
-	RETURN_TYPE(/obj/item/weapon/gun)
-	return inventory?.get_next_secondary_weapon()
-
-/datum/human_ai_brain/proc/add_secondary_weapon(obj/item/weapon/gun/weapon)
-	return inventory?.add_secondary_weapon(weapon)
-
-/datum/human_ai_brain/proc/get_primary_weapon()
-	RETURN_TYPE(/obj/item/weapon/gun)
-	return inventory?.get_primary_weapon()
-
-/datum/human_ai_brain/proc/get_gun_data()
-	RETURN_TYPE(/datum/human_ai_firearm_profile)
-	return inventory?.get_gun_data()
-
-/datum/human_ai_brain/proc/find_ammo_for_weapon(obj/item/weapon/gun/weapon)
-	RETURN_TYPE(/obj/item)
-	return inventory?.find_ammo_for_weapon(weapon)
-
-/datum/human_ai_brain/proc/find_equipment_by_trait(tool_trait, equipment_type)
-	RETURN_TYPE(/obj/item)
-	return inventory?.find_equipment_by_trait(tool_trait, equipment_type)
-
-/datum/human_ai_brain/proc/can_item_supply_ammo_for_weapon(obj/item/item, obj/item/weapon/gun/weapon)
-	return inventory?.can_item_supply_ammo_for_weapon(item, weapon)
-
-/datum/human_ai_brain/proc/can_item_supply_grenade(obj/item/item, obj/item/weapon/gun/launcher/grenade/grenade_launcher)
-	return inventory?.can_item_supply_grenade(item, grenade_launcher)
-
-/datum/human_ai_brain/proc/has_gun_data()
-	return inventory?.has_gun_data()
-
-/datum/human_ai_brain/proc/storage_has_room(obj/item/item)
-	return inventory?.storage_has_room(item)
-
-/datum/human_ai_brain/proc/has_container_ref(container_id)
-	return inventory?.has_container_ref(container_id)
-
-/datum/human_ai_brain/proc/get_pickup_storage_equipment_types(obj/item/item)
-	return inventory?.get_pickup_storage_equipment_types(item)
-
-/datum/human_ai_brain/proc/store_item_as_types(obj/item/item, storage_spot, list/equipment_types)
-	return inventory?.store_item_as_types(item, storage_spot, equipment_types)
-
-/datum/human_ai_brain/proc/store_item(obj/item/item, storage_spot, equipment_type = null)
-	return inventory?.store_item(item, storage_spot, equipment_type)
-
-/datum/human_ai_brain/proc/prepare_primary_for_fire(obj/item/weapon/gun/primary_weapon)
-	if(!primary_weapon)
-		return FALSE
-	unholster_primary()
-	ensure_primary_hand(primary_weapon)
-	wield_primary()
-	return TRUE
-
-/datum/human_ai_brain/proc/clear_main_hand()
-	inventory?.clear_main_hand()
-
-/datum/human_ai_brain/proc/equip_item_from_equipment_map(equipment_type, obj/item/item)
-	return inventory?.equip_item_from_equipment_map(equipment_type, item)
-
-/datum/human_ai_brain/proc/appraise_inventory(belt = TRUE, back = TRUE, pocket_l = TRUE, pocket_r = TRUE, armor = TRUE, uniform = TRUE)
-	inventory?.appraise_inventory(belt, back, pocket_l, pocket_r, armor, uniform)
-
-/datum/human_ai_brain/proc/set_nearby_item_search_interval(interval)
-	if(!inventory)
-		return
-	inventory.nearby_item_search_interval = interval
-	inventory.invalidate_nearby_item_search()
-
-/datum/human_ai_brain/proc/find_usable_equipment_by_type_list(list/item_types, equipment_type, mob/living/carbon/human/target = null)
-	RETURN_TYPE(/obj/item)
-	return inventory?.find_usable_equipment_by_type_list(item_types, equipment_type, target)
 
 // ==================== Navigation ====================
 // Movement requests and pathing profile knobs.

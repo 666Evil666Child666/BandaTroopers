@@ -7,7 +7,8 @@
 
 /datum/ai_action/sniper_nest/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
-	if(!brain)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !inventory)
 		return 0
 
 	if(!brain.has_sniper_home())
@@ -19,7 +20,7 @@
 	if(brain.has_cover())
 		return 0
 
-	if(!brain.has_primary_weapon())
+	if(!inventory.has_primary_weapon())
 		return 0
 
 	if(brain.is_healing_someone())
@@ -50,13 +51,14 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain || !controller)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !controller || !inventory)
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.is_stationary_fire_blocked())
 		return ONGOING_ACTION_COMPLETED
 
-	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
 	if(!primary_weapon)
 		return ONGOING_ACTION_COMPLETED
 
@@ -73,7 +75,9 @@
 		controller.face_dir(brain.get_sniper_dir())
 
 	if(!brain.should_reload())
-		brain.prepare_primary_for_fire(primary_weapon)
+		inventory.unholster_primary()
+		inventory.ensure_primary_hand(primary_weapon)
+		inventory.wield_primary()
 
 	return ONGOING_ACTION_UNFINISHED
 

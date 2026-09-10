@@ -9,11 +9,12 @@
 
 	var/datum/human_ai_context/context = brain.create_context()
 	var/datum/human_tied_controller/controller = context.controller
+	var/datum/human_ai_module/inventory/inventory = context.get_module(/datum/human_ai_module/inventory)
 	if(!controller)
 		qdel(context)
 		return FALSE
 
-	if(!brain.unholster_any_weapon())
+	if(!inventory?.unholster_any_weapon())
 		controller.set_combat_intent()
 
 	controller.click_atom(src)
@@ -46,18 +47,26 @@
 //       MINERAL DOOR      //
 /////////////////////////////
 /obj/structure/mineral_door/human_ai_obstacle(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain, direction, turf/target)
-	if(!brain.has_primary_weapon())
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_ai_module/inventory/inventory = context.get_module(/datum/human_ai_module/inventory)
+	if(!inventory?.has_primary_weapon())
+		qdel(context)
 		return INFINITY
+	qdel(context)
 
 	return DOOR_PENALTY
 
 /obj/structure/mineral_door/resin/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_ai_module/inventory/inventory = context.get_module(/datum/human_ai_module/inventory)
+	var/obj/item/weapon/gun/primary_weapon = inventory?.get_primary_weapon()
 	if(!primary_weapon)
+		qdel(context)
 		return TRUE
 
-	brain.unholster_primary()
-	brain.ensure_primary_hand(primary_weapon)
+	inventory.unholster_primary()
+	inventory.ensure_primary_hand(primary_weapon)
+	qdel(context)
 
 	return ..()
 
@@ -84,24 +93,30 @@
 	if(!(stat & NOPOWER))
 		return INFINITY
 
-	if(density && !operating && !unacidable && brain.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_ai_module/inventory/inventory = context.get_module(/datum/human_ai_module/inventory)
+	var/has_crowbar = inventory?.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
+	qdel(context)
+	if(density && !operating && !unacidable && has_crowbar)
 		return DOOR_PENALTY
 
 	return INFINITY
 
 /obj/structure/machinery/door/poddoor/human_ai_act(mob/living/carbon/human/ai_human, datum/human_ai_brain/brain)
-	if(!(stat & NOPOWER) || !brain.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_ai_module/inventory/inventory = context.get_module(/datum/human_ai_module/inventory)
+	if(!(stat & NOPOWER) || !inventory?.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS))
+		qdel(context)
 		return
 
-	brain.holster_primary()
-	var/obj/item/crowbar = brain.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
-	brain.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
-	var/datum/human_ai_context/context = brain.create_context()
+	inventory.holster_primary()
+	var/obj/item/crowbar = inventory.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
+	inventory.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
 	var/datum/human_tied_controller/controller = context.controller
 	if(controller)
 		controller.do_click(src)
 	qdel(context)
-	brain.store_item(crowbar, brain.storage_has_room(crowbar), HUMAN_AI_TOOLS)
+	inventory.store_item(crowbar, inventory.storage_has_room(crowbar), HUMAN_AI_TOOLS)
 
 /////////////////////////////
 //         AIRLOCK         //
@@ -135,6 +150,7 @@
 
 	var/datum/human_ai_context/context = brain.create_context()
 	var/datum/human_tied_controller/controller = context.controller
+	var/datum/human_ai_module/inventory/inventory = context.get_module(/datum/human_ai_module/inventory)
 	if(!controller)
 		qdel(context)
 		return
@@ -145,12 +161,12 @@
 		qdel(context)
 		return
 
-	brain.holster_primary()
-	var/obj/item/crowbar = brain.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
-	brain.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
+	inventory?.holster_primary()
+	var/obj/item/crowbar = inventory?.find_equipment_by_trait(TRAIT_TOOL_CROWBAR, HUMAN_AI_TOOLS)
+	inventory?.equip_item_from_equipment_map(HUMAN_AI_TOOLS, crowbar)
 	controller.do_click(src)
 	qdel(context)
-	brain.store_item(crowbar, brain.storage_has_room(crowbar), HUMAN_AI_TOOLS)
+	inventory?.store_item(crowbar, inventory?.storage_has_room(crowbar), HUMAN_AI_TOOLS)
 
 /////////////////////////////
 //         HUMANS         //

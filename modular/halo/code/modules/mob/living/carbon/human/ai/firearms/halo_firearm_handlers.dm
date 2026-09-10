@@ -124,7 +124,7 @@
 	context.sleep_micro()
 	if(!can_use(context) || QDELETED(context.mag))
 		return FALSE
-	context.AI.equip_item_from_equipment_map(HUMAN_AI_AMMUNITION, context.mag)
+	context.equip_reload_item(HUMAN_AI_AMMUNITION)
 	context.sleep_short()
 	if(!can_use(context) || QDELETED(context.mag))
 		return FALSE

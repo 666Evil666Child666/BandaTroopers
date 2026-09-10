@@ -2,6 +2,7 @@
 
 /datum/human_ai_firearm_context
 	var/datum/human_ai_brain/AI
+	var/datum/human_ai_context/ai_context
 	var/datum/human_tied_controller/controller
 	var/obj/item/weapon/gun/firearm
 	var/obj/item/ammo_magazine/mag
@@ -12,11 +13,27 @@
 /datum/human_ai_firearm_context/New(obj/item/weapon/gun/new_firearm, datum/human_ai_brain/new_ai, atom/movable/new_current_target = null, turf/new_target_turf = null, obj/item/ammo_magazine/new_mag = null, obj/item/new_reload_item = null)
 	firearm = new_firearm
 	AI = new_ai
-	controller = AI?.get_tied_controller()
+	ai_context = AI?.create_context()
+	controller = ai_context?.controller
 	current_target = new_current_target
 	target_turf = new_target_turf
 	mag = new_mag
 	reload_item = new_reload_item || new_mag
+
+/datum/human_ai_firearm_context/Destroy(force, ...)
+	QDEL_NULL(ai_context)
+	AI = null
+	controller = null
+	firearm = null
+	mag = null
+	reload_item = null
+	current_target = null
+	target_turf = null
+	return ..()
+
+/datum/human_ai_firearm_context/proc/get_inventory()
+	RETURN_TYPE(/datum/human_ai_module/inventory)
+	return ai_context?.get_module(/datum/human_ai_module/inventory)
 
 /datum/human_ai_firearm_context/proc/is_valid()
 	return firearm && AI?.can_continue_runtime_work() && controller
@@ -54,20 +71,25 @@
 /datum/human_ai_firearm_context/proc/prepare_primary_weapon()
 	if(!is_valid())
 		return FALSE
-	if(!AI.unholster_primary())
+	var/datum/human_ai_module/inventory/inventory = get_inventory()
+	if(!inventory?.unholster_primary())
 		return FALSE
-	return AI.ensure_primary_hand(firearm)
+	return inventory.ensure_primary_hand(firearm)
 
 /datum/human_ai_firearm_context/proc/wield_primary()
 	if(!is_valid())
 		return FALSE
-	AI.wield_primary()
+	var/datum/human_ai_module/inventory/inventory = get_inventory()
+	if(!inventory)
+		return FALSE
+	inventory.wield_primary()
 	return TRUE
 
 /datum/human_ai_firearm_context/proc/wield_primary_sleep()
 	if(!is_valid())
 		return FALSE
-	return AI.wield_primary_sleep()
+	var/datum/human_ai_module/inventory/inventory = get_inventory()
+	return inventory?.wield_primary_sleep()
 
 /datum/human_ai_firearm_context/proc/unwield_weapon()
 	if(!is_valid())
@@ -108,7 +130,8 @@
 /datum/human_ai_firearm_context/proc/equip_reload_item(equipment_type = HUMAN_AI_AMMUNITION)
 	if(!is_valid() || !reload_item)
 		return FALSE
-	return AI.equip_item_from_equipment_map(equipment_type, reload_item)
+	var/datum/human_ai_module/inventory/inventory = get_inventory()
+	return inventory?.equip_item_from_equipment_map(equipment_type, reload_item)
 
 /datum/human_ai_firearm_context/proc/insert_reload_item(obj/item/item = reload_item)
 	if(!is_valid() || !item)

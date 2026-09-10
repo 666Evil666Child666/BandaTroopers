@@ -2,6 +2,7 @@
 
 /datum/human_ai_weapon_context
 	var/datum/human_ai_brain/AI
+	var/datum/human_ai_context/ai_context
 	var/datum/human_tied_controller/controller
 	var/obj/item/weapon_item
 	var/atom/movable/current_target
@@ -9,10 +10,24 @@
 
 /datum/human_ai_weapon_context/New(datum/human_ai_brain/new_ai, obj/item/new_weapon_item = null, atom/movable/new_current_target = null, turf/new_target_turf = null)
 	AI = new_ai
-	controller = AI?.get_tied_controller()
+	ai_context = AI?.create_context()
+	controller = ai_context?.controller
 	weapon_item = new_weapon_item
 	current_target = new_current_target
 	target_turf = new_target_turf
+
+/datum/human_ai_weapon_context/Destroy(force, ...)
+	QDEL_NULL(ai_context)
+	AI = null
+	controller = null
+	weapon_item = null
+	current_target = null
+	target_turf = null
+	return ..()
+
+/datum/human_ai_weapon_context/proc/get_inventory()
+	RETURN_TYPE(/datum/human_ai_module/inventory)
+	return ai_context?.get_module(/datum/human_ai_module/inventory)
 
 /datum/human_ai_weapon_context/proc/is_valid()
 	return AI?.can_continue_runtime_work() && controller

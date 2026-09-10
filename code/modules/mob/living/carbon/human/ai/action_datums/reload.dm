@@ -6,13 +6,14 @@
 
 /datum/ai_action/reload/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
-	if(!brain)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !inventory)
 		return 0
 
 	if(brain.has_tried_reload())
 		return 0
 
-	if(!brain.has_gun_data())
+	if(!inventory.has_gun_data())
 		return 0
 
 	if(!brain.should_reload())
@@ -30,13 +31,14 @@
 		return .
 
 	var/datum/human_ai_brain/brain = context?.brain
-	if(!brain)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !inventory)
 		return ONGOING_ACTION_COMPLETED
 
 	if(currently_reloading)
 		return ONGOING_ACTION_UNFINISHED
 
-	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
 	if(!primary_weapon || brain.has_tried_reload() || !brain.should_reload())
 		return ONGOING_ACTION_COMPLETED
 
@@ -48,15 +50,16 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain || !controller)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !controller || !inventory)
 		return
 
-	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
-	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
+	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
+	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
 	if(gun_data.disposable)
 		controller.drop_held_item(primary_weapon)
-		brain.unqueue_pickup(primary_weapon)
-		brain.set_primary_weapon(null)
+		inventory.unqueue_pickup(primary_weapon)
+		inventory.set_primary_weapon(null)
 		qdel(src)
 		return
 
@@ -85,10 +88,11 @@
 
 /datum/ai_action/reload/proc/primary_ammo_search()
 	var/datum/human_ai_brain/brain = context?.brain
-	if(!brain)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !inventory)
 		return
 
-	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
 	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain)
 	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
 	var/obj/item/reload_item = handler?.find_reload_item(firearm_context)

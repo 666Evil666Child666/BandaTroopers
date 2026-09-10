@@ -731,4 +731,7 @@
 	brain.halo_suicide_bomber = TRUE
 	brain.halo_suicide_prime_range = 5
 	brain.set_grenade_throwing_enabled(FALSE)
-	brain.set_looting_disabled(TRUE)
+	var/datum/human_ai_context/context = brain.create_context()
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	inventory?.set_looting_disabled(TRUE)
+	qdel(context)

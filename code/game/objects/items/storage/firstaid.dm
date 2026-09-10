@@ -989,7 +989,10 @@
 		COOLDOWN_START(ai_brain.health, pill_use_cooldown, 5 SECONDS)
 		sleep(ai_brain.profile.medium_action_delay * ai_brain.profile.action_delay_mult)
 
-	ai_brain.inventory.appraise_inventory() // For some reason it removes pill bottles from equipment_map after usage
+	var/datum/human_ai_context/context = ai_brain.create_context()
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	inventory?.appraise_inventory() // For some reason it removes pill bottles from equipment_map after usage
+	qdel(context)
 
 /obj/item/storage/pill_bottle/proc/choose_color(mob/user)
 	if(!user)

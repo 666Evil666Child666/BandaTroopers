@@ -7,7 +7,8 @@
 /datum/ai_action/follow_leader/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain || !controller)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !controller || !inventory)
 		return 0
 
 	if(brain.is_in_cover())
@@ -19,7 +20,7 @@
 	if(!brain.can_move_for_action())
 		return 0
 
-	if(brain.has_pickup_queue())
+	if(inventory.has_pickup_queue())
 		return 0
 
 	var/list/squad_members = brain.get_squad_members()
@@ -52,10 +53,11 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain || !controller)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !controller || !inventory)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.is_in_combat() || brain.has_pickup_queue())
+	if(brain.is_in_combat() || inventory.has_pickup_queue())
 		return ONGOING_ACTION_COMPLETED
 
 	var/datum/human_ai_context/squad_leader_context = brain.get_squad_leader()?.create_context()

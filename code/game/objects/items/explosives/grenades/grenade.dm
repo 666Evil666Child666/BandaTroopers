@@ -176,7 +176,10 @@
 	sleep(ai_brain.profile.short_action_delay * ai_brain.profile.action_delay_mult)
 	attack_self(user)
 	user.toggle_throw_mode(THROW_MODE_NORMAL)
-	ai_brain.inventory.ensure_primary_hand(src)
+	var/datum/human_ai_context/context = ai_brain.create_context()
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	inventory?.ensure_primary_hand(src)
+	qdel(context)
 	sleep(det_time * 0.4)
 	if(QDELETED(src) || (loc != user))
 		return

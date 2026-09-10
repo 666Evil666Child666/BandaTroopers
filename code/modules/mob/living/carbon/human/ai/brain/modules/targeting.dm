@@ -2,7 +2,7 @@
 
 /datum/human_ai_module/targeting
 	module_id = "targeting"
-	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/profile)
+	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/profile, /datum/human_ai_module/inventory)
 
 	/// Ref to the currently focused (and shooting at) target
 	var/atom/movable/current_target
@@ -327,8 +327,9 @@
 		return FALSE
 
 	var/distance = controller.get_distance_to(target)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
 
-	if(!brain.can_ignore_target_darkness() && distance > 1 && !can_detect_living_target(target))
+	if(!inventory?.can_ignore_target_darkness() && distance > 1 && !can_detect_living_target(target))
 		return FALSE
 
 	if(HAS_TRAIT(target, TRAIT_CLOAKED) && controller.get_distance_to(target) > cloak_visible_range)

@@ -281,14 +281,15 @@
 
 /datum/human_ai_module/health/proc/use_treatment_item(mob/living/carbon/human/target, list/item_types, datum/callback/treatment_check)
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!controller || !inventory)
 		return FALSE
 
-	var/obj/item/item = brain.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, target)
+	var/obj/item/item = inventory.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, target)
 	if(!item)
 		return FALSE
-	brain.clear_main_hand()
-	if(!brain.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
 		return FALSE
 
 	sleep(brain.get_action_delay())
@@ -298,9 +299,9 @@
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return TRUE
 
-	var/storage_slot = brain.storage_has_room(item)
+	var/storage_slot = inventory.storage_has_room(item)
 	if(storage_slot)
-		brain.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		controller.drop_held_item(item)
 	return TRUE
@@ -326,8 +327,8 @@
 
 	if(!item)
 		return FALSE
-	brain.clear_main_hand()
-	if(!brain.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
+	inventory.clear_main_hand()
+	if(!inventory.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
 		return FALSE
 
 	sleep(brain.get_action_delay())
@@ -337,9 +338,9 @@
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return TRUE
 
-	var/storage_slot = brain.storage_has_room(item)
+	var/storage_slot = inventory.storage_has_room(item)
 	if(storage_slot)
-		brain.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
+		inventory.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
 	else
 		controller.drop_held_item(item)
 	return TRUE

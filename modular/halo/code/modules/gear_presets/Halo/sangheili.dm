@@ -106,7 +106,10 @@
 	brain.halo_sangheili_unarmed_commit_range = halo_sangheili_unarmed_commit_range
 	brain.halo_apply_navigation_profile(halo_sangheili_sword_charge_range + 1, 2, 1 SECONDS)
 	if(halo_sangheili_sword_only)
-		brain.set_looting_disabled(TRUE)
+		var/datum/human_ai_context/context = brain.create_context()
+		var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+		inventory?.set_looting_disabled(TRUE)
+		qdel(context)
 
 /datum/equipment_preset/covenant/sangheili/proc/modular_apply_human_ai_brain_overrides(datum/human_ai_brain/brain, mob/living/carbon/human/new_human)
 	apply_sangheili_ai_behavior(brain)

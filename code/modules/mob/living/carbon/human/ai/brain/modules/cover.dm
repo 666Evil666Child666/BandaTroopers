@@ -82,10 +82,11 @@
 
 /datum/human_ai_module/cover/on_moved(atom/oldloc, direction, forced)
 	var/datum/human_tied_controller/controller = context?.controller
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
 	if(!controller)
 		return
 
-	if(is_in_cover() && brain?.inventory && (controller.get_distance_to(get_current_cover()) > brain.inventory.get_gun_data()?.minimum_range))
+	if(is_in_cover() && inventory && (controller.get_distance_to(get_current_cover()) > inventory.get_gun_data()?.minimum_range))
 		end_cover()
 
 /datum/human_ai_module/cover/proc/react_to_incoming_fire(angle, atom/firer)
@@ -102,7 +103,8 @@
 	if(!COOLDOWN_FINISHED(src, cover_search_cooldown))
 		return
 
-	if(!(cover_without_gun || brain.has_primary_weapon()))
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!(cover_without_gun || inventory?.has_primary_weapon()))
 		return
 
 	COOLDOWN_START(src, cover_search_cooldown, 10 SECONDS)

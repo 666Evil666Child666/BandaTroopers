@@ -190,8 +190,9 @@
 		return
 	controller.face_dir(mob.dir)
 	controller.forceMove(get_turf(mob))
+	var/datum/human_ai_module/inventory/inventory = context.get_module(/datum/human_ai_module/inventory)
+	inventory?.appraise_inventory(armor = TRUE)
 	qdel(context)
-	ai_brain.appraise_inventory(armor = TRUE)
 
 /client/proc/make_human_ai(mob/living/carbon/human/mob in GLOB.human_mob_list)
 	set name = "Make AI"
@@ -212,7 +213,10 @@
 		return
 
 	mob.AddComponent(/datum/component/human_ai)
-	mob.get_ai_brain().appraise_inventory()
+	var/datum/human_ai_context/context = mob.get_ai_brain()?.create_context()
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	inventory?.appraise_inventory()
+	qdel(context)
 
 	message_admins("[key_name_admin(usr)] assigned an AI component to [mob.real_name].")
 

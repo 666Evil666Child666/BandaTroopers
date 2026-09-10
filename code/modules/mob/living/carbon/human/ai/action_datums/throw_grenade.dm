@@ -10,7 +10,8 @@
 /datum/ai_action/throw_grenade/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain || !controller)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !controller || !inventory)
 		return 0
 
 	if(!brain.can_throw_grenades())
@@ -23,10 +24,10 @@
 	if(!target_turf)
 		return 0
 
-	if(!brain.find_grenade_for_throw())
+	if(!inventory.find_grenade_for_throw())
 		return 0
 
-	if(!brain.has_primary_weapon())
+	if(!inventory.has_primary_weapon())
 		return 10
 
 	if(locate(/turf/closed) in controller.get_line_to(target_turf))
@@ -42,13 +43,14 @@
 /datum/ai_action/throw_grenade/Added()
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain)
+	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
+	if(!brain || !inventory)
 		return
 
 	var/datum/human_ai_throwable_context/throwable_context = new(brain)
-	throwing = GLOB.human_ai_grenade_throw_handler.prepare_grenade_for_throw(throwable_context, brain.find_grenade_for_throw())
+	throwing = GLOB.human_ai_grenade_throw_handler.prepare_grenade_for_throw(throwable_context, inventory.find_grenade_for_throw())
 	throw_range_override = isnum(throwing?.throw_range) ? throwing.throw_range : null
-	log_game("AI GRENADE: throw action created - grenade=[throwing] ([throwing?.type]), available=[brain.get_equipment_summary(HUMAN_AI_GRENADES)], throw_range=[throw_range_override], mob=[controller?.get_key_name()]")
+	log_game("AI GRENADE: throw action created - grenade=[throwing] ([throwing?.type]), available=[inventory.get_equipment_summary(HUMAN_AI_GRENADES)], throw_range=[throw_range_override], mob=[controller?.get_key_name()]")
 	qdel(throwable_context)
 	cancel_conflicting_actions()
 
