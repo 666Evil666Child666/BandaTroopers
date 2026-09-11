@@ -121,6 +121,7 @@
 		action_runtime_module.action_blacklist = list()
 	for(var/action_type as anything in action_types)
 		action_runtime_module.action_blacklist |= action_type
+	cancel_ongoing_actions_by_type(action_types)
 
 /datum/human_ai_brain/proc/remove_action_blacklist(list/action_types)
 	var/datum/human_ai_module/action_runtime/action_runtime_module = get_action_runtime_module()

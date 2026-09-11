@@ -52,6 +52,8 @@
 	var/list/possible_actions = list()
 	for(var/action_type in shuffle(allowed_actions))
 		var/datum/ai_action/glob_ref = GLOB.AI_actions[action_type]
+		if(!glob_ref)
+			continue
 		// SS220 EDIT: skip hand-using actions while a grenade throw is in async flight
 		if(grenade_throw_in_progress && (glob_ref.action_flags & ACTION_USING_HANDS))
 			continue
