@@ -702,6 +702,10 @@
 	new_human.equip_to_slot_or_del(new /obj/item/weapon/gun/energy/plasma/plasma_pistol(new_human), WEAR_J_STORE)
 	add_ai_injectors(new_human, list(/obj/item/reagent_container/hypospray/autoinjector/bicaridine/halo, /obj/item/reagent_container/hypospray/autoinjector/oxycodone/halo))
 
+/datum/human_ai_action_set/halo_unggoy_suicide_bomber
+	action_whitelist = list(/datum/ai_action/unggoy_suicide_bomber)
+	action_blacklist = list(/datum/ai_action/throw_grenade)
+
 /datum/equipment_preset/covenant/unggoy/ai/suicide_bomber
 	name = "Унггой-смертник"
 	flags = EQUIPMENT_PRESET_EXTRA|EQUIPMENT_PRESET_MARINE
@@ -709,7 +713,7 @@
 	rank = JOB_COV_MINOR
 	paygrades = list(PAY_SHORT_COV_MINOR = JOB_PLAYTIME_TIER_0)
 	role_comm_title = "Смертник"
-	human_ai_action_whitelist = list(/datum/ai_action/unggoy_suicide_bomber)
+	human_ai_action_set_type = /datum/human_ai_action_set/halo_unggoy_suicide_bomber
 	halo_unggoy_role = "bomber"
 	halo_unggoy_ignore_panic = TRUE
 	halo_unggoy_overheat_retreat = FALSE
@@ -718,10 +722,6 @@
 	add_grunt_minor(new_human)
 	add_plasma_grenades(new_human, 2)
 	add_ai_injectors(new_human, list(/obj/item/reagent_container/hypospray/autoinjector/bicaridine/halo, /obj/item/reagent_container/hypospray/autoinjector/kelotane/halo))
-
-/datum/equipment_preset/covenant/unggoy/ai/suicide_bomber/get_human_ai_action_blacklist()
-	. = ..()
-	LAZYOR(., /datum/ai_action/throw_grenade)
 
 /datum/equipment_preset/covenant/unggoy/ai/suicide_bomber/modular_apply_human_ai_brain_overrides(datum/human_ai_brain/brain, mob/living/carbon/human/new_human)
 	..()
