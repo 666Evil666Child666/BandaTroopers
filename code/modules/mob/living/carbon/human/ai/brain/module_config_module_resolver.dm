@@ -1,8 +1,8 @@
 // Human AI module selection and dependency expansion.
 
-// ==================== Default composition ====================
-// Full legacy Human AI module set used when a preset has no explicit action policy.
-/datum/human_ai_module_config/proc/get_default_module_types()
+// ==================== Supported modules ====================
+// Full core Human AI module set known to the config factory.
+/datum/human_ai_module_config/proc/get_supported_module_types()
 	return list(
 		/datum/human_ai_module/faction,
 		/datum/human_ai_module/targeting,
@@ -24,6 +24,11 @@
 		/datum/human_ai_module/inventory,
 		/datum/human_ai_module/melee,
 	)
+
+// ==================== Default composition ====================
+// Full legacy Human AI module set used when a preset has no explicit action policy.
+/datum/human_ai_module_config/proc/get_default_module_types()
+	return get_supported_module_types()
 
 /datum/human_ai_module_config/proc/get_core_module_types()
 	return list(

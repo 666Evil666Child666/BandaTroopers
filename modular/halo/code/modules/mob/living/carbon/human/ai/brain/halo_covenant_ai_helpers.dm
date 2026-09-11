@@ -1,7 +1,6 @@
 /datum/human_ai_brain
 	var/halo_sangheili_runtime = FALSE
 	var/halo_unggoy_runtime = FALSE
-	var/datum/human_ai_module/halo_covenant/halo_covenant_module
 	var/halo_unggoy_role
 	var/halo_unggoy_panic_health_pct = 0
 	var/halo_unggoy_panics_without_leader = FALSE
@@ -27,6 +26,14 @@
 	var/turf/halo_cached_threat_turf
 	var/halo_ranged_fire_backoff_until = 0
 
+/datum/human_ai_module/halo_covenant
+	module_id = "halo_covenant"
+
+/datum/human_ai_module_config/get_supported_module_types()
+	. = ..()
+	if(!(/datum/human_ai_module/halo_covenant in .))
+		. += /datum/human_ai_module/halo_covenant
+
 /datum/human_ai_brain/proc/halo_get_controller()
 	RETURN_TYPE(/datum/human_tied_controller)
 	var/datum/human_ai_context/context = create_context()
@@ -38,12 +45,12 @@
 	if(!halo_runtime_uses_projectile_pressure_controls())
 		return
 
+	var/datum/human_ai_module/halo_covenant/halo_covenant_module = get_module(/datum/human_ai_module/halo_covenant)
 	if(!halo_covenant_module)
-		halo_covenant_module = register_extension_module(new /datum/human_ai_module/halo_covenant(src))
-	setup_lifecycle_modules()
-	halo_configure_covenant_module_lists()
+		halo_covenant_module = module_config?.setup_module_by_type(src, /datum/human_ai_module/halo_covenant)
+	halo_configure_covenant_module_lists(halo_covenant_module)
 
-/datum/human_ai_brain/proc/halo_configure_covenant_module_lists()
+/datum/human_ai_brain/proc/halo_configure_covenant_module_lists(datum/human_ai_module/halo_covenant/halo_covenant_module)
 	if(!halo_covenant_module)
 		return
 

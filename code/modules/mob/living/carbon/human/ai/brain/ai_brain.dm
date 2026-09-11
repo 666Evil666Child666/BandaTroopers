@@ -8,7 +8,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/list/datum/human_ai_module/process_modules_before_posture
 	var/list/datum/human_ai_module/process_modules_after_posture
 	var/list/datum/human_ai_module/target_vision_modules
-	var/list/datum/human_ai_module/extension_modules
 	var/list/ai_event_subscribers
 
 	var/wake_rethink_queued_at = -1 // SS220 EDIT: wake-up signal should only queue one immediate rethink per tick
@@ -56,14 +55,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/setup_lifecycle_modules()
 	module_config.configure_module_lists(src)
-
-/datum/human_ai_brain/proc/register_extension_module(datum/human_ai_module/module)
-	if(!module)
-		return null
-
-	module_config?.register_module(module)
-	LAZYOR(extension_modules, module)
-	return module
 
 /datum/human_ai_brain/proc/reset_ai()
 	emit_ai_event(HUMAN_AI_EVENT_RESET_BEFORE_WAKE_CLEAR)

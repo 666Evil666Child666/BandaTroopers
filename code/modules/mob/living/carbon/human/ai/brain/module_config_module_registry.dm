@@ -21,52 +21,18 @@
 // ==================== Factory ====================
 // Creates and registers a module for a known module type.
 /datum/human_ai_module_config/proc/setup_module_by_type(datum/human_ai_brain/brain, module_type)
-	var/datum/human_ai_module/module
-	switch(module_type)
-		if(/datum/human_ai_module/faction)
-			module = new /datum/human_ai_module/faction(brain)
-		if(/datum/human_ai_module/targeting)
-			module = new /datum/human_ai_module/targeting(brain)
-		if(/datum/human_ai_module/cover)
-			module = new /datum/human_ai_module/cover(brain)
-		if(/datum/human_ai_module/grenade)
-			module = new /datum/human_ai_module/grenade(brain)
-		if(/datum/human_ai_module/health)
-			module = new /datum/human_ai_module/health(brain)
-		if(/datum/human_ai_module/communication)
-			module = new /datum/human_ai_module/communication(brain)
-		if(/datum/human_ai_module/guns)
-			module = new /datum/human_ai_module/guns(brain)
-		if(/datum/human_ai_module/melee)
-			module = new /datum/human_ai_module/melee(brain)
-		if(/datum/human_ai_module/navigation)
-			module = new /datum/human_ai_module/navigation(brain)
-		if(/datum/human_ai_module/squad)
-			module = new /datum/human_ai_module/squad(brain)
-		if(/datum/human_ai_module/action_runtime)
-			module = new /datum/human_ai_module/action_runtime(brain)
-		if(/datum/human_ai_module/combat)
-			module = new /datum/human_ai_module/combat(brain)
-		if(/datum/human_ai_module/conversation)
-			module = new /datum/human_ai_module/conversation(brain)
-		if(/datum/human_ai_module/orders)
-			module = new /datum/human_ai_module/orders(brain)
-		if(/datum/human_ai_module/profile)
-			module = new /datum/human_ai_module/profile(brain)
-		if(/datum/human_ai_module/emplacement)
-			module = new /datum/human_ai_module/emplacement(brain)
-		if(/datum/human_ai_module/admin)
-			module = new /datum/human_ai_module/admin(brain)
-		if(/datum/human_ai_module/perception)
-			module = new /datum/human_ai_module/perception(brain)
-		if(/datum/human_ai_module/inventory)
-			module = new /datum/human_ai_module/inventory(brain)
-
-	if(!module)
+	var/module_factory_type = get_module_factory_type(module_type)
+	if(!module_factory_type)
 		report_action_policy_issue("unknown module factory type [module_type]")
 		return null
 
+	var/datum/human_ai_module/module = new module_factory_type(brain)
 	return register_module(module)
+
+/datum/human_ai_module_config/proc/get_module_factory_type(module_type)
+	if(!(module_type in get_supported_module_types()))
+		return null
+	return module_type
 
 // ==================== Lookup ====================
 // Reads the registry source of truth for a known module type.

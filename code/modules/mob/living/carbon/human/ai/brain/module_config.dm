@@ -31,7 +31,6 @@
 	modules_by_type = null
 	modules_by_id = null
 	requested_module_types = null
-	brain.extension_modules = null
 
 // ==================== Process lists ====================
 // Wires created modules into lifecycle, process, event, and query dispatch lists.
