@@ -2216,6 +2216,7 @@
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\perception.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\targeting.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\modules\cover.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\modules\melee.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\module_config.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\module_config_action_policy.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\module_config_module_registry.dm"

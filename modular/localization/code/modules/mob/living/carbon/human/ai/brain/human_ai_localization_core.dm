@@ -78,10 +78,11 @@
 		target.vars[key] = existing_lines
 
 /datum/modpack/localization/proc/halo_ai_apply_brain_line_pack(datum/human_ai_brain/brain, list/pack, append = FALSE)
-	if(!brain?.communication)
+	var/datum/human_ai_module/communication/communication_module = brain?.get_communication_module()
+	if(!communication_module)
 		return
 
-	halo_ai_apply_line_pack(brain.communication, pack, append)
+	halo_ai_apply_line_pack(communication_module, pack, append)
 
 /datum/modpack/localization/proc/halo_ai_get_faction_localization_pack(faction_name)
 	var/list/general_pack = halo_ai_get_general_faction_localization_pack(faction_name)
@@ -104,7 +105,8 @@
 		faction_datum.reapply_faction_data()
 
 /datum/modpack/localization/proc/halo_ai_apply_default_fallback_to_brain(datum/human_ai_brain/brain)
-	if(!brain?.communication)
+	var/datum/human_ai_module/communication/communication_module = brain?.get_communication_module()
+	if(!communication_module)
 		return
 
 	var/datum/human_ai_faction/faction_datum
@@ -120,7 +122,7 @@
 			continue
 		var/list/default_lines = default_pack[key]
 		if(islist(default_lines))
-			brain.communication.vars[key] = default_lines.Copy()
+			communication_module.vars[key] = default_lines.Copy()
 
 /datum/human_ai_brain/proc/modular_finalize_human_ai_brain(mob/living/carbon/human/new_human)
 	var/datum/modpack/localization/localization_pack

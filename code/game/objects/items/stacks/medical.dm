@@ -125,7 +125,7 @@
 		if(locate(/datum/effects/bleeding/external) in limb.bleeding_effects_list)
 			user.zone_selected = limb.name
 			attack(target, user)
-			sleep(ai_brain.profile.short_action_delay)
+			sleep(ai_brain.get_short_action_delay())
 
 /obj/item/stack/medical/bruise_pack/two
 	amount = 2
@@ -268,7 +268,7 @@
 		if(locate(/datum/effects/bleeding/external) in limb.bleeding_effects_list)
 			user.zone_selected = limb.name
 			attack(target, user)
-			sleep(ai_brain.profile.short_action_delay)
+			sleep(ai_brain.get_short_action_delay())
 			continue
 
 		for(var/datum/wound/wound in limb.wounds)
@@ -281,7 +281,7 @@
 			if(!(wound.bandaged & (WOUND_BANDAGED|WOUND_SUTURED)))
 				user.zone_selected = limb.name
 				attack(target, user)
-				sleep(ai_brain.profile.short_action_delay)
+				sleep(ai_brain.get_short_action_delay())
 
 /obj/item/stack/medical/advanced/bruise_pack/predator
 	name = "mending herbs"
@@ -377,7 +377,7 @@
 			if(!(wound.bandaged & (WOUND_BANDAGED|WOUND_SUTURED)))
 				user.zone_selected = limb.name
 				attack(target, user)
-				sleep(ai_brain.profile.short_action_delay)
+				sleep(ai_brain.get_short_action_delay())
 
 /obj/item/stack/medical/splint
 	name = "medical splints"
@@ -446,5 +446,5 @@
 		if(limb.is_broken())
 			user.zone_selected = limb.name
 			attack(target, user)
-			sleep(ai_brain.profile.short_action_delay)
+			sleep(ai_brain.get_short_action_delay())
 			continue

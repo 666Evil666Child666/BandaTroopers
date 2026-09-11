@@ -19,64 +19,48 @@
 	return module
 
 // ==================== Factory ====================
-// Creates a module for a known module type and stores it in the brain's typed module slot.
+// Creates and registers a module for a known module type.
 /datum/human_ai_module_config/proc/setup_module_by_type(datum/human_ai_brain/brain, module_type)
 	var/datum/human_ai_module/module
 	switch(module_type)
 		if(/datum/human_ai_module/faction)
 			module = new /datum/human_ai_module/faction(brain)
-			brain.faction = module
 		if(/datum/human_ai_module/targeting)
 			module = new /datum/human_ai_module/targeting(brain)
-			brain.targeting = module
 		if(/datum/human_ai_module/cover)
 			module = new /datum/human_ai_module/cover(brain)
-			brain.cover = module
 		if(/datum/human_ai_module/grenade)
 			module = new /datum/human_ai_module/grenade(brain)
-			brain.grenade = module
 		if(/datum/human_ai_module/health)
 			module = new /datum/human_ai_module/health(brain)
-			brain.health = module
 		if(/datum/human_ai_module/communication)
 			module = new /datum/human_ai_module/communication(brain)
-			brain.communication = module
 		if(/datum/human_ai_module/guns)
 			module = new /datum/human_ai_module/guns(brain)
-			brain.guns = module
+		if(/datum/human_ai_module/melee)
+			module = new /datum/human_ai_module/melee(brain)
 		if(/datum/human_ai_module/navigation)
 			module = new /datum/human_ai_module/navigation(brain)
-			brain.navigation = module
 		if(/datum/human_ai_module/squad)
 			module = new /datum/human_ai_module/squad(brain)
-			brain.squad = module
 		if(/datum/human_ai_module/action_runtime)
 			module = new /datum/human_ai_module/action_runtime(brain)
-			brain.action_runtime = module
 		if(/datum/human_ai_module/combat)
 			module = new /datum/human_ai_module/combat(brain)
-			brain.combat = module
 		if(/datum/human_ai_module/conversation)
 			module = new /datum/human_ai_module/conversation(brain)
-			brain.conversation = module
 		if(/datum/human_ai_module/orders)
 			module = new /datum/human_ai_module/orders(brain)
-			brain.orders = module
 		if(/datum/human_ai_module/profile)
 			module = new /datum/human_ai_module/profile(brain)
-			brain.profile = module
 		if(/datum/human_ai_module/emplacement)
 			module = new /datum/human_ai_module/emplacement(brain)
-			brain.emplacement = module
 		if(/datum/human_ai_module/admin)
 			module = new /datum/human_ai_module/admin(brain)
-			brain.admin = module
 		if(/datum/human_ai_module/perception)
 			module = new /datum/human_ai_module/perception(brain)
-			brain.perception = module
 		if(/datum/human_ai_module/inventory)
 			module = new /datum/human_ai_module/inventory(brain)
-			brain.inventory = module
 
 	if(!module)
 		report_action_policy_issue("unknown module factory type [module_type]")

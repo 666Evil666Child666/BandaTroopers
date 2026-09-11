@@ -86,7 +86,7 @@
 	end_cover()
 
 /datum/human_ai_brain/proc/halo_covenant_try_cover_retreat(atom/threat)
-	if(!cover)
+	if(!get_cover_module())
 		return FALSE
 	var/datum/human_tied_controller/controller = halo_get_controller()
 	if(!controller)

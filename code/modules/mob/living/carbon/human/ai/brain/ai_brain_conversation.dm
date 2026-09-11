@@ -29,6 +29,18 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 		"P1 Random||Chance||Messages"
 	)
 
+/datum/human_ai_conversation/proc/get_conversation_module(datum/human_ai_brain/brain)
+	RETURN_TYPE(/datum/human_ai_module/conversation)
+	var/datum/human_ai_context/module_context = brain?.create_context()
+	var/datum/human_ai_module/conversation/conversation = module_context?.get_module(/datum/human_ai_module/conversation)
+	qdel(module_context)
+	return conversation
+
+/datum/human_ai_conversation/proc/end_conversation_for_brains(list/brains_involved, finished = FALSE)
+	for(var/datum/human_ai_brain/conversation_brain as anything in brains_involved)
+		var/datum/human_ai_module/conversation/conversation = get_conversation_module(conversation_brain)
+		conversation?.end_conversation(finished)
+
 /// Processes a conversation with other nearby AI.
 /datum/human_ai_conversation/proc/initiate_conversation(list/brains_involved)
 	if(!length(brains_involved))
@@ -36,7 +48,7 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 
 	var/list/valid_brains = list()
 	for(var/datum/human_ai_brain/brain as anything in brains_involved)
-		if(!brain.conversation)
+		if(!get_conversation_module(brain))
 			continue
 		valid_brains += brain
 
@@ -45,7 +57,8 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 		return
 
 	for(var/datum/human_ai_brain/brain as anything in brains_involved)
-		brain.conversation?.start_conversation()
+		var/datum/human_ai_module/conversation/conversation = get_conversation_module(brain)
+		conversation?.start_conversation()
 
 	for(var/string in conversation_data)
 		switch(string[1])
@@ -53,16 +66,14 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 				var/ai_index = text2num(string[2]) // doesn't currently support indexes >9, but can be fixed if that ever comes up, somehow
 				var/datum/human_ai_brain/brain = brains_involved[ai_index]
 				if(should_interrupt_conversation(brain))
-					for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
-						other_brain.conversation?.end_conversation()
+					end_conversation_for_brains(brains_involved)
 					return
 
 				var/datum/human_ai_context/speaker_context = brain.create_context()
 				var/datum/human_tied_controller/speaker_controller = speaker_context.controller
 				if(!speaker_controller)
 					qdel(speaker_context)
-					for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
-						other_brain.conversation?.end_conversation()
+					end_conversation_for_brains(brains_involved)
 					return
 
 				for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
@@ -78,8 +89,7 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 			if("D")
 				sleep(text2num(copytext(string, 3)))
 
-	for(var/datum/human_ai_brain/other_brain as anything in brains_involved)
-		other_brain.conversation?.end_conversation(TRUE)
+	end_conversation_for_brains(brains_involved, TRUE)
 
 /// Simple check to see if a conversation should stop at a given line
 /datum/human_ai_conversation/proc/should_interrupt_conversation(datum/human_ai_brain/brain)
@@ -88,7 +98,8 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 
 	var/datum/human_ai_context/context = brain.create_context()
 	var/datum/human_tied_controller/controller = context.controller
-	. = (brain.is_in_combat() || !brain.conversation?.in_conversation || !controller || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	var/datum/human_ai_module/conversation/conversation = context?.get_module(/datum/human_ai_module/conversation)
+	. = (brain.is_in_combat() || !conversation?.in_conversation || !controller || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 	qdel(context)
 
 /// Check to be overridden to see if an AI should be able to start a conversation

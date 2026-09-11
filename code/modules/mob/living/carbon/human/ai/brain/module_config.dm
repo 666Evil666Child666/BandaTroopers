@@ -24,31 +24,13 @@
 	return
 
 // ==================== Teardown ====================
-// Clears every module slot on the brain after deleting config-owned modules.
+// Deletes config-owned modules and clears registry/list state.
 /datum/human_ai_module_config/proc/teardown_brain_modules(datum/human_ai_brain/brain)
 	QDEL_LIST(owned_modules)
 	owned_modules = null
 	modules_by_type = null
 	modules_by_id = null
 	requested_module_types = null
-	brain.targeting = null
-	brain.perception = null
-	brain.cover = null
-	brain.faction = null
-	brain.inventory = null
-	brain.grenade = null
-	brain.health = null
-	brain.communication = null
-	brain.guns = null
-	brain.navigation = null
-	brain.squad = null
-	brain.action_runtime = null
-	brain.combat = null
-	brain.conversation = null
-	brain.orders = null
-	brain.profile = null
-	brain.emplacement = null
-	brain.admin = null
 	brain.extension_modules = null
 
 // ==================== Process lists ====================
@@ -82,12 +64,17 @@
 
 	validate_module_setup(brain)
 
-	if(brain.action_runtime)
-		brain.action_runtime.action_whitelist = action_whitelist?.Copy()
-		brain.action_runtime.action_blacklist = action_blacklist?.Copy()
-	brain.perception?.register_signals()
-	brain.perception?.setup_detection_radius()
-	brain.inventory?.register_signals()
+	var/datum/human_ai_module/action_runtime/action_runtime = get_module_by_type(brain, /datum/human_ai_module/action_runtime)
+	if(action_runtime)
+		action_runtime.action_whitelist = action_whitelist?.Copy()
+		action_runtime.action_blacklist = action_blacklist?.Copy()
+
+	var/datum/human_ai_module/perception/perception = get_module_by_type(brain, /datum/human_ai_module/perception)
+	perception?.register_signals()
+	perception?.setup_detection_radius()
+
+	var/datum/human_ai_module/inventory/inventory = get_module_by_type(brain, /datum/human_ai_module/inventory)
+	inventory?.register_signals()
 
 /datum/human_ai_module_config/default/configure_lifecycle_module_lists(datum/human_ai_brain/brain)
 	register_module_list_for_event(brain, HUMAN_AI_EVENT_RESET_BEFORE_WAKE_CLEAR, list(/datum/human_ai_module/health, /datum/human_ai_module/navigation, /datum/human_ai_module/cover, /datum/human_ai_module/perception))

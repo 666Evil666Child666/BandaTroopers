@@ -173,7 +173,7 @@
 	return TRUE
 
 /obj/item/explosive/grenade/ai_use(mob/living/carbon/human/user, datum/human_ai_brain/ai_brain, turf/target_turf)
-	sleep(ai_brain.profile.short_action_delay * ai_brain.profile.action_delay_mult)
+	sleep(ai_brain.get_short_action_delay(TRUE))
 	attack_self(user)
 	user.toggle_throw_mode(THROW_MODE_NORMAL)
 	var/datum/human_ai_context/context = ai_brain.create_context()
@@ -184,7 +184,7 @@
 	if(QDELETED(src) || (loc != user))
 		return
 
-	ai_brain.communication.say_grenade_thrown_line()
+	ai_brain.say_grenade_thrown_line()
 	sleep(det_time * 0.4)
 	if(QDELETED(src) || (loc != user))
 		return

@@ -22,6 +22,7 @@
 		/datum/human_ai_module/admin,
 		/datum/human_ai_module/perception,
 		/datum/human_ai_module/inventory,
+		/datum/human_ai_module/melee,
 	)
 
 /datum/human_ai_module_config/proc/get_core_module_types()

@@ -5,25 +5,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	var/datum/human_tied_controller/tied_controller
 	var/datum/human_ai_module_config/module_config
 
-	var/datum/human_ai_module/targeting/targeting
-	var/datum/human_ai_module/perception/perception
-	var/datum/human_ai_module/cover/cover
-	var/datum/human_ai_module/faction/faction
-	var/datum/human_ai_module/inventory/inventory
-	var/datum/human_ai_module/grenade/grenade
-	var/datum/human_ai_module/health/health
-	var/datum/human_ai_module/communication/communication
-	var/datum/human_ai_module/guns/guns
-	var/datum/human_ai_module/navigation/navigation
-	var/datum/human_ai_module/squad/squad
-	var/datum/human_ai_module/action_runtime/action_runtime
-	var/datum/human_ai_module/combat/combat
-	var/datum/human_ai_module/conversation/conversation
-	var/datum/human_ai_module/orders/orders
-	var/datum/human_ai_module/profile/profile
-	var/datum/human_ai_module/emplacement/emplacement
-	var/datum/human_ai_module/admin/admin
-
 	var/list/datum/human_ai_module/process_modules_before_posture
 	var/list/datum/human_ai_module/process_modules_after_posture
 	var/list/datum/human_ai_module/target_vision_modules
@@ -250,7 +231,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 /datum/human_ai_brain/proc/on_combat_exit_started()
 	var/datum/human_tied_controller/controller = get_tied_controller()
 	controller?.set_safe_intent()
-	var/should_holster_primary = !emplacement?.has_sniper_home()
+	var/datum/human_ai_module/emplacement/emplacement_module = get_module(/datum/human_ai_module/emplacement)
+	var/should_holster_primary = !emplacement_module?.has_sniper_home()
 	emit_ai_event(HUMAN_AI_EVENT_COMBAT_EXIT_STARTED, list(
 		"should_holster_primary" = should_holster_primary,
 	))
@@ -282,7 +264,8 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/on_human_delete(datum/source, force)
 	SIGNAL_HANDLER
-	perception?.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
+	var/datum/human_ai_module/perception/perception_module = get_module(/datum/human_ai_module/perception)
+	perception_module?.clear_detection_radius() // SS220 EDIT: aggressively tear down brain state before component qdel catches up
 	shutdown_runtime()
 	wake_rethink_queued_at = -1 // SS220 EDIT: owner delete must not leave a queued wake rethink pointing at a null tied human
 	get_tied_controller()?.set_tied_human(null)
