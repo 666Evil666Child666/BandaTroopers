@@ -2,7 +2,7 @@
 	brain?.halo_covenant_end_cover()
 
 /datum/human_ai_module/melee/proc/halo_sangheili_get_sword_charge_weight()
-	if(!brain?.halo_sangheili_runtime)
+	if(!brain?.halo_sangheili_is_active())
 		return 0
 
 	if(!brain.halo_covenant_can_run_movement_action(TRUE))
@@ -15,7 +15,7 @@
 	if(!brain.halo_sangheili_should_sword_charge(threat))
 		return 0
 
-	if(brain.halo_sangheili_sword_only)
+	if(brain.halo_sangheili_is_sword_only())
 		return 60
 
 	return 45
@@ -31,7 +31,7 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.halo_covenant_can_run_movement_action(TRUE) || !brain.halo_sangheili_should_sword_charge(threat))
+	if(!brain.halo_sangheili_is_active() || !brain.has_valid_tied_human() || !threat || !brain.halo_covenant_can_run_movement_action(TRUE) || !brain.halo_sangheili_should_sword_charge(threat))
 		if(!brain.halo_sangheili_restore_ranged_state())
 			brain.halo_sangheili_holster_sword()
 		return ONGOING_ACTION_COMPLETED
@@ -40,7 +40,7 @@
 	controller.set_combat_intent()
 
 	var/obj/item/weapon/covenant/energy_sword/sword = brain.halo_sangheili_draw_sword()
-	if(!sword && !brain.halo_sangheili_sword_only)
+	if(!sword && !brain.halo_sangheili_is_sword_only())
 		brain.halo_sangheili_restore_ranged_state()
 		return ONGOING_ACTION_COMPLETED
 
@@ -63,7 +63,7 @@
 
 /datum/human_ai_module/melee/proc/halo_sangheili_get_kick_weight()
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain?.halo_sangheili_runtime || !controller)
+	if(!brain?.halo_sangheili_is_active() || !controller)
 		return 0
 
 	if(!brain.halo_covenant_can_run_movement_action(TRUE))
@@ -93,7 +93,7 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.halo_covenant_can_run_movement_action(TRUE))
+	if(!brain.halo_sangheili_is_active() || !brain.has_valid_tied_human() || !threat || !brain.halo_covenant_can_run_movement_action(TRUE))
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.halo_covenant_has_pending_cover())
@@ -125,7 +125,7 @@
 	return ONGOING_ACTION_UNFINISHED_BLOCK
 
 /datum/human_ai_module/melee/proc/halo_sangheili_get_overheat_response_weight()
-	if(!brain?.halo_sangheili_runtime)
+	if(!brain?.halo_sangheili_is_active())
 		return 0
 
 	if(!brain.halo_covenant_can_run_movement_action(TRUE))
@@ -149,7 +149,7 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
-	if(!brain.halo_sangheili_runtime || !brain.has_valid_tied_human() || !threat || !brain.halo_covenant_can_run_movement_action(TRUE) || !brain.halo_sangheili_should_overheat_response(threat))
+	if(!brain.halo_sangheili_is_active() || !brain.has_valid_tied_human() || !threat || !brain.halo_covenant_can_run_movement_action(TRUE) || !brain.halo_sangheili_should_overheat_response(threat))
 		return ONGOING_ACTION_COMPLETED
 
 	controller.set_combat_intent()

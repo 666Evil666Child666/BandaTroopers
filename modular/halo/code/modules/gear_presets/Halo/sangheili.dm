@@ -99,11 +99,12 @@
 	if(!brain)
 		return
 
-	brain.halo_sangheili_runtime = TRUE
-	brain.halo_sangheili_has_sword = sangheili_rank_has_sword(rank) || halo_sangheili_sword_only
-	brain.halo_sangheili_sword_only = halo_sangheili_sword_only
-	brain.halo_sangheili_sword_charge_range = halo_sangheili_sword_charge_range
-	brain.halo_sangheili_unarmed_commit_range = halo_sangheili_unarmed_commit_range
+	brain.halo_configure_sangheili_behavior(
+		sangheili_rank_has_sword(rank) || halo_sangheili_sword_only,
+		halo_sangheili_sword_only,
+		halo_sangheili_sword_charge_range,
+		halo_sangheili_unarmed_commit_range,
+	)
 	brain.halo_apply_navigation_profile(halo_sangheili_sword_charge_range + 1, 2, 1 SECONDS)
 	if(halo_sangheili_sword_only)
 		var/datum/human_ai_context/context = brain.create_context()

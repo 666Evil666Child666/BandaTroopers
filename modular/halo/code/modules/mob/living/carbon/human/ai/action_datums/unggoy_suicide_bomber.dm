@@ -1,18 +1,14 @@
-/datum/human_ai_brain
-	var/halo_suicide_bomber = FALSE
-	var/halo_suicide_prime_range = 5
-
 /datum/ai_action/unggoy_suicide_bomber
 	name = "Унггой-смертник"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
-	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/inventory, /datum/human_ai_module/action_runtime)
+	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/inventory, /datum/human_ai_module/action_runtime, /datum/human_ai_module/halo_covenant, /datum/human_ai_module/halo_unggoy)
 
 /datum/ai_action/unggoy_suicide_bomber/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	if(!brain?.has_valid_tied_human())
 		return 0
 
-	if(!brain.halo_suicide_bomber)
+	if(!brain.halo_unggoy_is_suicide_bomber())
 		return 0
 
 	if(!brain.halo_covenant_can_run_movement_action())
@@ -48,7 +44,7 @@
 			return ONGOING_ACTION_COMPLETED
 
 		var/target_dist = controller.get_distance_to(charge_target)
-		if(target_dist > brain.halo_suicide_prime_range)
+		if(target_dist > brain.halo_unggoy_get_suicide_prime_range())
 			if(!move_towards_target(charge_target, context))
 				return ONGOING_ACTION_COMPLETED
 			return ONGOING_ACTION_UNFINISHED_BLOCK
@@ -140,4 +136,4 @@
 	if(!brain || !brain.has_valid_tied_human())
 		return FALSE
 
-	return brain.halo_covenant_move_to_atom(charge_target, brain.halo_unggoy_runtime)
+	return brain.halo_covenant_move_to_atom(charge_target, brain.halo_unggoy_is_active())

@@ -1,7 +1,7 @@
 /datum/ai_action/sangheili_overheat_response
 	name = "Реакция сангхейли на перегрев"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
-	required_ai_modules = list(/datum/human_ai_module/melee)
+	required_ai_modules = list(/datum/human_ai_module/melee, /datum/human_ai_module/halo_covenant, /datum/human_ai_module/halo_sangheili)
 
 /datum/ai_action/sangheili_overheat_response/Added()
 	var/datum/human_ai_module/melee/melee = context?.get_module(/datum/human_ai_module/melee)

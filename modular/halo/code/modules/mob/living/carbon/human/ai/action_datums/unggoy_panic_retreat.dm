@@ -1,11 +1,11 @@
 /datum/ai_action/unggoy_panic_retreat
 	name = "Паническое отступление унггоя"
 	action_flags = ACTION_USING_LEGS
-	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/squad)
+	required_ai_modules = list(/datum/human_ai_module/targeting, /datum/human_ai_module/navigation, /datum/human_ai_module/squad, /datum/human_ai_module/halo_covenant, /datum/human_ai_module/halo_unggoy)
 
 /datum/ai_action/unggoy_panic_retreat/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
-	if(!brain?.halo_unggoy_runtime)
+	if(!brain?.halo_unggoy_is_active())
 		return 0
 
 	if(!brain.halo_covenant_can_run_movement_action())
@@ -25,7 +25,7 @@
 		return .
 
 	var/datum/human_ai_brain/brain = context?.brain
-	if(!brain || !brain.halo_unggoy_runtime || !brain.halo_covenant_can_run_movement_action() || !brain.halo_unggoy_should_retreat())
+	if(!brain || !brain.halo_unggoy_is_active() || !brain.halo_covenant_can_run_movement_action() || !brain.halo_unggoy_should_retreat())
 		return ONGOING_ACTION_COMPLETED
 
 	var/atom/threat = brain.halo_covenant_get_threat_atom()
