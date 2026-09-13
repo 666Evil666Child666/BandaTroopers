@@ -13,14 +13,7 @@
 	if(!brain || !controller)
 		return 0
 
-	if(!brain.can_throw_back_grenade()) // SS220 EDIT: weak AI presets must not enter throw-back mode
-		return 0
-
-	var/obj/item/explosive/grenade/active_grenade_found = brain.get_active_grenade()
-	if(QDELETED(active_grenade_found))
-		return 0
-
-	if(controller.get_distance_to(active_grenade_found) > 4)
+	if(!brain.can_attempt_grenade_throwback(controller, 4)) // SS220 EDIT: weak AI presets must not enter throw-back mode
 		return 0
 
 	return 50
@@ -48,7 +41,7 @@
 	if(mid_throw)
 		return ONGOING_ACTION_UNFINISHED
 
-	var/obj/item/explosive/grenade/active_grenade_found = brain.get_active_grenade()
+	var/obj/item/explosive/grenade/active_grenade_found = brain.get_active_throwback_grenade()
 	var/datum/human_ai_throwable_context/throwable_context = new(brain, active_grenade_found)
 	throwable_context.min_safe_throw_distance = min_safe_throw_distance
 	var/result = GLOB.human_ai_grenade_throw_back_handler.continue_throw_back(throwable_context, src)

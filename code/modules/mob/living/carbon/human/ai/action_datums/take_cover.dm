@@ -10,13 +10,7 @@
 	if(!brain?.has_valid_tied_human() || !controller || !inventory) // SS220 EDIT: upstream cover action must not score after modular owner teardown
 		return 0
 
-	if(!brain.has_cover())
-		return 0
-
-	if(!brain.can_move_for_action())
-		return 0
-
-	if(brain.is_in_cover() && !(controller.get_distance_to(brain.get_current_target()) > inventory.get_gun_data()?.minimum_range))
+	if(!brain.can_attempt_cover_move(controller, inventory.get_gun_data()))
 		return 0
 
 	return 15
@@ -31,7 +25,7 @@
 	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/current_cover = brain.get_current_cover()
+	var/turf/current_cover = brain.get_cover_destination()
 	if(!current_cover)
 		return ONGOING_ACTION_COMPLETED
 

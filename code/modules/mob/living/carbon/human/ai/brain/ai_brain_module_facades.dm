@@ -149,25 +149,6 @@
 
 	return FALSE
 
-// ==================== Combat ====================
-// Combat state transitions and shared combat state.
-/datum/human_ai_brain/proc/is_in_combat()
-	var/datum/human_ai_module/combat/combat_module = get_combat_module()
-	return combat_module?.in_combat
-
-/datum/human_ai_brain/proc/set_shot_at_turf(turf/target_turf)
-	var/datum/human_ai_module/combat/combat_module = get_combat_module()
-	if(combat_module)
-		combat_module.shot_at = get_turf(target_turf)
-
-/datum/human_ai_brain/proc/enter_combat()
-	var/datum/human_ai_module/combat/combat_module = get_combat_module()
-	return combat_module?.enter_combat()
-
-/datum/human_ai_brain/proc/exit_combat()
-	var/datum/human_ai_module/combat/combat_module = get_combat_module()
-	return combat_module?.exit_combat()
-
 // ==================== Communication ====================
 // Voice lines and squad/combat communication hooks.
 /datum/human_ai_brain/proc/get_reload_line_chance()
@@ -200,49 +181,6 @@
 /datum/human_ai_brain/proc/can_participate_in_conversation()
 	var/datum/human_ai_module/conversation/conversation_module = get_conversation_module()
 	return conversation_module?.can_participate()
-
-// ==================== Cover ====================
-// Cover reservation, entry, exit, and cover-search helpers.
-/datum/human_ai_brain/proc/has_cover()
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	return cover_module?.has_cover()
-
-/datum/human_ai_brain/proc/is_in_cover()
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	return cover_module?.is_in_cover()
-
-/datum/human_ai_brain/proc/has_pending_cover()
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	if(!cover_module)
-		return FALSE
-	return cover_module.has_cover() && !cover_module.is_in_cover()
-
-/datum/human_ai_brain/proc/get_current_cover()
-	RETURN_TYPE(/turf)
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	return cover_module?.get_current_cover()
-
-/datum/human_ai_brain/proc/end_cover()
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	cover_module?.end_cover()
-
-/datum/human_ai_brain/proc/enter_cover()
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	cover_module?.enter_cover()
-
-/datum/human_ai_brain/proc/try_cover(angle = null, atom/source = null)
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	cover_module?.try_cover(angle, source)
-
-/datum/human_ai_brain/proc/apply_cover_processing(list/turf_dict, from_squad = FALSE)
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	cover_module?.cover_processing(turf_dict, from_squad)
-
-/datum/human_ai_brain/proc/start_cover_search_cooldown(cooldown)
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
-	if(!cover_module)
-		return
-	COOLDOWN_START(cover_module, cover_search_cooldown, cooldown)
 
 // ==================== Emplacement ====================
 // Stationary sniper and machinegunner home positions.
@@ -282,9 +220,8 @@
 
 /datum/human_ai_brain/proc/is_stationary_fire_blocked()
 	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	var/datum/human_ai_module/cover/cover_module = get_cover_module()
 	var/datum/human_ai_module/health/health_module = get_health_module()
-	return guns_module?.has_tried_reload() || cover_module?.has_cover() || health_module?.healing_someone
+	return guns_module?.has_tried_reload() || should_block_stationary_fire_for_cover() || health_module?.healing_someone
 
 // ==================== Faction ====================
 // Friendly/hostile checks and faction memory.
@@ -300,119 +237,6 @@
 	var/datum/human_ai_module/faction/faction_module = get_faction_module()
 	if(faction_module)
 		faction_module.previous_faction = new_faction
-
-// ==================== Grenade ====================
-// Grenade capabilities, active live grenade tracking, and throw state.
-/datum/human_ai_brain/proc/has_active_grenade()
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	return grenade_module?.has_active_grenade()
-
-/datum/human_ai_brain/proc/get_active_grenade()
-	RETURN_TYPE(/obj/item/explosive/grenade)
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	return grenade_module?.get_active_grenade()
-
-/datum/human_ai_brain/proc/set_active_grenade(obj/item/explosive/grenade/new_grenade)
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	grenade_module?.set_active_grenade(new_grenade)
-
-/datum/human_ai_brain/proc/clear_active_grenade()
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	grenade_module?.clear_active_grenade()
-
-/datum/human_ai_brain/proc/set_grenade_throwback_enabled(enabled)
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	if(!grenade_module)
-		return
-	grenade_module.can_throw_back_grenades = enabled
-	if(!enabled)
-		grenade_module.clear_active_grenade()
-
-/datum/human_ai_brain/proc/can_throw_grenades()
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	return grenade_module?.can_throw_grenades()
-
-/datum/human_ai_brain/proc/set_grenade_throwing_enabled(enabled)
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	if(!grenade_module)
-		return
-	grenade_module.grenading_allowed = enabled
-
-/datum/human_ai_brain/proc/can_throw_back_grenade()
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	return grenade_module?.can_throw_back()
-
-/datum/human_ai_brain/proc/get_friendly_throw_check_range()
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	return grenade_module?.get_friendly_throw_check_range() || 0
-
-/datum/human_ai_brain/proc/find_grenade_for_throw()
-	RETURN_TYPE(/obj/item/explosive/grenade)
-	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
-	return inventory_module?.find_grenade_for_throw()
-
-/datum/human_ai_brain/proc/has_throw_in_progress()
-	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
-	return grenade_module?.has_throw_in_progress()
-
-// ==================== Guns ====================
-// Ranged weapon reload/fire cooldown state.
-/datum/human_ai_brain/proc/has_tried_reload()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	return guns_module?.has_tried_reload()
-
-/datum/human_ai_brain/proc/mark_tried_reload()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	guns_module?.mark_tried_reload()
-
-/datum/human_ai_brain/proc/set_tried_reload(new_value)
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	if(!guns_module)
-		return
-	if(new_value)
-		guns_module.mark_tried_reload()
-	else
-		guns_module.clear_tried_reload()
-
-/datum/human_ai_brain/proc/should_reload()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	return guns_module?.should_reload()
-
-/datum/human_ai_brain/proc/can_start_fire()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	if(!guns_module)
-		return FALSE
-	return COOLDOWN_FINISHED(guns_module, stop_fire_cooldown)
-
-/datum/human_ai_brain/proc/start_stop_fire_cooldown(cooldown)
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	if(!guns_module)
-		return
-	COOLDOWN_START(guns_module, stop_fire_cooldown, cooldown)
-
-/datum/human_ai_brain/proc/can_continue_fire_burst()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	if(!guns_module)
-		return FALSE
-	return COOLDOWN_FINISHED(guns_module, fire_overload_cooldown)
-
-/datum/human_ai_brain/proc/start_fire_overload_cooldown()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	if(!guns_module || !profile_module)
-		return
-
-	var/short_action_delay = profile_module.short_action_delay
-	COOLDOWN_START(guns_module, fire_overload_cooldown, max(short_action_delay, short_action_delay * profile_module.action_delay_mult))
-
-/datum/human_ai_brain/proc/clear_tried_reload()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	guns_module?.clear_tried_reload()
-
-/datum/human_ai_brain/proc/can_use_ranged_weapon()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
-	return guns_module && !guns_module.has_tried_reload() && (inventory_module?.has_primary_weapon() || inventory_module?.has_secondary_weapons())
 
 // ==================== Health ====================
 // Treatment state and self-treatment retry helpers.
@@ -585,56 +409,3 @@
 /datum/human_ai_brain/proc/set_current_order(datum/ai_order/order)
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
 	squad_module?.set_current_order(order)
-
-// ==================== Targeting ====================
-// Current target, target turf, aiming, and offscreen-fire targeting state.
-/datum/human_ai_brain/proc/get_current_target()
-	RETURN_TYPE(/atom/movable)
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	return targeting_module?.get_current_target()
-
-/datum/human_ai_brain/proc/get_aim_target()
-	RETURN_TYPE(/atom)
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	return targeting_module?.get_aim_target()
-
-/datum/human_ai_brain/proc/has_current_target()
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	return targeting_module?.has_current_target()
-
-/datum/human_ai_brain/proc/can_target(atom/movable/target)
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	return targeting_module?.can_target(target)
-
-/datum/human_ai_brain/proc/get_target_turf()
-	RETURN_TYPE(/turf)
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	return targeting_module?.get_target_turf()
-
-/datum/human_ai_brain/proc/has_target_turf()
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	return targeting_module?.has_target_turf()
-
-/datum/human_ai_brain/proc/has_offscreen_fire_target()
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	return targeting_module?.has_target_turf() && !COOLDOWN_FINISHED(targeting_module, fire_offscreen)
-
-/datum/human_ai_brain/proc/can_fire_offscreen(turf/target_turf, datum/human_ai_firearm_profile/gun_data = null)
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	if(!targeting_module || !target_turf || COOLDOWN_FINISHED(targeting_module, fire_offscreen))
-		return FALSE
-	if(!gun_data)
-		return TRUE
-	return gun_data.maximum_range > get_view_distance()
-
-/datum/human_ai_brain/proc/lose_target()
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	targeting_module?.lose_target()
-
-/datum/human_ai_brain/proc/clear_target_turf()
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	targeting_module?.clear_target_turf()
-
-/datum/human_ai_brain/proc/set_target_turf_direct(turf/new_target_turf)
-	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	targeting_module?.set_target_turf_direct(new_target_turf)

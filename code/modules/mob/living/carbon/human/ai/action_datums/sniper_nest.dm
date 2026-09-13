@@ -17,7 +17,7 @@
 	if(brain.has_tried_reload())
 		return 0
 
-	if(brain.has_cover())
+	if(brain.should_block_stationary_fire_for_cover())
 		return 0
 
 	if(!inventory.has_primary_weapon())

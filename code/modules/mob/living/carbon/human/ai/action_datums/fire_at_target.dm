@@ -15,39 +15,13 @@
 	if(!brain || !controller || !inventory)
 		return 0
 
-	if(!brain.has_valid_tied_human()) // SS220 EDIT: upstream action glue must not schedule work for detached modular AI owners
-		return 0
-
-	if(!brain.is_in_combat())
-		return 0
-
-	if(brain.has_tried_reload())
-		return 0
-
 	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
-	if(!primary_weapon)
-		return 0
-
-	if(!brain.can_start_fire())
-		return 0
-
-	var/turf/target_turf = brain.get_target_turf()
 	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
-	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf, gun_data)
-
-	if(!brain.has_current_target() && !should_fire_offscreen)
+	if(!brain.can_attempt_ranged_fire(controller, primary_weapon, gun_data))
 		return 0
 
-	if((controller.get_distance_to(target_turf) > brain.get_view_distance()) && !should_fire_offscreen)
-		return 0
-
-	if(brain.should_defer_ranged_fire(brain.get_aim_target()))
-		return 0
-
+	var/turf/target_turf = brain.get_ranged_fire_target_turf(gun_data)
 	if(!firing_line_check(context, target_turf))
-		return 0
-
-	if(brain.should_reload())
 		return 0
 
 	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
@@ -97,23 +71,17 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
-	if(!primary_weapon || brain.has_active_grenade() || !brain.can_start_fire())
+	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
+	if(!brain.can_attempt_ranged_fire(controller, primary_weapon, gun_data, require_combat = FALSE, block_active_grenade = TRUE, check_view_distance = FALSE, check_reload = FALSE, check_tried_reload = FALSE))
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/target_turf = brain.get_target_turf()
+	var/turf/target_turf = brain.get_ranged_fire_target_turf(gun_data)
 	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf)
-	if(!brain.has_current_target() && !should_fire_offscreen)
-		return ONGOING_ACTION_COMPLETED
-
-	if(brain.should_defer_ranged_fire(brain.get_aim_target()))
-		return ONGOING_ACTION_COMPLETED
-
 	if(currently_firing || !brain.can_continue_fire_burst())
 		return ONGOING_ACTION_UNFINISHED
 
 	inventory.unholster_primary()
 
-	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
 	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
 	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
 	if(!handler?.before_fire(firearm_context))
@@ -126,7 +94,7 @@
 			inventory.set_primary_weapon(null)
 		return ONGOING_ACTION_COMPLETED
 
-	if((controller.get_distance_to(target_turf) > gun_data.maximum_range) && !should_fire_offscreen)
+	if(!brain.can_reach_ranged_fire_target(controller, target_turf, gun_data.maximum_range) && !should_fire_offscreen)
 		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
 
@@ -291,7 +259,7 @@
 			qdel(src)
 			return
 
-	if(brain.should_defer_ranged_fire(shoot_next))
+	if(brain.should_defer_ranged_fire_target(shoot_next))
 		stop_firing()
 		qdel(src)
 		return
@@ -306,7 +274,7 @@
 		stop_firing()
 		return
 
-	if((controller.get_distance_to(shoot_next) > gun_data.maximum_range) && !should_fire_offscreen)
+	if(!brain.can_reach_ranged_fire_atom(controller, shoot_next, gun_data.maximum_range) && !should_fire_offscreen)
 		brain.lose_target()
 		stop_firing()
 		qdel(src)

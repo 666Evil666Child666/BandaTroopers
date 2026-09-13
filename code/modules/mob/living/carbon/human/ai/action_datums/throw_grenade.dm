@@ -14,22 +14,13 @@
 	if(!brain || !controller || !inventory)
 		return 0
 
-	if(!brain.can_throw_grenades())
-		return 0
-
-	if(!brain.is_in_combat())
-		return 0
-
-	var/turf/target_turf = brain.get_target_turf()
-	if(!target_turf)
-		return 0
-
-	if(!inventory.find_grenade_for_throw())
+	if(!brain.can_attempt_grenade_throw())
 		return 0
 
 	if(!inventory.has_primary_weapon())
 		return 10
 
+	var/turf/target_turf = brain.get_grenade_throw_target_turf()
 	if(locate(/turf/closed) in controller.get_line_to(target_turf))
 		return 10
 
@@ -48,7 +39,7 @@
 		return
 
 	var/datum/human_ai_throwable_context/throwable_context = new(brain)
-	throwing = GLOB.human_ai_grenade_throw_handler.prepare_grenade_for_throw(throwable_context, inventory.find_grenade_for_throw())
+	throwing = GLOB.human_ai_grenade_throw_handler.prepare_grenade_for_throw(throwable_context, brain.get_grenade_throw_source())
 	throw_range_override = isnum(throwing?.throw_range) ? throwing.throw_range : null
 	log_game("AI GRENADE: throw action created - grenade=[throwing] ([throwing?.type]), available=[inventory.get_equipment_summary(HUMAN_AI_GRENADES)], throw_range=[throw_range_override], mob=[controller?.get_key_name()]")
 	qdel(throwable_context)
@@ -84,7 +75,7 @@
 	if(mid_throw)
 		return ONGOING_ACTION_UNFINISHED_BLOCK
 
-	var/turf/target_turf = brain.get_target_turf()
+	var/turf/target_turf = brain.get_grenade_throw_target_turf()
 	if(QDELETED(throwing) || !target_turf)
 		log_game("AI GRENADE: throw action aborted - grenade missing or no target, QDELETED=[QDELETED(throwing)], target=[target_turf], mob=[controller?.get_key_name()]")
 		return ONGOING_ACTION_COMPLETED

@@ -52,7 +52,7 @@
 	if(brain.has_active_grenade())
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.has_pending_cover())
+	if(brain.should_block_movement_for_pending_cover())
 		return ONGOING_ACTION_COMPLETED
 
 	return approach() || back_up() || ONGOING_ACTION_COMPLETED
