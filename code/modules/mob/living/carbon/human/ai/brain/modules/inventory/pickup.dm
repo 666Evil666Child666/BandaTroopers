@@ -31,7 +31,7 @@
 	to_pickup.Cut()
 
 /datum/human_ai_module/inventory/proc/should_run_nearby_item_search()
-	if(brain.halo_should_suspend_nearby_item_search())
+	if(brain.should_suspend_nearby_item_search())
 		return FALSE
 
 	if(nearby_item_search_interval <= 0)

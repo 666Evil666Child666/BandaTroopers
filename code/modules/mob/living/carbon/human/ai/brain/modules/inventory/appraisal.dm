@@ -62,8 +62,8 @@
 		add_secondary_weapon(controller.get_back())
 		return
 
-	// SS220 EDIT - START: HALO transport rigs such as the SPNKr pack sit on the back slot as storage,
-	// but they are not guaranteed to inherit backpack. AI still needs to appraise their contents.
+	// SS220 EDIT - START: some back-slot transport rigs are storage without inheriting backpack.
+	// AI still needs to appraise their contents.
 	if(!istype(controller.get_back(), /obj/item/storage))
 		return
 	// SS220 EDIT - END

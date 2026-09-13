@@ -108,8 +108,7 @@
 		return
 
 	COOLDOWN_START(src, cover_search_cooldown, 10 SECONDS)
-	// SS220 EDIT: keep a lightweight count of human AI cover scans during HALO perf investigations
-	halo_perf_bump_cover_scans()
+	brain?.on_cover_scan_started()
 
 	var/list/turf_dict = list()
 	var/cover_dir = reverse_direction(angle2dir4ai(angle))

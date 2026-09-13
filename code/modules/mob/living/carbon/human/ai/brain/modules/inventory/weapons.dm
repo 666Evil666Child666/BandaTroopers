@@ -6,7 +6,7 @@
 	primary_weapon = new_gun
 	appraise_primary()
 	invalidate_nearby_item_search()
-	brain.invalidate_halo_runtime_caches()
+	brain.on_inventory_runtime_changed()
 	if(primary_weapon)
 		RegisterSignal(primary_weapon, COMSIG_PARENT_QDELETING, PROC_REF(on_primary_delete), TRUE)
 

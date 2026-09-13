@@ -23,7 +23,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	module_config.setup_brain(src, new_human)
 	setup_lifecycle_modules()
 	controller.register_signal_for(src, COMSIG_PARENT_QDELETING, PROC_REF(on_human_delete))
-	controller.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: HALO death guard should tear down AI and force corpses prone immediately
+	controller.register_signal_for(src, COMSIG_MOB_DEATH, PROC_REF(on_human_death)) // SS220 EDIT: death guard should tear down AI and force corpses prone immediately
 	controller.register_signal_for(src, COMSIG_MOVABLE_MOVED, PROC_REF(on_move))
 	controller.register_signal_for(src, COMSIG_HUMAN_HANDCUFFED, PROC_REF(on_handcuffed))
 	controller.register_signal_for(src, COMSIG_HUMAN_GET_AI_BRAIN, PROC_REF(get_ai_brain))
@@ -168,7 +168,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	return TRUE
 
 /datum/human_ai_brain/proc/brain_resume_modular_runtime()
-	invalidate_halo_runtime_caches()
+	invalidate_runtime_extension_caches()
 
 /datum/human_ai_brain/proc/should_force_hardcrit_resting()
 	var/datum/human_tied_controller/controller = get_tied_controller()

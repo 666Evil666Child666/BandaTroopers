@@ -3,8 +3,8 @@
 	/// A nearby found active grenade which AI will try and toss back
 	var/obj/item/explosive/grenade/active_grenade_found
 	/// If TRUE, may enter the grenade throw-back action from nearby live grenades.
-	var/can_throw_back_grenades = TRUE // SS220 EDIT: modular HALO presets can opt weak HumanAI out of grenade throw-back
-	/// Range in tiles for friendly proximity check when throwing grenades. Default 3. Override in HALO presets.
+	var/can_throw_back_grenades = TRUE // SS220 EDIT: equipment presets can opt weak HumanAI out of grenade throw-back
+	/// Range in tiles for friendly proximity check when throwing grenades. Default 3. Override in presets.
 	var/friendly_throw_check_range = 3 // SS220 EDIT: configurable friendly check range for grenade throws
 	/// If TRUE, the AI will throw grenades at enemies who enter cover
 	var/grenading_allowed = TRUE

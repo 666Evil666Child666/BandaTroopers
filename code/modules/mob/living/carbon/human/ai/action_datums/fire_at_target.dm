@@ -41,7 +41,7 @@
 	if((controller.get_distance_to(target_turf) > brain.get_view_distance()) && !should_fire_offscreen)
 		return 0
 
-	if(brain.halo_should_defer_ranged_fire(brain.get_aim_target()))
+	if(brain.should_defer_ranged_fire(brain.get_aim_target()))
 		return 0
 
 	if(!firing_line_check(context, target_turf))
@@ -105,7 +105,7 @@
 	if(!brain.has_current_target() && !should_fire_offscreen)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.halo_should_defer_ranged_fire(brain.get_aim_target()))
+	if(brain.should_defer_ranged_fire(brain.get_aim_target()))
 		return ONGOING_ACTION_COMPLETED
 
 	if(currently_firing || !brain.can_continue_fire_burst())
@@ -291,7 +291,7 @@
 			qdel(src)
 			return
 
-	if(brain.halo_should_defer_ranged_fire(shoot_next))
+	if(brain.should_defer_ranged_fire(shoot_next))
 		stop_firing()
 		qdel(src)
 		return

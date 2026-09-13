@@ -13,7 +13,7 @@
 	if(!brain || !controller)
 		return 0
 
-	if(!brain.can_throw_back_grenade()) // SS220 EDIT: modular HALO weak AI presets must not enter throw-back mode
+	if(!brain.can_throw_back_grenade()) // SS220 EDIT: weak AI presets must not enter throw-back mode
 		return 0
 
 	var/obj/item/explosive/grenade/active_grenade_found = brain.get_active_grenade()

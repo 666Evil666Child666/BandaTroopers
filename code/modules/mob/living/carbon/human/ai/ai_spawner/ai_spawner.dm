@@ -294,7 +294,7 @@
 				var/datum/equipment_preset/assigned_preset = ai_human.assigned_equipment_preset
 				var/expected_species = assigned_preset?.expected_species
 				var/needs_species_intrinsic_refresh = FALSE // SS220 EDIT: restore owner-bound intrinsic equipment after shared Create AI cleanup
-				if(expected_species && ai_human.species?.group != expected_species && ai_human.species?.name != expected_species) // SS220 EDIT: accept canonical HALO species ids through group as well as species.name
+				if(expected_species && ai_human.species?.group != expected_species && ai_human.species?.name != expected_species) // SS220 EDIT: accept canonical species ids through group as well as species.name
 					ai_human.set_species(expected_species)
 				var/final_species = species || ai_human.species?.name // SS220 EDIT: only refresh intrinsic equipment when the finished species remains the same
 				var/datum/human_ai_brain/ai_brain = ai_human.get_ai_brain()

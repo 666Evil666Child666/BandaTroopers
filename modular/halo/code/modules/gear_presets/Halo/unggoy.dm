@@ -704,7 +704,8 @@
 	add_ai_injectors(new_human, list(/obj/item/reagent_container/hypospray/autoinjector/bicaridine/halo, /obj/item/reagent_container/hypospray/autoinjector/oxycodone/halo))
 
 /datum/human_ai_action_set/halo_unggoy_suicide_bomber
-	action_whitelist = list(/datum/ai_action/unggoy_suicide_bomber)
+	// SS220 HALO AI DISABLED: original suicide bomber action is preserved in halo_ai_reenable_registrations.dm.
+	action_whitelist = list()
 	action_blacklist = list(/datum/ai_action/throw_grenade)
 
 /datum/equipment_preset/covenant/unggoy/ai/suicide_bomber

@@ -82,11 +82,8 @@
 	return ONGOING_ACTION_UNFINISHED
 
 
-/datum/admins/proc/create_human_ai_machinegunner()
-	set name = "Create Human AI machinegunner"
-	set category = "Game Master.HumanAI"
-
-	var/static/list/machinegunner_equipment_presets = list(
+/datum/admins/proc/get_human_ai_machinegunner_equipment_presets()
+	var/list/equipment_presets = list(
 		/datum/equipment_preset/rebel/soldier::name = /datum/equipment_preset/rebel/soldier,
 		/datum/equipment_preset/clf/soldier::name = /datum/equipment_preset/clf/soldier,
 		/datum/equipment_preset/canc/remnant::name = /datum/equipment_preset/canc/remnant,
@@ -110,18 +107,16 @@
 		/datum/equipment_preset/clf/soldier/machinegunner::name = /datum/equipment_preset/clf/soldier/machinegunner,
 		/datum/equipment_preset/mercenary/sentinel/mg::name = /datum/equipment_preset/mercenary/sentinel/mg,
 		/datum/equipment_preset/fil/rifleman/mg::name = /datum/equipment_preset/fil/rifleman/mg,
-		// SS220 EDIT - START
-		// HALO AI machinegunner presets.
-		/datum/equipment_preset/covenant/sangheili/minor/plasma_rifle::name = /datum/equipment_preset/covenant/sangheili/minor/plasma_rifle,
-		/datum/equipment_preset/covenant/unggoy/minor/plasma_pistol::name = /datum/equipment_preset/covenant/unggoy/minor/plasma_pistol,
-		/datum/equipment_preset/covenant/unggoy/heavy/plasma_rifle::name = /datum/equipment_preset/covenant/unggoy/heavy/plasma_rifle,
-		/datum/equipment_preset/covenant/ruuhtian/major/plasma_rifle::name = /datum/equipment_preset/covenant/ruuhtian/major/plasma_rifle,
-		/datum/equipment_preset/unsc/pfc/equipped::name = /datum/equipment_preset/unsc/pfc/equipped,
-		/datum/equipment_preset/police/officer/geared/smg::name = /datum/equipment_preset/police/officer/geared/smg,
-		/datum/equipment_preset/oni/security::name = /datum/equipment_preset/oni/security,
-		/datum/equipment_preset/insurgent/rifleman::name = /datum/equipment_preset/insurgent/rifleman,
-		// SS220 EDIT - END
 	)
+	if(hascall(src, "modular_append_human_ai_machinegunner_equipment_presets"))
+		call(src, "modular_append_human_ai_machinegunner_equipment_presets")(equipment_presets)
+	return equipment_presets
+
+/datum/admins/proc/create_human_ai_machinegunner()
+	set name = "Create Human AI machinegunner"
+	set category = "Game Master.HumanAI"
+
+	var/list/machinegunner_equipment_presets = get_human_ai_machinegunner_equipment_presets()
 
 	if(!check_rights(R_DEBUG))
 		return
