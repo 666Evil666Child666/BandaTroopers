@@ -8,9 +8,6 @@
 /datum/human_ai_throwable_handler/proc/try_hold_throwable(datum/human_ai_throwable_context/context)
 	if(!context?.can_continue_throw())
 		return FALSE
-	var/datum/human_ai_module/inventory/inventory = context.get_inventory()
-	if(!inventory)
-		return FALSE
 
 	var/obj/item/explosive/grenade/grenade = context.grenade
 	if(context.controller.get_active_hand() == grenade)
@@ -25,17 +22,17 @@
 	if(active_hand && (active_hand != grenade))
 		if(active_hand.flags_item & NODROP)
 			return FALSE
-		inventory.clear_main_hand()
+		context.clear_main_hand()
 		if(context.controller.get_active_hand())
 			return FALSE
 
 	if(!context.controller.is_item_equipped_or_held(grenade))
-		if(!inventory.equip_item_from_equipment_map(HUMAN_AI_GRENADES, grenade))
+		if(!context.equip_item_from_equipment_map(HUMAN_AI_GRENADES, grenade))
 			return FALSE
 	else if(!context.controller.put_in_active_hand(grenade))
 		return FALSE
 
-	inventory.ensure_primary_hand(grenade)
+	context.ensure_primary_hand(grenade)
 	return context.controller.get_active_hand() == grenade
 
 /datum/human_ai_throwable_handler/grenade
@@ -46,11 +43,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 	if(!context?.can_continue_throw() || !action)
 		return FALSE
 
-	var/datum/human_ai_module/inventory/inventory = context.get_inventory()
-	if(!inventory)
-		return FALSE
-
-	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = context.get_primary_weapon()
 	if(primary_weapon)
 		context.controller.unwield_weapon(primary_weapon)
 		if(context.controller.get_active_hand() == primary_weapon)
@@ -128,7 +121,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 		finish_async_throw(action)
 		return
 
-	context.get_inventory()?.ensure_primary_hand(grenade)
+	context.ensure_primary_hand(grenade)
 	context.AI.say_grenade_thrown_line()
 	sleep(HUMAN_AI_GRENADE_POST_PRIME_THROW_DELAY)
 

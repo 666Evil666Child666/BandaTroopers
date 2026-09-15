@@ -22,8 +22,7 @@
 	clear_tried_reload()
 
 /datum/human_ai_module/guns/proc/should_reload()
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	var/obj/item/weapon/gun/primary_weapon = inventory?.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	if(!primary_weapon)
 		return FALSE
 

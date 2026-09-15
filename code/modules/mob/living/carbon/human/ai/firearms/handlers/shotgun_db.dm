@@ -22,12 +22,11 @@
 		return FALSE
 	context.insert_ammo()
 	if(!QDELETED(context.mag))
-		var/datum/human_ai_module/inventory/inventory = context.get_inventory()
-		var/storage_spot = inventory?.storage_has_room(context.mag)
+		var/storage_spot = context.storage_has_room(context.mag)
 		if(storage_spot)
 			if(!context.sleep_micro())
 				return FALSE
-			inventory.store_item(context.mag, storage_spot, HUMAN_AI_AMMUNITION)
+			context.store_ammo_item(context.mag, storage_spot)
 	if(!context.sleep_short())
 		return FALSE
 	context.swap_hand()

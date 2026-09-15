@@ -375,10 +375,7 @@
 					var/datum/component/human_ai/ai_component = ai_human.GetComponent(/datum/component/human_ai) // ai human might not be AI. those who know
 					if(!ai_component)
 						ai_component = ai_human.AddComponent(/datum/component/human_ai)
-					var/datum/human_ai_context/appraise_context = ai_component?.ai_brain?.create_context()
-					var/datum/human_ai_module/inventory/inventory = appraise_context?.get_module(/datum/human_ai_module/inventory)
-					inventory?.appraise_inventory(armor = TRUE)
-					qdel(appraise_context)
+					ai_component?.ai_brain?.appraise_inventory(armor = TRUE)
 				qdel(setup_context)
 				QDEL_NULL(temporary_tied_controller)
 

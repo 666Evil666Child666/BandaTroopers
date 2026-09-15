@@ -14,9 +14,6 @@
 		ai_human.face_dir(facing_dir)
 
 	var/datum/component/human_ai/ai_component = ai_human.AddComponent(/datum/component/human_ai)
-	var/datum/human_ai_context/context = ai_component?.ai_brain?.create_context()
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	inventory?.appraise_inventory(armor = TRUE)
-	qdel(context)
+	ai_component?.ai_brain?.appraise_inventory(armor = TRUE)
 
 	return ai_human

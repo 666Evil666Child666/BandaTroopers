@@ -29,16 +29,13 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/try_hold_live_grenade(datum/human_ai_throwable_context/context)
 	if(!context?.can_continue() || !context.grenade || QDELETED(context.grenade) || !isturf(context.grenade.loc))
 		return FALSE
-	var/datum/human_ai_module/inventory/inventory = context.get_inventory()
-	if(!inventory)
-		return FALSE
 
 	var/obj/item/explosive/grenade/grenade = context.grenade
 	if(context.controller.get_active_hand() == grenade)
 		return TRUE
 
 	if(!(context.controller.get_active_hand()?.flags_item & NODROP))
-		inventory.clear_main_hand()
+		context.clear_main_hand()
 		if(context.controller.put_in_active_hand(grenade))
 			return TRUE
 
@@ -47,7 +44,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 		return TRUE
 
 	if(!(context.controller.get_active_hand()?.flags_item & NODROP))
-		inventory.clear_main_hand()
+		context.clear_main_hand()
 		if(context.controller.put_in_active_hand(grenade))
 			return TRUE
 
@@ -57,7 +54,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/try_hold_live_grenade_ensure_primary(datum/human_ai_throwable_context/context)
 	if(!try_hold_live_grenade(context))
 		return FALSE
-	context.get_inventory()?.ensure_primary_hand(context.grenade)
+	context.ensure_primary_hand(context.grenade)
 	return TRUE
 
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/get_directional_throw_target(datum/human_ai_throwable_context/context)
@@ -186,7 +183,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 	context.controller.face_atom(place_to_throw)
 	log_game("AI GRENADE: throw-back proceeding to async throw - grenade=[context.grenade], target=[place_to_throw], mob=[context.controller.get_key_name()]")
 	context.AI.clear_active_grenade()
-	context.get_inventory()?.unqueue_pickup(context.grenade)
+	context.unqueue_pickup(context.grenade)
 	action.throw_ready_time = 0
 	action.mid_throw = TRUE
 	INVOKE_ASYNC(src, PROC_REF(async_throw_grenade), action, context.controller.get_identity_ref(), context.grenade, place_to_throw)

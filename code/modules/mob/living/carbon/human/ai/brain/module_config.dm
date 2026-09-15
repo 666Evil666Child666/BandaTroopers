@@ -72,8 +72,7 @@
 	perception?.register_signals()
 	perception?.setup_detection_radius()
 
-	var/datum/human_ai_module/inventory/inventory = get_module_by_type(brain, /datum/human_ai_module/inventory)
-	inventory?.register_signals()
+	brain.register_inventory_signals()
 
 /datum/human_ai_module_config/default/configure_lifecycle_module_lists(datum/human_ai_brain/brain)
 	register_module_list_for_event(brain, HUMAN_AI_EVENT_RESET_BEFORE_WAKE_CLEAR, list(/datum/human_ai_module/health, /datum/human_ai_module/navigation, /datum/human_ai_module/cover, /datum/human_ai_module/perception))

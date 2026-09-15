@@ -6,19 +6,18 @@
 /datum/ai_action/keep_distance/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !inventory)
+	if(!brain || !controller)
 		return 0
 
 	var/atom/movable/current_target = brain.get_current_target()
 	if(!current_target)
 		return 0
 
-	if(!inventory.has_primary_weapon() || brain.has_tried_reload() || !brain.can_move_for_action())
+	if(!brain.has_primary_weapon() || brain.has_tried_reload() || !brain.can_move_for_action())
 		return 0
 
 	var/distance = controller.get_distance_to(current_target)
-	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
 
 	if(ismob(current_target) && current_target?:is_mob_incapacitated())
 		if(distance != gun_data.minimum_range)
@@ -39,14 +38,13 @@
 		return .
 
 	var/datum/human_ai_brain/brain = context?.brain
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !inventory)
+	if(!brain)
 		return ONGOING_ACTION_COMPLETED
 
 	if(!brain.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
-	if(!inventory.has_primary_weapon())
+	if(!brain.has_primary_weapon())
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.has_active_grenade())
@@ -60,12 +58,11 @@
 /datum/ai_action/keep_distance/proc/approach()
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !inventory)
+	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
 	var/atom/movable/current_target = brain.get_current_target()
-	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
 	var/range
 	if(ismob(current_target))
 		var/mob/current_mob_target = current_target
@@ -90,12 +87,11 @@
 /datum/ai_action/keep_distance/proc/back_up()
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !inventory)
+	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
 	var/atom/movable/current_target = brain.get_current_target()
-	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
 	var/range
 	var/is_incap = FALSE
 	if(ismob(current_target))

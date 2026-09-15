@@ -11,12 +11,11 @@
 /datum/ai_action/fire_at_target/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !inventory)
+	if(!brain || !controller)
 		return 0
 
-	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
-	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
 	if(!brain.can_attempt_ranged_fire(controller, primary_weapon, gun_data))
 		return 0
 
@@ -44,13 +43,12 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
 	if(!brain)
 		return
 
 	if(controller && brain.has_valid_tied_human())
 		controller.unregister_signal_for(src, COMSIG_MOB_FIRED_GUN)
-	inventory?.get_primary_weapon()?.set_target(null)
+	brain.get_primary_weapon()?.set_target(null)
 
 /datum/ai_action/fire_at_target/proc/clear_watched_turfs()
 	if(!length(watched_turfs))
@@ -66,12 +64,11 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !inventory)
+	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
-	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
 	if(!brain.can_attempt_ranged_fire(controller, primary_weapon, gun_data, require_combat = FALSE, block_active_grenade = TRUE, check_view_distance = FALSE, check_reload = FALSE, check_tried_reload = FALSE))
 		return ONGOING_ACTION_COMPLETED
 
@@ -80,7 +77,7 @@
 	if(currently_firing || !brain.can_continue_fire_burst())
 		return ONGOING_ACTION_UNFINISHED
 
-	inventory.unholster_primary()
+	brain.unholster_primary()
 
 	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
 	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
@@ -91,7 +88,7 @@
 		qdel(firearm_context)
 		if(gun_data?.disposable)
 			controller.drop_held_item(primary_weapon)
-			inventory.set_primary_weapon(null)
+			brain.set_primary_weapon(null)
 		return ONGOING_ACTION_COMPLETED
 
 	if(!brain.can_reach_ranged_fire_target(controller, target_turf, gun_data.maximum_range) && !should_fire_offscreen)
@@ -209,8 +206,7 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain?.can_continue_runtime_work() || !controller || !inventory) // SS220 EDIT: late gun callbacks can outlive active AI control for a tick
+	if(!brain?.can_continue_runtime_work() || !controller) // SS220 EDIT: late gun callbacks can outlive active AI control for a tick
 		qdel(src)
 		return
 
@@ -223,13 +219,13 @@
 
 	currently_firing = TRUE
 
-	var/datum/human_ai_firearm_profile/gun_data = inventory.get_gun_data()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
 	if(brain.should_reload()) // note that bullet removal comes after comsig is triggered
 		if(gun_data?.disposable)
-			var/obj/item/weapon/gun/current_primary_weapon = inventory.get_primary_weapon()
+			var/obj/item/weapon/gun/current_primary_weapon = brain.get_primary_weapon()
 			if(current_primary_weapon)
 				controller.drop_held_item(current_primary_weapon)
-			inventory.set_primary_weapon(null)
+			brain.set_primary_weapon(null)
 		stop_firing()
 		qdel(src)
 		return
@@ -264,7 +260,7 @@
 		qdel(src)
 		return
 
-	var/obj/item/weapon/gun/primary_weapon = inventory.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	var/count_shot_against_burst_limit = ((primary_weapon.gun_firemode == GUN_FIREMODE_AUTOMATIC) || gun_data.count_every_shot_toward_burst_limit)
 	if(count_shot_against_burst_limit)
 		rounds_burst_fired++

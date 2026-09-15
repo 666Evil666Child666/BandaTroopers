@@ -2174,6 +2174,7 @@
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_extension_hooks.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_module_facades.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\api\inventory_api.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\api\combat_api.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_conversation.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_factions.dm"

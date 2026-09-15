@@ -81,11 +81,7 @@
 			if(!context.sleep_micro())
 				return FALSE
 		if(!QDELETED(handful) && (handful.current_rounds > 0))
-			var/datum/human_ai_module/inventory/inventory = context.get_inventory()
-			var/storage_slot = inventory?.storage_has_room(handful)
-			if(storage_slot)
-				inventory.store_item(handful, storage_slot, HUMAN_AI_AMMUNITION)
-			else
+			if(!context.store_ammo_item(handful))
 				context.controller.drop_held_item(handful)
 	else
 		context.insert_ammo()

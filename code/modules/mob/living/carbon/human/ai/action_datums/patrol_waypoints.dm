@@ -6,8 +6,7 @@
 /datum/ai_action/patrol_waypoints/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !inventory)
+	if(!brain || !controller)
 		return 0
 
 	if(brain.is_in_combat())
@@ -17,7 +16,7 @@
 	if(!istype(current_order))
 		return 0
 
-	if(inventory.has_pickup_queue())
+	if(brain.has_pickup_queue())
 		return 0
 
 	if(current_order.waiting)
@@ -36,12 +35,11 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !inventory)
+	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
 	var/datum/ai_order/patrol/current_order = brain.get_current_order()
-	if(current_order.waiting || QDELETED(current_order) || !istype(current_order) || inventory.has_pickup_queue() || brain.is_in_combat())
+	if(current_order.waiting || QDELETED(current_order) || !istype(current_order) || brain.has_pickup_queue() || brain.is_in_combat())
 		return ONGOING_ACTION_COMPLETED
 
 	var/turf/current_waypoint = current_order.current_waypoint

@@ -327,9 +327,8 @@
 		return FALSE
 
 	var/distance = controller.get_distance_to(target)
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
 
-	if(!inventory?.can_ignore_target_darkness() && distance > 1 && !can_detect_living_target(target))
+	if(!brain.can_ignore_target_darkness() && distance > 1 && !can_detect_living_target(target))
 		return FALSE
 
 	if(HAS_TRAIT(target, TRAIT_CLOAKED) && controller.get_distance_to(target) > cloak_visible_range)

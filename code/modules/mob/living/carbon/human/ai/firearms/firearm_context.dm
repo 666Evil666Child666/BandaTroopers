@@ -31,10 +31,6 @@
 	target_turf = null
 	return ..()
 
-/datum/human_ai_firearm_context/proc/get_inventory()
-	RETURN_TYPE(/datum/human_ai_module/inventory)
-	return ai_context?.get_module(/datum/human_ai_module/inventory)
-
 /datum/human_ai_firearm_context/proc/is_valid()
 	return firearm && AI?.can_continue_runtime_work() && controller
 
@@ -71,25 +67,19 @@
 /datum/human_ai_firearm_context/proc/prepare_primary_weapon()
 	if(!is_valid())
 		return FALSE
-	var/datum/human_ai_module/inventory/inventory = get_inventory()
-	if(!inventory?.unholster_primary())
+	if(!AI.unholster_primary())
 		return FALSE
-	return inventory.ensure_primary_hand(firearm)
+	return AI.ensure_primary_hand(firearm)
 
 /datum/human_ai_firearm_context/proc/wield_primary()
 	if(!is_valid())
 		return FALSE
-	var/datum/human_ai_module/inventory/inventory = get_inventory()
-	if(!inventory)
-		return FALSE
-	inventory.wield_primary()
-	return TRUE
+	return AI.wield_primary()
 
 /datum/human_ai_firearm_context/proc/wield_primary_sleep()
 	if(!is_valid())
 		return FALSE
-	var/datum/human_ai_module/inventory/inventory = get_inventory()
-	return inventory?.wield_primary_sleep()
+	return AI.wield_primary_sleep()
 
 /datum/human_ai_firearm_context/proc/unwield_weapon()
 	if(!is_valid())
@@ -130,8 +120,41 @@
 /datum/human_ai_firearm_context/proc/equip_reload_item(equipment_type = HUMAN_AI_AMMUNITION)
 	if(!is_valid() || !reload_item)
 		return FALSE
-	var/datum/human_ai_module/inventory/inventory = get_inventory()
-	return inventory?.equip_item_from_equipment_map(equipment_type, reload_item)
+	return AI.equip_item_from_equipment_map(equipment_type, reload_item)
+
+/datum/human_ai_firearm_context/proc/iter_equipment_type(equipment_type)
+	if(!is_valid())
+		return list()
+	return AI.iter_equipment_type(equipment_type)
+
+/datum/human_ai_firearm_context/proc/has_equipment_item(obj/item/item, equipment_type)
+	if(!is_valid())
+		return FALSE
+	return AI.has_equipment_item(item, equipment_type)
+
+/datum/human_ai_firearm_context/proc/can_item_supply_ammo_for_weapon(obj/item/item)
+	if(!is_valid())
+		return FALSE
+	return AI.can_item_supply_ammo_for_weapon(item, firearm)
+
+/datum/human_ai_firearm_context/proc/can_item_supply_grenade(obj/item/item, obj/item/weapon/gun/launcher/grenade/grenade_launcher)
+	if(!is_valid())
+		return FALSE
+	return AI.can_item_supply_grenade(item, grenade_launcher)
+
+/datum/human_ai_firearm_context/proc/storage_has_room(obj/item/item)
+	if(!is_valid() || !item)
+		return null
+	return AI.storage_has_room(item)
+
+/datum/human_ai_firearm_context/proc/store_ammo_item(obj/item/item, storage_slot = null)
+	if(!is_valid() || !item)
+		return FALSE
+	if(!storage_slot)
+		storage_slot = storage_has_room(item)
+	if(!storage_slot)
+		return FALSE
+	return AI.store_item(item, storage_slot, HUMAN_AI_AMMUNITION)
 
 /datum/human_ai_firearm_context/proc/insert_reload_item(obj/item/item = reload_item)
 	if(!is_valid() || !item)

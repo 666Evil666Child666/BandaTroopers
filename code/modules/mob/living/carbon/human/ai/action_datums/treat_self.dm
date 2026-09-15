@@ -7,8 +7,7 @@
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
 	var/datum/human_ai_module/health/health = context?.get_module(/datum/human_ai_module/health)
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !health || !inventory)
+	if(!brain || !controller || !health)
 		return 0
 
 	if(controller.is_zombie())
@@ -20,10 +19,10 @@
 	if(brain.has_current_target() || brain.has_offscreen_fire_target())
 		return 0
 
-	if(inventory.has_pickup_queue())
+	if(brain.has_pickup_queue())
 		return 0
 
-	if(!inventory.has_equipment(HUMAN_AI_HEALTHITEMS))
+	if(!brain.has_equipment(HUMAN_AI_HEALTHITEMS))
 		return 0
 
 	if(!brain.can_retry_self_treatment())
@@ -46,14 +45,13 @@
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
 	var/datum/human_ai_module/health/health = context?.get_module(/datum/human_ai_module/health)
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain || !controller || !health || !inventory)
+	if(!brain || !controller || !health)
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
-	if(!inventory.has_equipment(HUMAN_AI_HEALTHITEMS))
+	if(!brain.has_equipment(HUMAN_AI_HEALTHITEMS))
 		return ONGOING_ACTION_COMPLETED
 
 	if(controller.is_on_fire())

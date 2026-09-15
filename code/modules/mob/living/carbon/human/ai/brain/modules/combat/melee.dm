@@ -37,8 +37,7 @@
 
 /datum/human_ai_module/melee/proc/can_use_ranged_weapon()
 	var/datum/human_ai_module/guns/guns = context?.get_module(/datum/human_ai_module/guns)
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	return guns && !guns.has_tried_reload() && (inventory?.has_primary_weapon() || inventory?.has_secondary_weapons())
+	return guns && !guns.has_tried_reload() && (brain.has_primary_weapon() || brain.has_secondary_weapons())
 
 /datum/human_ai_module/melee/proc/can_try_melee()
 	if(!context?.is_valid())

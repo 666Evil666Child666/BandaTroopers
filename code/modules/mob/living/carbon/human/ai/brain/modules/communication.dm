@@ -192,8 +192,7 @@
 	emit_ai_voiceline(pick(grenade_thrown_lines))
 
 /datum/human_ai_module/communication/proc/say_reload_line(chance = reload_line_chance)
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	var/obj/item/weapon/gun/primary_weapon = inventory?.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!length(reload_lines) || !prob(chance) || controller?.is_health_below(HEALTH_THRESHOLD_CRIT) || !primary_weapon)
 		return

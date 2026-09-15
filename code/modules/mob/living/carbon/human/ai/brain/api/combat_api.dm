@@ -137,11 +137,6 @@
 	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
 	return grenade_module?.get_friendly_throw_check_range() || 0
 
-/datum/human_ai_brain/proc/find_grenade_for_throw()
-	RETURN_TYPE(/obj/item/explosive/grenade)
-	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
-	return inventory_module?.find_grenade_for_throw()
-
 /datum/human_ai_brain/proc/has_throw_in_progress()
 	var/datum/human_ai_module/grenade/grenade_module = get_grenade_module()
 	return grenade_module?.has_throw_in_progress()
@@ -258,8 +253,7 @@
 
 /datum/human_ai_brain/proc/can_use_ranged_weapon()
 	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
-	return guns_module && !guns_module.has_tried_reload() && (inventory_module?.has_primary_weapon() || inventory_module?.has_secondary_weapons())
+	return guns_module && !guns_module.has_tried_reload() && (has_primary_weapon() || has_secondary_weapons())
 
 // ==================== Ranged Fire ====================
 // Higher-level ranged-fire readiness helpers. Firing actions still own line checks and firearm handler side effects.

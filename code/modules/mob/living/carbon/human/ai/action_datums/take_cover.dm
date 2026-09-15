@@ -6,11 +6,10 @@
 /datum/ai_action/take_cover/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	if(!brain?.has_valid_tied_human() || !controller || !inventory) // SS220 EDIT: upstream cover action must not score after modular owner teardown
+	if(!brain?.has_valid_tied_human() || !controller) // SS220 EDIT: upstream cover action must not score after modular owner teardown
 		return 0
 
-	if(!brain.can_attempt_cover_move(controller, inventory.get_gun_data()))
+	if(!brain.can_attempt_cover_move(controller, brain.get_gun_data()))
 		return 0
 
 	return 15
