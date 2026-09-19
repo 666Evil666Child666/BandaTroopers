@@ -13,6 +13,9 @@
 	/// Length of the conversation success cooldown
 	var/conversation_success_cooldown_time = 45 SECONDS
 
+/datum/human_ai_module/conversation/proc/is_in_conversation()
+	return in_conversation
+
 /datum/human_ai_module/conversation/proc/can_try_start()
 	if(!COOLDOWN_FINISHED(src, conversation_start_cooldown))
 		return FALSE
@@ -30,6 +33,16 @@
 		return FALSE
 
 	if(brain.is_in_combat() || in_conversation || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+		return FALSE
+
+	return TRUE
+
+/datum/human_ai_module/conversation/proc/can_continue()
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!context?.can_continue())
+		return FALSE
+
+	if(brain.is_in_combat() || !is_in_conversation() || !controller || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return FALSE
 
 	return TRUE

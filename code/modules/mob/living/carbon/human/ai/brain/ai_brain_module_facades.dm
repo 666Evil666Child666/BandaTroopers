@@ -182,6 +182,10 @@
 	var/datum/human_ai_module/conversation/conversation_module = get_conversation_module()
 	return conversation_module?.can_participate()
 
+/datum/human_ai_brain/proc/can_continue_conversation()
+	var/datum/human_ai_module/conversation/conversation_module = get_conversation_module()
+	return conversation_module?.can_continue()
+
 // ==================== Emplacement ====================
 // Stationary sniper and machinegunner home positions.
 /datum/human_ai_brain/proc/has_sniper_home()
@@ -354,28 +358,26 @@
 // Squad membership, leader lookup, and current order glue.
 /datum/human_ai_brain/proc/is_squad_leader()
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
-	return squad_module?.is_squad_leader
+	return squad_module?.is_leader()
 
 /datum/human_ai_brain/proc/set_squad_leader_status(is_leader)
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
-	if(squad_module)
-		squad_module.is_squad_leader = is_leader
+	squad_module?.set_leader_status(is_leader)
 
 /datum/human_ai_brain/proc/get_squad_id()
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
-	return squad_module?.squad_id
+	return squad_module?.get_squad_id()
 
 /datum/human_ai_brain/proc/has_squad()
 	return !!get_squad_id()
 
 /datum/human_ai_brain/proc/set_squad_id(new_squad_id)
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
-	if(squad_module)
-		squad_module.squad_id = new_squad_id
+	squad_module?.set_squad_id(new_squad_id)
 
 /datum/human_ai_brain/proc/can_assign_squad()
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
-	return squad_module?.can_assign_squad
+	return squad_module?.can_assign()
 
 /datum/human_ai_brain/proc/add_to_squad(new_squad_id)
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
@@ -384,22 +386,20 @@
 /datum/human_ai_brain/proc/get_squad_datum()
 	RETURN_TYPE(/datum/human_ai_squad)
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
-	if(!squad_module?.squad_id)
-		return null
-	return SShuman_ai.squad_id_dict["[squad_module.squad_id]"]
+	return squad_module?.get_squad_datum()
 
 /datum/human_ai_brain/proc/get_squad_leader()
 	RETURN_TYPE(/datum/human_ai_brain)
-	var/datum/human_ai_squad/squad_datum = get_squad_datum()
-	return squad_datum?.squad_leader
+	var/datum/human_ai_module/squad/squad_module = get_squad_module()
+	return squad_module?.get_squad_leader()
 
 /datum/human_ai_brain/proc/get_squad_members()
-	var/datum/human_ai_squad/squad_datum = get_squad_datum()
-	return squad_datum?.ai_in_squad || list()
+	var/datum/human_ai_module/squad/squad_module = get_squad_module()
+	return squad_module?.get_squad_members() || list()
 
 /datum/human_ai_brain/proc/get_current_order()
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
-	return squad_module?.current_order
+	return squad_module?.get_current_order()
 
 /datum/human_ai_brain/proc/remove_current_order()
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()

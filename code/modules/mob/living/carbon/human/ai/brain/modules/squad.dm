@@ -110,6 +110,40 @@
 	/// Semi-permanent "order" datum. Does not expire
 	var/datum/ai_order/current_order
 
+/datum/human_ai_module/squad/proc/is_leader()
+	return is_squad_leader
+
+/datum/human_ai_module/squad/proc/set_leader_status(new_value)
+	is_squad_leader = new_value
+
+/datum/human_ai_module/squad/proc/get_squad_id()
+	return squad_id
+
+/datum/human_ai_module/squad/proc/set_squad_id(new_id)
+	squad_id = new_id
+
+/datum/human_ai_module/squad/proc/can_assign()
+	return can_assign_squad
+
+/datum/human_ai_module/squad/proc/get_current_order()
+	RETURN_TYPE(/datum/ai_order)
+	return current_order
+
+/datum/human_ai_module/squad/proc/get_squad_datum()
+	RETURN_TYPE(/datum/human_ai_squad)
+	if(!squad_id)
+		return null
+	return SShuman_ai.squad_id_dict["[squad_id]"]
+
+/datum/human_ai_module/squad/proc/get_squad_leader()
+	RETURN_TYPE(/datum/human_ai_brain)
+	var/datum/human_ai_squad/squad_datum = get_squad_datum()
+	return squad_datum?.squad_leader
+
+/datum/human_ai_module/squad/proc/get_squad_members()
+	var/datum/human_ai_squad/squad_datum = get_squad_datum()
+	return squad_datum?.ai_in_squad || list()
+
 /datum/human_ai_module/squad/proc/add_to_squad(new_id)
 	if(isnull(new_id) || (new_id == squad_id))
 		return

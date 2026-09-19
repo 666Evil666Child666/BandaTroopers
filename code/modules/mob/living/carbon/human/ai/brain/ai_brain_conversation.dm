@@ -96,11 +96,7 @@ GLOBAL_LIST_INIT(human_ai_conversations, initialize_human_ai_conversations())
 	if(!brain)
 		return TRUE
 
-	var/datum/human_ai_context/context = brain.create_context()
-	var/datum/human_tied_controller/controller = context.controller
-	var/datum/human_ai_module/conversation/conversation = context?.get_module(/datum/human_ai_module/conversation)
-	. = (brain.is_in_combat() || !conversation?.in_conversation || !controller || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
-	qdel(context)
+	return !brain.can_continue_conversation()
 
 /// Check to be overridden to see if an AI should be able to start a conversation
 /datum/human_ai_conversation/proc/conversation_allowed(datum/human_ai_brain/brain)
