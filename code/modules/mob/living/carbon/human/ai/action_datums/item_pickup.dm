@@ -86,7 +86,8 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/storage_spot = brain.storage_has_room(to_pickup)
-	if(!storage_spot || !controller.can_use_item_on_self(to_pickup))
+	var/mob/living/carbon/human/self_target = controller.get_self_target()
+	if(!storage_spot || !self_target || !controller.can_use_item(to_pickup, self_target))
 		cleanup_pickup_target()
 		return ONGOING_ACTION_COMPLETED
 

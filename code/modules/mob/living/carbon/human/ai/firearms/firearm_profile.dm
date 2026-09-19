@@ -19,6 +19,14 @@
 	var/available_to_ai = TRUE
 	/// Selection weight used when choosing primary weapon.
 	var/primary_weight = 1
+	/// If TRUE, Human AI aims near human targets instead of directly at them.
+	var/aim_adjacent_to_human_targets = FALSE
+	/// Percent chance to fire directly at a human target despite adjacent aim policy.
+	var/direct_human_target_chance = 0
+	/// Percent chance to use safer adjacent turfs around a human target.
+	var/safe_human_adjacent_target_chance = 0
+	/// Percent chance to intentionally miss into less-safe adjacent turfs around a human target.
+	var/miss_human_adjacent_target_chance = 0
 
 /datum/human_ai_firearm_profile/proc/matches(obj/item/weapon/gun/firearm)
 	return firearm && is_type_in_list(firearm, gun_types)
@@ -115,6 +123,10 @@
 	optimal_range = 6
 	disposable = TRUE
 	primary_weight = 15
+	aim_adjacent_to_human_targets = TRUE
+	direct_human_target_chance = 20
+	safe_human_adjacent_target_chance = 70
+	miss_human_adjacent_target_chance = 10
 
 /datum/human_ai_firearm_profile/rpg/multi_use
 	gun_types = list(/obj/item/weapon/gun/launcher/rocket)

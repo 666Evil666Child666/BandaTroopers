@@ -6,7 +6,7 @@
 /datum/human_ai_brain/proc/get_module(module_type)
 	if(!module_config)
 		return null
-	return module_config.get_module_by_type(src, module_type)
+	return module_config.get_module_by_type(module_type)
 
 /datum/human_ai_brain/proc/has_module(module_type)
 	return !!get_module(module_type)

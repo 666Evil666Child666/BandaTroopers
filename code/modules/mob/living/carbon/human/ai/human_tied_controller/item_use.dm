@@ -14,16 +14,6 @@
 		return item.ai_use(tied_human, brain, target)
 	return item.ai_use(tied_human, brain)
 
-/datum/human_tied_controller/proc/can_use_item_on_self(obj/item/item)
-	if(!can_read_puppet() || !item)
-		return FALSE
-	return item.ai_can_use(tied_human, brain, tied_human)
-
-/datum/human_tied_controller/proc/ai_use_on_self(obj/item/item)
-	if(!can_directly_control() || !item)
-		return FALSE
-	return item.ai_use(tied_human, brain, tied_human)
-
 // Raw ammo source primitive
 /datum/human_tied_controller/proc/create_handful_from_ammo_source(obj/item/ammo_magazine/source, atom/display_source)
 	RETURN_TYPE(/obj/item/ammo_magazine/handful)

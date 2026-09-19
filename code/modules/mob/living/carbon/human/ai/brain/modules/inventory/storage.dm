@@ -84,6 +84,10 @@
 /datum/human_ai_module/inventory/proc/get_object_from_loc(object_loc)
 	RETURN_TYPE(/obj/item/storage)
 
+	var/obj/item/storage/storage_object = object_loc
+	if(istype(storage_object))
+		return storage_object
+
 	return context?.controller?.get_storage_from_loc(object_loc)
 
 /// Given a location and a reference, puts a referenced object into the AI's hand if possible

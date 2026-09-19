@@ -77,7 +77,7 @@
 
 /datum/human_ai_module/navigation/proc/get_adjacent_move_interactions(turf/next_turf)
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller?.has_valid_tied_human() || !next_turf || controller.get_distance_from(next_turf) != 1)
+	if(!controller?.has_valid_tied_human() || !next_turf || !controller.is_cardinal_step_to(next_turf))
 		return null
 
 	var/list/L = controller.get_move_blockers(next_turf)
@@ -123,10 +123,9 @@
 	var/list/interactions = get_adjacent_move_interactions(next_turf)
 	if(isnull(interactions))
 		return FALSE
-	var/turf/start_turf = controller.get_current_turf()
-	controller.act_on_blockers(interactions)
-	if(!controller.can_move() || controller.get_current_turf() != start_turf)
-		return FALSE
+	if(length(interactions))
+		controller.act_on_blockers(interactions)
+		return TRUE
 	return controller.Move(next_turf, controller.get_direction_to(next_turf))
 // SS220 EDIT - END
 
@@ -178,7 +177,7 @@
 	var/turf/next_turf
 	var/following_path = FALSE
 	var/distance = controller.get_distance_from(T)
-	if(distance == 1)
+	if(controller.is_cardinal_step_to(T))
 		next_turf = T
 	else if(!length(current_path) && short_step_pathing_range > 1 && distance <= short_step_pathing_range)
 		next_turf = get_local_step(T)
@@ -197,15 +196,15 @@
 			clear_navigation_path()
 			return TRUE
 		next_turf = current_path[length(current_path)]
-		var/step_distance = controller.get_distance_from(next_turf)
-		if(step_distance > 1)
-			clear_navigation_path()
-			return TRUE
-		if(step_distance == 0)
+		if(controller.get_distance_from(next_turf) == 0)
 			current_path.len--
+			return TRUE
+		if(!controller.is_cardinal_step_to(next_turf))
+			clear_navigation_path()
 			return TRUE
 		following_path = TRUE
 
+	controller.request_run_movement_intent()
 	if(!controller.can_move() || controller.has_move_delay() || !controller.apply_move_delay())
 		return TRUE
 	var/turf/start_turf = controller.get_current_turf()
@@ -226,7 +225,7 @@
 		return TRUE
 	if(following_path)
 		return TRUE
-	if(distance == 1 || consume_no_path_failure())
+	if(controller.is_cardinal_step_to(T) || consume_no_path_failure())
 		return FALSE
 	if(should_queue_navigation_path(T))
 		queue_navigation_path_to_turf(T, max_range)

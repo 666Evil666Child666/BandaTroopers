@@ -3,7 +3,7 @@
 /datum/ai_action/fire_at_target
 	name = "Fire At Target"
 	action_flags = ACTION_USING_HANDS
-	required_ai_modules = list(/datum/human_ai_module/combat, /datum/human_ai_module/guns, /datum/human_ai_module/inventory, /datum/human_ai_module/targeting, /datum/human_ai_module/profile, /datum/human_ai_module/faction)
+	required_ai_modules = list(/datum/human_ai_module/combat, /datum/human_ai_module/guns, /datum/human_ai_module/inventory)
 	var/rounds_burst_fired = 0
 	var/currently_firing
 	var/list/watched_turfs = list()
@@ -73,13 +73,17 @@
 		return ONGOING_ACTION_COMPLETED
 
 	var/turf/target_turf = brain.get_ranged_fire_target_turf(gun_data)
+	var/atom/aim_target = brain.get_ranged_fire_aim_target(controller, brain.get_current_target(), target_turf, gun_data)
+	if(!aim_target)
+		return ONGOING_ACTION_COMPLETED
+	var/turf/aim_turf = get_turf(aim_target)
 	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf)
 	if(currently_firing || !brain.can_continue_fire_burst())
 		return ONGOING_ACTION_UNFINISHED
 
 	brain.unholster_primary()
 
-	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
+	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), aim_turf)
 	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
 	if(!handler?.before_fire(firearm_context))
 		qdel(firearm_context)
@@ -91,15 +95,15 @@
 			brain.set_primary_weapon(null)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.can_reach_ranged_fire_target(controller, target_turf, gun_data.maximum_range) && !should_fire_offscreen)
+	if(!brain.can_reach_ranged_fire_atom(controller, aim_target, gun_data.maximum_range) && !should_fire_offscreen)
 		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!firing_line_check(context, target_turf))
+	if(!firing_line_check(context, aim_target))
 		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
 
-	controller.face_atom(target_turf)
+	controller.face_atom(aim_target)
 	controller.set_combat_intent()
 
 	controller.register_signal_for(src, COMSIG_MOB_FIRED_GUN, PROC_REF(on_gun_fire), TRUE)
@@ -270,15 +274,21 @@
 		stop_firing()
 		return
 
-	if(!brain.can_reach_ranged_fire_atom(controller, shoot_next, gun_data.maximum_range) && !should_fire_offscreen)
-		brain.lose_target()
+	current_target = brain.get_current_target()
+	if(current_target && (controller.get_distance_to(current_target) <= 1))
+		currently_firing = FALSE
+		return
+
+	shoot_next = brain.get_ranged_fire_aim_target(controller, current_target, target_turf, gun_data)
+	if(!shoot_next)
 		stop_firing()
 		qdel(src)
 		return
 
-	current_target = brain.get_current_target()
-	if(current_target && (controller.get_distance_to(current_target) <= 1))
-		currently_firing = FALSE
+	if(!brain.can_reach_ranged_fire_atom(controller, shoot_next, gun_data.maximum_range) && !should_fire_offscreen)
+		brain.lose_target()
+		stop_firing()
+		qdel(src)
 		return
 
 	if(!firing_line_check(context, shoot_next, listen = TRUE))
@@ -286,7 +296,9 @@
 		qdel(src)
 		return
 
-	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, current_target, target_turf)
+	var/turf/shoot_turf = get_turf(shoot_next)
+
+	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, current_target, shoot_turf)
 	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
 	var/datum/human_ai_firearm_result/after_fire_result = handler?.after_fire(firearm_context)
 	qdel(firearm_context)
@@ -305,15 +317,15 @@
 
 	if(primary_weapon.gun_firemode == GUN_FIREMODE_SEMIAUTO)
 		currently_firing = FALSE
-		addtimer(CALLBACK(src, PROC_REF(delayed_start_fire), primary_weapon, current_target), primary_weapon.get_fire_delay())
+		addtimer(CALLBACK(src, PROC_REF(delayed_start_fire), primary_weapon, shoot_next), primary_weapon.get_fire_delay())
 
 	else if(primary_weapon.gun_firemode == GUN_FIREMODE_BURSTFIRE)
 		currently_firing = FALSE
-		addtimer(CALLBACK(src, PROC_REF(delayed_start_fire), primary_weapon, current_target), primary_weapon.get_burst_fire_delay())
+		addtimer(CALLBACK(src, PROC_REF(delayed_start_fire), primary_weapon, shoot_next), primary_weapon.get_burst_fire_delay())
 
 	primary_weapon?.set_target(shoot_next)
 
-/datum/ai_action/fire_at_target/proc/delayed_start_fire(obj/item/weapon/gun/primary_weapon, atom/movable/current_target)
+/datum/ai_action/fire_at_target/proc/delayed_start_fire(obj/item/weapon/gun/primary_weapon, atom/current_target)
 	if(!context?.can_continue() || QDELETED(primary_weapon))
 		return FALSE
 	primary_weapon.start_fire(null, current_target, null, null, null, TRUE)

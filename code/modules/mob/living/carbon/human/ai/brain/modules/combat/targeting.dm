@@ -2,18 +2,14 @@
 
 /datum/human_ai_module/targeting
 	module_id = "targeting"
-	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/profile, /datum/human_ai_module/inventory)
+	required_module_types = list(/datum/human_ai_module/perception, /datum/human_ai_module/profile)
 
 	/// Ref to the currently focused (and shooting at) target
 	var/atom/movable/current_target
 	/// Last turf our target was seen at
 	var/turf/target_turf
-	/// At how far out the AI can see cloaked enemies
-	var/cloak_visible_range = 3
 	/// If TRUE, we care about the target being in view after shooting at them. If not, then we only do a line check instead
 	var/requires_vision = TRUE
-
-	COOLDOWN_DECLARE(fire_offscreen)
 
 /datum/human_ai_module/targeting/Destroy(force, ...)
 	lose_target()
@@ -50,17 +46,15 @@
 	if(!controller)
 		return
 
-	var/atom/firer = bullet?.firer
+	var/atom/movable/firer = brain.get_recent_projectile_threat_source()
 	if(!firer)
 		return
 
-	if(brain.is_friendly_target(firer))
+	if(!brain.can_target(firer))
 		return
 
 	if(controller.get_distance_to(firer) <= brain.get_targeting_view_distance())
 		set_target(firer)
-	else
-		set_target_turf(get_turf(firer), 4 SECONDS)
 
 /datum/human_ai_module/targeting/on_combat_exit_started(should_holster_primary = TRUE)
 	lose_target()
@@ -91,7 +85,7 @@
 		RegisterSignal(new_target, COMSIG_MOB_DEATH, PROC_REF(on_target_death), TRUE)
 	if(istype(new_target, /obj/structure/machinery/defenses))
 		RegisterSignal(new_target, COMSIG_SENTRY_DESTROYED_ALERT, PROC_REF(on_target_destroy), TRUE)
-	// Vehicles do not currently expose a destroyed signal; target validity is checked by can_target_vehicle().
+	// Vehicles do not currently expose a destroyed signal; target validity is checked by perception.
 	/*
 	if(istype(new_target, /obj/vehicle/multitile))
 		RegisterSignal(new_target, COMSIG_VEHICLE_DESTROYED_ALERT, PROC_REF(on_target_destroy), TRUE)
@@ -102,13 +96,6 @@
 
 	if(brain)
 		brain.on_target_changed(null, current_target)
-
-/datum/human_ai_module/targeting/proc/set_target_turf(turf/new_target_turf, duration = 4 SECONDS)
-	if(!new_target_turf)
-		return
-
-	target_turf = new_target_turf
-	COOLDOWN_START(src, fire_offscreen, duration)
 
 /datum/human_ai_module/targeting/proc/set_target_turf_direct(turf/new_target_turf)
 	target_turf = new_target_turf
@@ -142,7 +129,7 @@
 			UnregisterSignal(current_target, COMSIG_MOB_DEATH)
 		if(istype(current_target, /obj/structure/machinery/defenses))
 			UnregisterSignal(current_target, COMSIG_SENTRY_DESTROYED_ALERT)
-		// Vehicles do not currently expose a destroyed signal; target validity is checked by can_target_vehicle().
+		// Vehicles do not currently expose a destroyed signal; target validity is checked by perception.
 		/*
 		if(istype(current_target, /obj/vehicle/multitile))
 			UnregisterSignal(current_target, COMSIG_VEHICLE_DESTROYED_ALERT)
@@ -183,7 +170,6 @@
 		if(controller.is_in_view_of(current_target, brain.get_targeting_view_distance()))
 			target_turf = get_turf(current_target)
 		else
-			COOLDOWN_START(src, fire_offscreen, 2 SECONDS)
 			lose_target()
 
 /datum/human_ai_module/targeting/proc/get_target()
@@ -193,30 +179,12 @@
 	if(!controller)
 		return null
 
-	var/list/viable_targets = list()
+	var/list/viable_targets = brain.get_visible_target_candidates()
 	var/atom/movable/closest_target
 	var/smallest_distance = INFINITY
 
-	var/list/dir_cone
-	var/rear_view_penalty = 0
-
-	if(brain.has_scope_vision())
-		dir_cone = controller.get_reverse_dir_cone()
-		rear_view_penalty = brain.get_targeting_view_distance() / 7 - 1
-
-	for(var/atom/movable/potential_target in controller.get_view(brain.get_targeting_view_distance()))
-		if(controller.is_puppet(potential_target))
-			continue
-
+	for(var/atom/movable/potential_target as anything in viable_targets)
 		var/distance = controller.get_distance_to(potential_target)
-
-		if(!can_acquire_from_direction(potential_target, distance, dir_cone, rear_view_penalty))
-			continue
-
-		if(!can_target(potential_target))
-			continue
-
-		viable_targets += potential_target
 
 		if(smallest_distance <= distance)
 			continue
@@ -243,160 +211,6 @@
 			final_targets += target
 
 	return length(final_targets) ? pick(final_targets) : closest_target
-
-/datum/human_ai_module/targeting/proc/can_acquire_from_direction(atom/movable/target, distance, list/dir_cone, rear_view_penalty)
-	if(!has_valid_owner())
-		return FALSE
-	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller)
-		return FALSE
-
-	if(!is_valid_target_ref(target))
-		return FALSE
-
-	if(!brain.has_scope_vision())
-		return TRUE
-
-	if((distance > 7) && !(controller.get_direction_to(target) in dir_cone))
-		return FALSE
-
-	if(istype(target, /mob/living))
-		var/rear_view_check = (controller.get_direction_to(target) in controller.get_reverse_dir_cone())
-		if(rear_view_check && (distance > brain.get_targeting_view_distance() - rear_view_penalty))
-			return FALSE
-
-	return TRUE
-
-/datum/human_ai_module/targeting/proc/can_target(atom/movable/target)
-	if(!has_valid_owner())
-		return FALSE
-
-	if(!is_valid_target_ref(target))
-		return FALSE
-
-	if(istype(target, /mob/living))
-		return can_target_mob(target)
-
-	if(istype(target, /obj/vehicle/multitile))
-		return can_target_vehicle(target)
-
-	if(istype(target, /obj/structure/machinery/defenses))
-		return can_target_defense(target)
-
-	return FALSE
-
-/datum/human_ai_module/targeting/proc/can_target_defense(obj/structure/machinery/defenses/defense)
-	if(!istype(defense))
-		return FALSE
-
-	if(defense.stat & DEFENSE_DESTROYED)
-		return FALSE
-
-	if(brain.is_friendly_target(defense))
-		return FALSE
-
-	return path_check(defense)
-
-/datum/human_ai_module/targeting/proc/can_target_vehicle(obj/vehicle/multitile/vehicle)
-	if(!istype(vehicle))
-		return FALSE
-
-	if(vehicle.health <= 0)
-		return FALSE
-
-	if(brain.is_friendly_target(vehicle))
-		return FALSE
-
-	return path_check(vehicle)
-
-/datum/human_ai_module/targeting/proc/can_target_mob(mob/living/target)
-	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller)
-		return FALSE
-
-	if(!istype(target))
-		return FALSE
-
-	if(target.stat == DEAD)
-		return FALSE
-
-	if(!brain.should_shoot_to_kill() && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
-		return FALSE
-
-	if(brain.is_friendly_target(target))
-		return FALSE
-
-	var/distance = controller.get_distance_to(target)
-
-	if(!brain.can_ignore_target_darkness() && distance > 1 && !can_detect_living_target(target))
-		return FALSE
-
-	if(HAS_TRAIT(target, TRAIT_CLOAKED) && controller.get_distance_to(target) > cloak_visible_range)
-		return FALSE
-
-	if(!path_check(target))
-		return FALSE
-
-	return TRUE
-
-/datum/human_ai_module/targeting/proc/can_detect_living_target(mob/living/target)
-	for(var/turf/tile in range(1, target))
-		if(tile.luminosity || (tile.dynamic_lumcount >= 1))
-			return TRUE
-
-	return FALSE
-
-/datum/human_ai_module/targeting/proc/path_check(atom/movable/target)
-	if(!has_valid_owner())
-		return FALSE
-	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller)
-		return FALSE
-
-	if(!is_valid_target_ref(target))
-		return FALSE
-
-	var/turf/source_turf = controller.get_current_turf()
-	var/turf/target_turf = get_turf(target)
-	if(!source_turf || !target_turf)
-		return FALSE
-
-	var/list/turf_list = get_line(source_turf, target_turf, FALSE)
-	//проверка на препятствия на пути пули. ИИшке незачем стрелять в стену или непростреливаемые препятсвия за исключением разрушаемых.
-	for(var/turf/tile in turf_list)
-		if(tile.density)
-			return FALSE
-		for(var/atom/movable/obstacle in tile)
-			if(obstacle.density && obstacle != target && !controller.is_puppet(obstacle) && !istype(obstacle, /mob))
-				if(istype(obstacle, /obj/structure/window) || istype(obstacle, /obj/structure/grille) || istype(obstacle, /obj/structure/barricade))
-					continue
-				return FALSE
-	//модифицируем список для проверки на союзников, добавляя соседние тайлы и уберая тайл стрелка.
-	turf_list.Cut(1, 2) // starting turf
-	var/list/checked_turfs = list()// SS220 EDIT AI
-	for(var/i in 1 to length(turf_list))
-		var/turf/tile = turf_list[i]
-		if(!checked_turfs[tile])
-			checked_turfs[tile] = TRUE
-			for(var/mob/living/carbon/human/possible_friendly in tile)
-				if(possible_friendly.body_position == LYING_DOWN)
-					continue
-				if(brain.is_friendly_target(possible_friendly))
-					return FALSE
-
-		if(i <= 3)
-			continue
-
-		for(var/turf/neighbor in tile.AdjacentTurfs())
-			if(checked_turfs[neighbor])
-				continue
-			checked_turfs[neighbor] = TRUE
-			for(var/mob/living/carbon/human/possible_friendly in neighbor)
-				if(possible_friendly.body_position == LYING_DOWN)
-					continue
-				if(brain.is_friendly_target(possible_friendly))
-					return FALSE
-	return TRUE
 
 /datum/human_ai_module/targeting/proc/has_valid_owner()
 	return brain && brain.has_valid_tied_human()

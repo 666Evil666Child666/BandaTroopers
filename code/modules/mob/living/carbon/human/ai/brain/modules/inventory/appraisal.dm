@@ -1,4 +1,3 @@
-/// Currently doesn't support recursive storage
 /// Used to determine what the AI has in their inventory
 /datum/human_ai_module/inventory/proc/appraise_inventory(belt = TRUE, back = TRUE, pocket_l = TRUE, pocket_r = TRUE, armor = TRUE, uniform = TRUE)
 	recalculate_containers()
@@ -136,11 +135,21 @@
 		if(!add_item_to_equipment_maps(inv_item, slot_to_assign) && isgun(inv_item) && !has_secondary_weapon(inv_item))
 			add_secondary_weapon(inv_item)
 
+		var/obj/item/storage/nested_storage = inv_item
+		if(istype(nested_storage) && should_appraise_nested_storage(nested_storage))
+			item_slot_appraisal_loop(nested_storage, nested_storage)
+
 		//else if((inv_item.flags_human_ai & MELEE_WEAPON_ITEM) && !primary_melee)
 		//	set_primary_melee(inv_item)
 
 /datum/human_ai_module/inventory/proc/add_item_to_equipment_maps(obj/item/inv_item, slot_to_assign)
 	return set_equipment_locations_by_flags(inv_item, slot_to_assign)
+
+/datum/human_ai_module/inventory/proc/should_appraise_nested_storage(obj/item/storage/storage_item)
+	if(!storage_item)
+		return FALSE
+
+	return istype(storage_item, /obj/item/storage/firstaid) || istype(storage_item, /obj/item/storage/pouch/medkit) || istype(storage_item, /obj/item/storage/pouch/medical) || istype(storage_item, /obj/item/storage/pouch/firstaid)
 
 /datum/human_ai_module/inventory/proc/appraise_primary()
 	gun_data = null

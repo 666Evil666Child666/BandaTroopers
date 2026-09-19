@@ -72,7 +72,10 @@
 		on_projectile_threat(bullet, event.data?["from_direct_hit"])
 
 /datum/human_ai_module/faction/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
-	if(!bullet?.firer)
+	if(!brain.has_recent_projectile_threat())
+		return
+	var/atom/movable/threat_source = brain.get_recent_projectile_threat_source()
+	if(!threat_source)
 		return
 
-	react_to_attacker_faction(bullet.firer)
+	react_to_attacker_faction(threat_source)

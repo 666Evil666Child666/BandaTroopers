@@ -19,15 +19,19 @@
 // ==================== Config policy state ====================
 // Reads and tracks the preset policy for one brain setup pass.
 /datum/human_ai_module_config/proc/create_action_set(action_set_type = /datum/human_ai_action_set/default)
-	if(!ispath(action_set_type, /datum/human_ai_action_set))
+	if(isnull(action_set_type))
 		action_set_type = /datum/human_ai_action_set/default
+	else if(!ispath(action_set_type, /datum/human_ai_action_set))
+		report_action_policy_issue("invalid action set [action_set_type]")
+		return null
 	return new action_set_type()
 
 /datum/human_ai_module_config/proc/read_action_policy(datum/equipment_preset/preset)
 	var/datum/human_ai_action_set/action_set = create_action_set(preset?.human_ai_action_set_type)
-	action_whitelist = action_set.get_action_whitelist()
-	action_blacklist = action_set.get_action_blacklist()
-	qdel(action_set)
+	if(action_set)
+		action_whitelist = action_set.get_action_whitelist()
+		action_blacklist = action_set.get_action_blacklist()
+		qdel(action_set)
 
 	var/list/preset_action_whitelist = preset?.get_human_ai_action_whitelist()
 	if(!isnull(preset_action_whitelist))
@@ -39,6 +43,3 @@
 			action_blacklist = preset_action_blacklist
 		else
 			action_blacklist |= preset_action_blacklist
-
-/datum/human_ai_module_config/proc/has_explicit_action_policy()
-	return !isnull(action_whitelist) || !isnull(action_blacklist)

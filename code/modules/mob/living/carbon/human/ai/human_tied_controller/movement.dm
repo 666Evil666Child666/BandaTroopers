@@ -3,7 +3,7 @@
 /datum/human_tied_controller/proc/can_move()
 	if(!can_directly_control())
 		return FALSE
-	if(!(tied_human.mobility_flags & MOBILITY_MOVE) || tied_human.is_mob_incapacitated(TRUE) || (tied_human.body_position != STANDING_UP && !tied_human.can_crawl) || tied_human.anchored)
+	if(tied_human.action_busy || !(tied_human.mobility_flags & MOBILITY_MOVE) || tied_human.is_mob_incapacitated(TRUE) || (tied_human.body_position != STANDING_UP && !tied_human.can_crawl) || tied_human.anchored)
 		return FALSE
 	return TRUE
 
@@ -34,6 +34,14 @@
 	if(!can_mutate_puppet())
 		return FALSE
 	set_move_delay_until(world.time + get_current_move_delay() + consume_next_move_slowdown())
+	return TRUE
+
+/datum/human_tied_controller/proc/request_run_movement_intent()
+	if(!can_mutate_puppet() || tied_human.legcuffed)
+		return FALSE
+	if(tied_human.m_intent == MOVE_INTENT_RUN)
+		return TRUE
+	tied_human.set_movement_intent(MOVE_INTENT_RUN)
 	return TRUE
 
 // Raw movement primitives
@@ -118,6 +126,11 @@
 		return null
 	return get_step(tied_human, direction)
 
+/datum/human_tied_controller/proc/is_cardinal_step_to(turf/target_turf)
+	if(!can_read_puppet() || !target_turf || get_dist(tied_human, target_turf) != 1)
+		return FALSE
+	return get_dir(tied_human, target_turf) in GLOB.cardinals
+
 /datum/human_tied_controller/proc/is_calculating_path()
 	return can_read_puppet() && CALCULATING_PATH(tied_human)
 
@@ -159,6 +172,8 @@
 		return FALSE
 	if(isnull(direction))
 		direction = get_move_direction(target_turf)
+	if(!(direction in GLOB.cardinals))
+		return FALSE
 	return tied_human.Move(target_turf, direction)
 
 /datum/human_tied_controller/proc/forceMove(turf/target_turf)

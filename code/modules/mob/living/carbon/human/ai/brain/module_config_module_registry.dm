@@ -20,11 +20,27 @@
 
 // ==================== Factory ====================
 // Creates and registers a module for a known module type.
-/datum/human_ai_module_config/proc/setup_module_by_type(datum/human_ai_brain/brain, module_type)
+/datum/human_ai_module_config/proc/setup_module_by_type(datum/human_ai_brain/brain, module_type, list/resolving_module_types = null)
+	var/datum/human_ai_module/existing_module = get_module_by_type(module_type)
+	if(existing_module)
+		return existing_module
+
 	var/module_factory_type = get_module_factory_type(module_type)
 	if(!module_factory_type)
 		report_action_policy_issue("unknown module factory type [module_type]")
 		return null
+
+	if(!resolving_module_types)
+		resolving_module_types = list()
+
+	if(module_type in resolving_module_types)
+		report_action_policy_issue("cyclic module setup dependency [module_type]")
+		return null
+
+	resolving_module_types += module_type
+	for(var/dependency_type as anything in get_module_dependency_types(module_type))
+		setup_module_by_type(brain, dependency_type, resolving_module_types)
+	resolving_module_types -= module_type
 
 	var/datum/human_ai_module/module = new module_factory_type(brain)
 	return register_module(module)
@@ -36,7 +52,7 @@
 
 // ==================== Lookup ====================
 // Reads the registry source of truth for a known module type.
-/datum/human_ai_module_config/proc/get_module_by_type(datum/human_ai_brain/brain, module_type)
+/datum/human_ai_module_config/proc/get_module_by_type(module_type)
 	if(!modules_by_type)
 		return null
 	return modules_by_type[module_type]
@@ -51,7 +67,7 @@
 /datum/human_ai_module_config/proc/build_module_list(datum/human_ai_brain/brain, list/module_types)
 	var/list/module_list = list()
 	for(var/module_type as anything in module_types)
-		var/datum/human_ai_module/module = get_module_by_type(brain, module_type)
+		var/datum/human_ai_module/module = get_module_by_type(module_type)
 		if(module)
 			module_list += module
 

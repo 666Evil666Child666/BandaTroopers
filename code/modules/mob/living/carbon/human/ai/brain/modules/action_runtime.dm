@@ -40,7 +40,12 @@
 		return FALSE
 
 	// List all allowed action types for AI to consider
-	var/list/allowed_actions = action_whitelist ? action_whitelist.Copy() : GLOB.AI_actions.Copy() // SS220 EDIT: runtime selection must not mutate preset whitelists
+	if(isnull(action_whitelist))
+		stack_trace("Human AI action runtime issue: missing action whitelist")
+		qdel(runtime_context)
+		return FALSE
+
+	var/list/allowed_actions = action_whitelist.Copy() // SS220 EDIT: runtime selection must not mutate preset whitelists
 	allowed_actions -= action_blacklist
 	for(var/datum/ongoing_action as anything in ongoing_actions)
 		if(is_type_in_list(ongoing_action, allowed_actions))

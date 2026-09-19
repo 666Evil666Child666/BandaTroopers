@@ -1,6 +1,6 @@
 /datum/human_ai_module/combat
 	module_id = "combat"
-	required_module_types = list(/datum/human_ai_module/targeting)
+	required_module_types = list(/datum/human_ai_module/targeting, /datum/human_ai_module/perception)
 
 	/// Ref to the last turf that the AI shot at
 	var/turf/shot_at
@@ -31,7 +31,7 @@
 		on_projectile_threat(bullet, event.data?["from_direct_hit"])
 
 /datum/human_ai_module/combat/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
-	if(!bullet?.firer)
+	if(!brain.has_recent_projectile_threat())
 		return
 
 	enter_combat()

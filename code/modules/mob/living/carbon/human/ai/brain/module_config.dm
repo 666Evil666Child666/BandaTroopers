@@ -63,12 +63,12 @@
 
 	validate_module_setup(brain)
 
-	var/datum/human_ai_module/action_runtime/action_runtime = get_module_by_type(brain, /datum/human_ai_module/action_runtime)
+	var/datum/human_ai_module/action_runtime/action_runtime = get_module_by_type(/datum/human_ai_module/action_runtime)
 	if(action_runtime)
 		action_runtime.action_whitelist = action_whitelist?.Copy()
 		action_runtime.action_blacklist = action_blacklist?.Copy()
 
-	var/datum/human_ai_module/perception/perception = get_module_by_type(brain, /datum/human_ai_module/perception)
+	var/datum/human_ai_module/perception/perception = get_module_by_type(/datum/human_ai_module/perception)
 	perception?.register_signals()
 	perception?.setup_detection_radius()
 

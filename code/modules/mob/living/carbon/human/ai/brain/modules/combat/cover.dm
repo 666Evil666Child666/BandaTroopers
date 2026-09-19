@@ -1,6 +1,6 @@
 /datum/human_ai_module/cover
 	module_id = "cover"
-	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/targeting, /datum/human_ai_module/profile, /datum/human_ai_module/inventory)
+	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/targeting, /datum/human_ai_module/profile, /datum/human_ai_module/perception)
 
 	/// If TRUE, AI is currently in some form of cover
 	var/in_cover = FALSE
@@ -54,10 +54,16 @@
 			on_moved(event.data?["oldloc"], event.data?["direction"], event.data?["forced"])
 
 /datum/human_ai_module/cover/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
-	if(!from_direct_hit || !bullet?.firer)
+	if(!from_direct_hit)
+		return
+	if(!brain.has_recent_projectile_threat())
+		return
+	var/atom/movable/threat_source = brain.get_recent_projectile_threat_source()
+	var/threat_angle = brain.get_recent_projectile_threat_angle()
+	if(!threat_source || isnull(threat_angle))
 		return
 
-	react_to_incoming_fire(bullet.angle, bullet.firer)
+	react_to_incoming_fire(threat_angle, threat_source)
 
 /datum/human_ai_module/cover/on_combat_exit_finished(list/combat_exit_context)
 	if(combat_exit_context?["force_clear"])
@@ -149,18 +155,14 @@
 
 /// If an AI decides to go into cover, any squadmates in their view range will process on the same view dictionary so as to help with performance
 /datum/human_ai_module/cover/proc/squad_cover_processing(list/turf_dict)
-	var/datum/human_ai_module/squad/squad_module = context?.get_module(/datum/human_ai_module/squad)
-	if(!squad_module?.squad_id)
+	if(!brain.has_squad())
 		return
 
-	var/datum/human_ai_squad/squad = brain.get_squad_datum()
-	if(!squad)
-		return
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
 		return
 
-	for(var/datum/human_ai_brain/squaddie as anything in squad.ai_in_squad)
+	for(var/datum/human_ai_brain/squaddie as anything in brain.get_squad_members())
 		if(squaddie == brain)
 			continue
 

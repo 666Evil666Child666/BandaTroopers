@@ -1,7 +1,7 @@
 /datum/ai_action/follow_leader
 	name = "Follow Leader"
 	action_flags = ACTION_USING_LEGS
-	required_ai_modules = list(/datum/human_ai_module/squad, /datum/human_ai_module/navigation, /datum/human_ai_module/combat, /datum/human_ai_module/inventory)
+	required_ai_modules = list(/datum/human_ai_module/squad, /datum/human_ai_module/navigation, /datum/human_ai_module/combat)
 	var/follow_distance = 1
 
 /datum/ai_action/follow_leader/get_context_weight(datum/human_ai_context/context)

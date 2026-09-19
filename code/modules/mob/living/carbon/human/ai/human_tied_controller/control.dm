@@ -80,6 +80,12 @@
 	RETURN_TYPE(/turf)
 	return get_turf(tied_human)
 
+/datum/human_tied_controller/proc/get_self_target()
+	RETURN_TYPE(/mob/living/carbon/human)
+	if(!can_read_puppet())
+		return null
+	return tied_human
+
 /datum/human_tied_controller/proc/get_loc()
 	if(!can_read_puppet())
 		return null

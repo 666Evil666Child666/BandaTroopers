@@ -86,7 +86,8 @@
 			queue_pickup(thing)
 
 		var/storage_spot = storage_has_room(thing)
-		if(!storage_spot || !controller.can_use_item_on_self(thing))
+		var/mob/living/carbon/human/self_target = controller.get_self_target()
+		if(!storage_spot || !self_target || !controller.can_use_item(thing, self_target))
 			continue
 
 		if(thing.flags_human_ai & HEALING_ITEM)

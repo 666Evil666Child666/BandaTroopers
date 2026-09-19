@@ -1,7 +1,7 @@
 /datum/ai_action/treat_self
 	name = "Treat Self"
 	action_flags = ACTION_USING_HANDS
-	required_ai_modules = list(/datum/human_ai_module/health, /datum/human_ai_module/inventory, /datum/human_ai_module/targeting)
+	required_ai_modules = list(/datum/human_ai_module/health, /datum/human_ai_module/inventory)
 
 /datum/ai_action/treat_self/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
@@ -22,13 +22,10 @@
 	if(brain.has_pickup_queue())
 		return 0
 
-	if(!brain.has_equipment(HUMAN_AI_HEALTHITEMS))
-		return 0
-
 	if(!brain.can_retry_self_treatment())
 		return 0
 
-	if(!health.healing_start_check_controller(controller))
+	if(!health.can_self_treat(controller))
 		return 0
 
 	return 4
@@ -51,7 +48,7 @@
 	if(brain.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.has_equipment(HUMAN_AI_HEALTHITEMS))
+	if(!health.can_self_treat(controller))
 		return ONGOING_ACTION_COMPLETED
 
 	if(controller.is_on_fire())
@@ -60,7 +57,7 @@
 	if(brain.is_healing_someone())
 		return ONGOING_ACTION_UNFINISHED
 
-	if(health.healing_start_check_controller(controller))
+	if(health.can_self_treat(controller))
 		if(!health.start_healing_controller(controller))
 			brain.increment_treatment_stacks()
 		return ONGOING_ACTION_UNFINISHED
