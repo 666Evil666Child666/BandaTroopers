@@ -139,6 +139,36 @@
 	var/combat_voiceline_cooldown_time = 4 SECONDS
 	COOLDOWN_DECLARE(combat_voiceline_cooldown)
 
+/datum/human_ai_module/communication/proc/get_reload_line_chance()
+	return reload_line_chance
+
+/datum/human_ai_module/communication/proc/set_reload_line_chance(new_chance)
+	reload_line_chance = new_chance
+
+/datum/human_ai_module/communication/proc/apply_faction_lines(
+	list/new_enter_combat_lines,
+	list/new_exit_combat_lines,
+	list/new_squad_member_death_lines,
+	list/new_grenade_thrown_lines,
+	list/new_reload_lines,
+	list/new_reload_internal_mag_lines,
+	list/new_need_healing_lines
+)
+	if(length(new_enter_combat_lines))
+		enter_combat_lines = new_enter_combat_lines
+	if(length(new_exit_combat_lines))
+		exit_combat_lines = new_exit_combat_lines
+	if(length(new_squad_member_death_lines))
+		squad_member_death_lines = new_squad_member_death_lines
+	if(length(new_grenade_thrown_lines))
+		grenade_thrown_lines = new_grenade_thrown_lines
+	if(length(new_reload_lines))
+		reload_lines = new_reload_lines
+	if(length(new_reload_internal_mag_lines))
+		reload_internal_mag_lines = new_reload_internal_mag_lines
+	if(length(new_need_healing_lines))
+		need_healing_lines = new_need_healing_lines
+
 /datum/human_ai_module/communication/proc/emit_ai_voiceline(line)
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller?.can_read_puppet() || !line)

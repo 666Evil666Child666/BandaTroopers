@@ -25,26 +25,15 @@
 	var/datum/human_ai_module/profile/profile = context?.get_module(/datum/human_ai_module/profile)
 	var/datum/human_ai_module/faction/faction_module = context?.get_module(/datum/human_ai_module/faction)
 
-	if(communication && length(enter_combat_lines))
-		communication.enter_combat_lines = enter_combat_lines
-
-	if(communication && length(exit_combat_lines))
-		communication.exit_combat_lines = exit_combat_lines
-
-	if(communication && length(squad_member_death_lines))
-		communication.squad_member_death_lines = squad_member_death_lines
-
-	if(communication && length(grenade_thrown_lines))
-		communication.grenade_thrown_lines = grenade_thrown_lines
-
-	if(communication && length(reload_lines))
-		communication.reload_lines = reload_lines
-
-	if(communication && length(reload_internal_mag_lines))
-		communication.reload_internal_mag_lines = reload_internal_mag_lines
-
-	if(communication && length(need_healing_lines))
-		communication.need_healing_lines = need_healing_lines
+	communication?.apply_faction_lines(
+		enter_combat_lines,
+		exit_combat_lines,
+		squad_member_death_lines,
+		grenade_thrown_lines,
+		reload_lines,
+		reload_internal_mag_lines,
+		need_healing_lines,
+	)
 
 	if(profile)
 		profile.shoot_to_kill = shoot_to_kill
