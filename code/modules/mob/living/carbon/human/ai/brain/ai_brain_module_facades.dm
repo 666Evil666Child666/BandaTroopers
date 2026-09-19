@@ -233,12 +233,11 @@
 
 /datum/human_ai_brain/proc/get_previous_faction()
 	var/datum/human_ai_module/faction/faction_module = get_faction_module()
-	return faction_module?.previous_faction
+	return faction_module?.get_previous_faction()
 
 /datum/human_ai_brain/proc/set_previous_faction(new_faction)
 	var/datum/human_ai_module/faction/faction_module = get_faction_module()
-	if(faction_module)
-		faction_module.previous_faction = new_faction
+	faction_module?.set_previous_faction(new_faction)
 
 // ==================== Health ====================
 // Treatment state and self-treatment retry helpers.
@@ -272,12 +271,7 @@
 
 /datum/human_ai_brain/proc/apply_navigation_profile(short_step_range = 0, path_retarget_slack = 0)
 	var/datum/human_ai_module/navigation/navigation_module = get_navigation_module()
-	if(!navigation_module)
-		return
-	if(short_step_range > 0)
-		navigation_module.short_step_pathing_range = max(navigation_module.short_step_pathing_range, short_step_range)
-	if(path_retarget_slack > 0)
-		navigation_module.path_target_retarget_slack = max(navigation_module.path_target_retarget_slack, path_retarget_slack)
+	navigation_module?.apply_navigation_profile(short_step_range, path_retarget_slack)
 
 // ==================== Orders ====================
 // Order-gated movement and quick-approach transient state.
@@ -288,7 +282,7 @@
 /datum/human_ai_brain/proc/get_quick_approach_turf()
 	RETURN_TYPE(/turf)
 	var/datum/human_ai_module/orders/orders_module = get_orders_module()
-	return orders_module?.quick_approach
+	return orders_module?.get_quick_approach()
 
 /datum/human_ai_brain/proc/clear_quick_approach()
 	var/datum/human_ai_module/orders/orders_module = get_orders_module()
@@ -306,52 +300,39 @@
 // Generic timing, vision, and combat profile values.
 /datum/human_ai_brain/proc/get_targeting_view_distance()
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	return profile_module?.view_distance || 0
+	return profile_module?.get_view_distance() || 0
 
 /datum/human_ai_brain/proc/has_scope_vision()
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	return profile_module?.scope_vision
+	return profile_module?.has_scope_vision()
 
 /datum/human_ai_brain/proc/should_shoot_to_kill()
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	return profile_module?.shoot_to_kill
+	return profile_module?.should_shoot_to_kill()
 
 /datum/human_ai_brain/proc/get_view_distance()
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	return profile_module?.view_distance || 0
+	return profile_module?.get_view_distance() || 0
 
 /datum/human_ai_brain/proc/set_view_distance(new_view_distance)
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	if(profile_module)
-		profile_module.view_distance = new_view_distance
+	profile_module?.set_view_distance(new_view_distance)
 
 /datum/human_ai_brain/proc/get_action_delay()
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	if(!profile_module)
-		return 0
-	return profile_module.short_action_delay * profile_module.action_delay_mult
+	return profile_module?.get_action_delay() || 0
 
 /datum/human_ai_brain/proc/get_micro_action_delay()
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	if(!profile_module)
-		return 0
-	return profile_module.micro_action_delay * profile_module.action_delay_mult
+	return profile_module?.get_micro_action_delay() || 0
 
 /datum/human_ai_brain/proc/get_short_action_delay(apply_multiplier = FALSE)
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	if(!profile_module)
-		return 0
-	if(apply_multiplier)
-		return profile_module.short_action_delay * profile_module.action_delay_mult
-	return profile_module.short_action_delay
+	return profile_module?.get_short_action_delay(apply_multiplier) || 0
 
 /datum/human_ai_brain/proc/get_medium_action_delay(apply_multiplier = FALSE)
 	var/datum/human_ai_module/profile/profile_module = get_profile_module()
-	if(!profile_module)
-		return 0
-	if(apply_multiplier)
-		return profile_module.medium_action_delay * profile_module.action_delay_mult
-	return profile_module.medium_action_delay
+	return profile_module?.get_medium_action_delay(apply_multiplier) || 0
 
 // ==================== Squad ====================
 // Squad membership, leader lookup, and current order glue.

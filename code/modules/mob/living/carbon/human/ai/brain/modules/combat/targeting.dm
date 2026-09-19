@@ -46,11 +46,12 @@
 	if(!controller)
 		return
 
-	var/atom/movable/firer = brain.get_recent_projectile_threat_source()
+	var/datum/human_ai_module/perception/perception_module = get_perception_module()
+	var/atom/movable/firer = perception_module?.get_recent_threat_source()
 	if(!firer)
 		return
 
-	if(!brain.can_target(firer))
+	if(!perception_module.can_target(firer))
 		return
 
 	if(controller.get_distance_to(firer) <= brain.get_targeting_view_distance())
@@ -179,7 +180,8 @@
 	if(!controller)
 		return null
 
-	var/list/viable_targets = brain.get_visible_target_candidates()
+	var/datum/human_ai_module/perception/perception_module = get_perception_module()
+	var/list/viable_targets = perception_module?.get_visible_target_candidates() || list()
 	var/atom/movable/closest_target
 	var/smallest_distance = INFINITY
 
@@ -214,6 +216,10 @@
 
 /datum/human_ai_module/targeting/proc/has_valid_owner()
 	return brain && brain.has_valid_tied_human()
+
+/datum/human_ai_module/targeting/proc/get_perception_module()
+	RETURN_TYPE(/datum/human_ai_module/perception)
+	return brain?.get_perception_module()
 
 /datum/human_ai_module/targeting/proc/is_valid_target_ref(atom/movable/target)
 	return target && !QDELETED(target)

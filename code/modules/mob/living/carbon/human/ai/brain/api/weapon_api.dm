@@ -46,8 +46,8 @@
 	if(!guns_module || !profile_module)
 		return
 
-	var/short_action_delay = profile_module.short_action_delay
-	COOLDOWN_START(guns_module, fire_overload_cooldown, max(short_action_delay, short_action_delay * profile_module.action_delay_mult))
+	var/short_action_delay = profile_module.get_short_action_delay()
+	COOLDOWN_START(guns_module, fire_overload_cooldown, max(short_action_delay, profile_module.get_short_action_delay(TRUE)))
 
 /datum/human_ai_brain/proc/clear_tried_reload()
 	var/datum/human_ai_module/guns/guns_module = get_guns_module()

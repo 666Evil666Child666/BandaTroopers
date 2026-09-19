@@ -85,7 +85,7 @@
 	clear_detection_radius()
 	last_detected_projectile = null
 	last_detected_projectile_time = -1
-	clear_projectile_threat()
+	clear_recent_threat()
 
 /datum/human_ai_module/perception/proc/on_detection_turf_enter(datum/source, atom/movable/entering)
 	SIGNAL_HANDLER
@@ -110,7 +110,7 @@
 		return
 
 	remember_projectile_threat(bullet)
-	brain.on_projectile_threat(bullet)
+	brain.on_projectile_threat(bullet, FALSE, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
 
 /datum/human_ai_module/perception/proc/on_shot(datum/source, damage_result, ammo_flags, obj/projectile/bullet)
 	SIGNAL_HANDLER
@@ -122,7 +122,7 @@
 		return
 
 	remember_projectile_threat(bullet)
-	brain.on_projectile_threat(bullet, TRUE)
+	brain.on_projectile_threat(bullet, TRUE, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
 
 /datum/human_ai_module/perception/proc/can_process_detection()
 	return brain?.can_continue_runtime_work()
@@ -138,7 +138,7 @@
 	if(!bullet?.firer)
 		return FALSE
 	var/atom/movable/firer = bullet.firer
-	if(!can_remember_projectile_threat_source(firer))
+	if(!can_remember_threat_source(firer))
 		return FALSE
 	var/turf/firer_turf = get_turf(firer)
 	if(!firer_turf)
@@ -150,32 +150,52 @@
 	COOLDOWN_START(src, threat_memory, duration)
 	return TRUE
 
-/datum/human_ai_module/perception/proc/clear_projectile_threat()
+/datum/human_ai_module/perception/proc/clear_recent_threat()
 	recent_threat_source = null
 	recent_threat_turf = null
 	recent_threat_angle = null
 
-/datum/human_ai_module/perception/proc/has_recent_projectile_threat()
+/datum/human_ai_module/perception/proc/has_recent_threat()
 	return recent_threat_turf && !COOLDOWN_FINISHED(src, threat_memory)
 
-/datum/human_ai_module/perception/proc/get_recent_projectile_threat_turf()
+/datum/human_ai_module/perception/proc/get_recent_threat_turf()
 	RETURN_TYPE(/turf)
-	if(!has_recent_projectile_threat())
+	if(!has_recent_threat())
 		return null
 	return recent_threat_turf
 
-/datum/human_ai_module/perception/proc/get_recent_projectile_threat_source()
+/datum/human_ai_module/perception/proc/get_recent_threat_source()
 	RETURN_TYPE(/atom/movable)
-	if(!has_recent_projectile_threat())
+	if(!has_recent_threat())
 		return null
 	return recent_threat_source
 
-/datum/human_ai_module/perception/proc/get_recent_projectile_threat_angle()
-	if(!has_recent_projectile_threat())
+/datum/human_ai_module/perception/proc/get_recent_threat_angle()
+	if(!has_recent_threat())
 		return null
 	return recent_threat_angle
 
+/datum/human_ai_module/perception/proc/clear_projectile_threat()
+	clear_recent_threat()
+
+/datum/human_ai_module/perception/proc/has_recent_projectile_threat()
+	return has_recent_threat()
+
+/datum/human_ai_module/perception/proc/get_recent_projectile_threat_turf()
+	RETURN_TYPE(/turf)
+	return get_recent_threat_turf()
+
+/datum/human_ai_module/perception/proc/get_recent_projectile_threat_source()
+	RETURN_TYPE(/atom/movable)
+	return get_recent_threat_source()
+
+/datum/human_ai_module/perception/proc/get_recent_projectile_threat_angle()
+	return get_recent_threat_angle()
+
 /datum/human_ai_module/perception/proc/can_remember_projectile_threat_source(atom/movable/source)
+	return can_remember_threat_source(source)
+
+/datum/human_ai_module/perception/proc/can_remember_threat_source(atom/movable/source)
 	if(!has_valid_owner())
 		return FALSE
 	if(!is_valid_target_ref(source))

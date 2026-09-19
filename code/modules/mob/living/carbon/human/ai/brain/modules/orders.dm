@@ -11,6 +11,10 @@
 /datum/human_ai_module/orders/proc/set_quick_approach(turf/new_turf)
 	quick_approach = new_turf
 
+/datum/human_ai_module/orders/proc/get_quick_approach()
+	RETURN_TYPE(/turf)
+	return quick_approach
+
 /datum/human_ai_module/orders/proc/clear_quick_approach()
 	quick_approach = null
 

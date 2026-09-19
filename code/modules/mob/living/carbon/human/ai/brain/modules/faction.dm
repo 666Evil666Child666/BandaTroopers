@@ -7,6 +7,16 @@
 	/// The last faction that the AI was/is a part of
 	var/previous_faction
 
+/datum/human_ai_module/faction/proc/apply_relationships(list/new_friendly_factions, list/new_neutral_factions)
+	friendly_factions = new_friendly_factions
+	neutral_factions = new_neutral_factions
+
+/datum/human_ai_module/faction/proc/get_previous_faction()
+	return previous_faction
+
+/datum/human_ai_module/faction/proc/set_previous_faction(new_faction)
+	previous_faction = new_faction
+
 /// Removes neutral faction status from a given faction
 /datum/human_ai_module/faction/proc/on_neutral_faction_betray(faction)
 	var/datum/human_tied_controller/controller = context?.controller
@@ -69,12 +79,9 @@
 /datum/human_ai_module/faction/on_ai_event(datum/human_ai_event/event)
 	if(event.event_type == HUMAN_AI_EVENT_PROJECTILE_THREAT)
 		var/obj/projectile/bullet = event.data?["bullet"]
-		on_projectile_threat(bullet, event.data?["from_direct_hit"])
+		on_projectile_threat(bullet, event.data?["from_direct_hit"], event.data?["threat_source"])
 
-/datum/human_ai_module/faction/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
-	if(!brain.has_recent_projectile_threat())
-		return
-	var/atom/movable/threat_source = brain.get_recent_projectile_threat_source()
+/datum/human_ai_module/faction/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, atom/movable/threat_source = null)
 	if(!threat_source)
 		return
 

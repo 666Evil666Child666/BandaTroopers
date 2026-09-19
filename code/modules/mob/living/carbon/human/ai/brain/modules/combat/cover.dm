@@ -56,14 +56,19 @@
 /datum/human_ai_module/cover/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
 	if(!from_direct_hit)
 		return
-	if(!brain.has_recent_projectile_threat())
+	var/datum/human_ai_module/perception/perception_module = get_perception_module()
+	if(!perception_module?.has_recent_threat())
 		return
-	var/atom/movable/threat_source = brain.get_recent_projectile_threat_source()
-	var/threat_angle = brain.get_recent_projectile_threat_angle()
+	var/atom/movable/threat_source = perception_module.get_recent_threat_source()
+	var/threat_angle = perception_module.get_recent_threat_angle()
 	if(!threat_source || isnull(threat_angle))
 		return
 
 	react_to_incoming_fire(threat_angle, threat_source)
+
+/datum/human_ai_module/cover/proc/get_perception_module()
+	RETURN_TYPE(/datum/human_ai_module/perception)
+	return brain?.get_perception_module()
 
 /datum/human_ai_module/cover/on_combat_exit_finished(list/combat_exit_context)
 	if(combat_exit_context?["force_clear"])

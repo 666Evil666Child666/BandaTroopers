@@ -55,6 +55,12 @@
 	no_path_found = FALSE
 	no_path_found_amount = 0
 
+/datum/human_ai_module/navigation/proc/apply_navigation_profile(short_step_range = 0, path_retarget_slack = 0)
+	if(short_step_range > 0)
+		short_step_pathing_range = max(short_step_pathing_range, short_step_range)
+	if(path_retarget_slack > 0)
+		path_target_retarget_slack = max(path_target_retarget_slack, path_retarget_slack)
+
 /datum/human_ai_module/navigation/proc/on_navigation_success(clear_navigation_state = TRUE)
 	ai_timeout_time = world.time
 	if(clear_navigation_state)

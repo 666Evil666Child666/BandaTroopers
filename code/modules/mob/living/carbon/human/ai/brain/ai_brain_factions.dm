@@ -35,11 +35,8 @@
 		need_healing_lines,
 	)
 
-	if(profile)
-		profile.shoot_to_kill = shoot_to_kill
-	if(faction_module)
-		faction_module.friendly_factions = friendly_factions
-		faction_module.neutral_factions = neutral_factions
+	profile?.set_shoot_to_kill(shoot_to_kill)
+	faction_module?.apply_relationships(friendly_factions, neutral_factions)
 
 	qdel(context)
 

@@ -31,10 +31,15 @@
 		on_projectile_threat(bullet, event.data?["from_direct_hit"])
 
 /datum/human_ai_module/combat/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
-	if(!brain.has_recent_projectile_threat())
+	var/datum/human_ai_module/perception/perception_module = get_perception_module()
+	if(!perception_module?.has_recent_threat())
 		return
 
 	enter_combat()
+
+/datum/human_ai_module/combat/proc/get_perception_module()
+	RETURN_TYPE(/datum/human_ai_module/perception)
+	return brain?.get_perception_module()
 
 /datum/human_ai_module/combat/proc/enter_combat()
 	SIGNAL_HANDLER

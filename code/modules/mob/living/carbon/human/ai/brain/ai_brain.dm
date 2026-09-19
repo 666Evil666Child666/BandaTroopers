@@ -208,10 +208,13 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		"new_target" = new_target,
 	))
 
-/datum/human_ai_brain/proc/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
+/datum/human_ai_brain/proc/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, atom/movable/threat_source = null, turf/threat_turf = null, threat_angle = null)
 	emit_ai_event(HUMAN_AI_EVENT_PROJECTILE_THREAT, list(
 		"bullet" = bullet,
 		"from_direct_hit" = from_direct_hit,
+		"threat_source" = threat_source,
+		"threat_turf" = threat_turf,
+		"threat_angle" = threat_angle,
 	))
 
 /datum/human_ai_brain/proc/on_combat_entered(was_in_combat)
