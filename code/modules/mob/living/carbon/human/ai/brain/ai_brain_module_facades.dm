@@ -220,8 +220,7 @@
 
 /datum/human_ai_brain/proc/is_stationary_fire_blocked()
 	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	var/datum/human_ai_module/health/health_module = get_health_module()
-	return guns_module?.has_tried_reload() || should_block_stationary_fire_for_cover() || health_module?.healing_someone
+	return guns_module?.has_tried_reload() || should_block_stationary_fire_for_cover() || is_healing_someone()
 
 // ==================== Faction ====================
 // Friendly/hostile checks and faction memory.
@@ -242,11 +241,11 @@
 // Treatment state and self-treatment retry helpers.
 /datum/human_ai_brain/proc/is_healing_someone()
 	var/datum/human_ai_module/health/health_module = get_health_module()
-	return health_module?.healing_someone
+	return health_module?.is_treating()
 
 /datum/human_ai_brain/proc/can_retry_self_treatment()
 	var/datum/human_ai_module/health/health_module = get_health_module()
-	return health_module && (health_module.cant_be_treated_stacks < health_module.treatment_stack_threshold)
+	return health_module?.can_retry_self_treatment()
 
 /datum/human_ai_brain/proc/cancel_treatment()
 	var/datum/human_ai_module/health/health_module = get_health_module()

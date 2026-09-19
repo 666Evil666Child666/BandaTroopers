@@ -60,6 +60,12 @@
 	cancel_treatment() // SS220 EDIT: resumed AI must not inherit an old treatment continuation
 	recent_patient_treatments = list()
 
+/datum/human_ai_module/health/proc/is_treating()
+	return healing_someone
+
+/datum/human_ai_module/health/proc/can_retry_self_treatment()
+	return cant_be_treated_stacks < treatment_stack_threshold
+
 /datum/human_ai_module/health/proc/increment_treatment_stacks()
 	cant_be_treated_stacks++
 	addtimer(CALLBACK(src, PROC_REF(clear_treatment_stacks)), 5 SECONDS, TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)

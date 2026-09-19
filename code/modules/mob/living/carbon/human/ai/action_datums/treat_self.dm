@@ -16,16 +16,13 @@
 	if(brain.is_healing_someone())
 		return 0
 
-	if(brain.has_current_target() || brain.has_offscreen_fire_target())
-		return 0
-
 	if(brain.has_pickup_queue())
 		return 0
 
 	if(!brain.can_retry_self_treatment())
 		return 0
 
-	if(!health.can_self_treat(controller))
+	if(!health.can_start_self_treatment_now(controller))
 		return 0
 
 	return 4
@@ -45,10 +42,7 @@
 	if(!brain || !controller || !health)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.has_current_target())
-		return ONGOING_ACTION_COMPLETED
-
-	if(!health.can_self_treat(controller))
+	if(!health.can_continue_self_treatment_now(controller))
 		return ONGOING_ACTION_COMPLETED
 
 	if(controller.is_on_fire())
@@ -57,7 +51,7 @@
 	if(brain.is_healing_someone())
 		return ONGOING_ACTION_UNFINISHED
 
-	if(health.can_self_treat(controller))
+	if(health.can_start_self_treatment_now(controller))
 		if(!health.start_healing_controller(controller))
 			brain.increment_treatment_stacks()
 		return ONGOING_ACTION_UNFINISHED

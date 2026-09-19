@@ -17,9 +17,6 @@
 	if(brain.is_healing_someone())
 		return 0
 
-	if(brain.has_current_target() || brain.has_offscreen_fire_target())
-		return 0
-
 	if(brain.has_pickup_queue())
 		return 0
 
@@ -55,13 +52,13 @@
 	if(!brain || !controller || !health)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.has_current_target())
+	if(!health.can_continue_ally_treatment_now(ally_to_treat))
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.is_healing_someone())
 		return ONGOING_ACTION_UNFINISHED
 
-	if(!health.can_treat_ally(ally_to_treat))
+	if(!health.can_start_ally_treatment_now(ally_to_treat))
 		return ONGOING_ACTION_COMPLETED
 
 	if(controller.get_distance_to(ally_to_treat) > 1)

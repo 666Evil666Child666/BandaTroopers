@@ -17,9 +17,9 @@
 	if(!controller)
 		return null
 
-	var/list/viable_targets = list()
-	var/atom/movable/closest_target
-	var/smallest_distance = INFINITY
+	var/mob/living/carbon/human/best_target
+	var/best_score = -INFINITY
+	var/best_distance = INFINITY
 
 	for(var/mob/living/carbon/human/possible_buddy as anything in GLOB.alive_human_list)
 		if(controller.is_puppet(possible_buddy))
@@ -38,21 +38,21 @@
 		if(distance > brain.get_view_distance())
 			continue
 
-		if(!healing_start_check(possible_buddy))
+		if(!can_treat_ally(possible_buddy))
 			continue
 
-		viable_targets += possible_buddy
-
-		if(smallest_distance <= distance)
+		var/score = get_ally_treatment_priority(possible_buddy, distance)
+		if(score < best_score)
 			continue
 
-		closest_target = possible_buddy
-		smallest_distance = distance
+		if(score == best_score && distance >= best_distance)
+			continue
 
-	if(length(viable_targets) > 1)
-		return pick(viable_targets)
+		best_target = possible_buddy
+		best_score = score
+		best_distance = distance
 
-	return closest_target
+	return best_target
 
 /datum/human_ai_module/health/proc/healing_start_check(mob/living/carbon/human/target)
 	if(!target)
