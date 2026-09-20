@@ -6,22 +6,28 @@
 
 	/// Ref to the currently focused (and shooting at) target
 	var/atom/movable/current_target
-	/// Last turf our target was seen at
+	/// Current focused target turf or explicit target turf.
 	var/turf/target_turf
+	/// Recent turf where a live target was last seen before being lost.
+	var/turf/last_known_target_turf
+	/// World time when `last_known_target_turf` was stored.
+	var/last_known_target_time = 0
+	/// How long a lost visible target remains worth investigating.
+	var/last_known_target_memory_duration = 10 SECONDS
 	/// If TRUE, we care about the target being in view after shooting at them. If not, then we only do a line check instead
 	var/requires_vision = TRUE
 
 /datum/human_ai_module/targeting/Destroy(force, ...)
-	lose_target()
+	lose_target(FALSE)
 	. = ..()
 
 /datum/human_ai_module/targeting/reset_module()
 	clear_target_turf()
-	lose_target()
+	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/suspend_module(clear_inventory = FALSE)
 	clear_target_turf()
-	lose_target()
+	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/process_module(delta_time)
 	if(!has_current_target())
@@ -58,11 +64,11 @@
 		set_target(firer)
 
 /datum/human_ai_module/targeting/on_combat_exit_started(should_holster_primary = TRUE)
-	lose_target()
+	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/on_combat_exit_finished(list/combat_exit_context)
 	if(combat_exit_context?["force_clear"])
-		lose_target()
+		lose_target(FALSE)
 
 	if(combat_exit_context?["clear_target_turf"])
 		clear_target_turf()
@@ -75,7 +81,7 @@
 	update_target_pos()
 
 /datum/human_ai_module/targeting/proc/set_target(atom/movable/new_target)
-	lose_target()
+	lose_target(FALSE)
 
 	if(!is_valid_target_ref(new_target))
 		return
@@ -94,22 +100,59 @@
 
 	current_target = new_target
 	target_turf = get_turf(current_target)
+	clear_last_known_target()
 
 	if(brain)
 		brain.on_target_changed(null, current_target)
 
 /datum/human_ai_module/targeting/proc/set_target_turf_direct(turf/new_target_turf)
 	target_turf = new_target_turf
+	clear_last_known_target()
 
 /datum/human_ai_module/targeting/proc/clear_target_turf()
 	target_turf = null
+	clear_last_known_target()
 
 /datum/human_ai_module/targeting/proc/get_target_turf()
 	RETURN_TYPE(/turf)
-	return target_turf
+	return target_turf || get_last_known_target_turf()
 
 /datum/human_ai_module/targeting/proc/has_target_turf()
-	return !!target_turf
+	return !!get_target_turf()
+
+/datum/human_ai_module/targeting/proc/get_current_target_turf()
+	RETURN_TYPE(/turf)
+	return target_turf
+
+/datum/human_ai_module/targeting/proc/get_last_known_target_turf()
+	RETURN_TYPE(/turf)
+	if(!has_recent_lost_target())
+		return null
+	return last_known_target_turf
+
+/datum/human_ai_module/targeting/proc/has_recent_lost_target()
+	if(!last_known_target_turf)
+		return FALSE
+	if((world.time - last_known_target_time) > last_known_target_memory_duration)
+		return FALSE
+	return TRUE
+
+/datum/human_ai_module/targeting/proc/remember_last_known_target_turf(turf/new_target_turf = null)
+	var/turf/remembered_turf = new_target_turf
+	if(!remembered_turf)
+		remembered_turf = target_turf
+	if(!remembered_turf && current_target)
+		remembered_turf = get_turf(current_target)
+	if(!remembered_turf)
+		return FALSE
+
+	last_known_target_turf = remembered_turf
+	last_known_target_time = world.time
+	return TRUE
+
+/datum/human_ai_module/targeting/proc/clear_last_known_target()
+	last_known_target_turf = null
+	last_known_target_time = 0
 
 /datum/human_ai_module/targeting/proc/get_current_target()
 	RETURN_TYPE(/atom/movable)
@@ -119,10 +162,13 @@
 	return !!current_target
 
 /datum/human_ai_module/targeting/proc/get_aim_target()
-	return current_target || target_turf
+	return current_target || target_turf || get_last_known_target_turf()
 
-/datum/human_ai_module/targeting/proc/lose_target()
+/datum/human_ai_module/targeting/proc/lose_target(remember_last_known = TRUE)
 	var/atom/movable/old_target = current_target
+	if(remember_last_known && current_target)
+		remember_last_known_target_turf()
+
 	if(current_target)
 		UnregisterSignal(current_target, COMSIG_PARENT_QDELETING)
 		UnregisterSignal(current_target, COMSIG_MOVABLE_MOVED)
@@ -138,21 +184,23 @@
 
 	current_target = null
 	target_turf = null
+	if(!remember_last_known)
+		clear_last_known_target()
 
 	if(brain)
 		brain.on_target_changed(old_target, null)
 
 /datum/human_ai_module/targeting/proc/on_target_delete(datum/source, force)
 	SIGNAL_HANDLER
-	lose_target()
+	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/proc/on_target_death(datum/source)
 	SIGNAL_HANDLER
-	lose_target()
+	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/proc/on_target_destroy(datum/source)
 	SIGNAL_HANDLER
-	lose_target()
+	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/proc/on_target_move(atom/oldloc, dir, forced)
 	SIGNAL_HANDLER

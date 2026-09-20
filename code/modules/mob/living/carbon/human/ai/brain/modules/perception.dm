@@ -278,34 +278,62 @@
 	return FALSE
 
 /datum/human_ai_module/perception/proc/can_target_defense(obj/structure/machinery/defenses/defense)
+	if(!can_consider_defense_target(defense))
+		return FALSE
+
+	if(!can_engage_target(defense))
+		return FALSE
+
+	return has_safe_line_to_target(defense)
+
+/datum/human_ai_module/perception/proc/can_consider_defense_target(obj/structure/machinery/defenses/defense)
 	if(!istype(defense))
 		return FALSE
 
 	if(defense.stat & DEFENSE_DESTROYED)
 		return FALSE
 
-	if(brain.is_friendly_target(defense))
-		return FALSE
-
-	return path_check(defense)
+	return TRUE
 
 /datum/human_ai_module/perception/proc/can_target_vehicle(obj/vehicle/multitile/vehicle)
+	if(!can_consider_vehicle_target(vehicle))
+		return FALSE
+
+	if(!can_engage_target(vehicle))
+		return FALSE
+
+	return has_safe_line_to_target(vehicle)
+
+/datum/human_ai_module/perception/proc/can_consider_vehicle_target(obj/vehicle/multitile/vehicle)
 	if(!istype(vehicle))
 		return FALSE
 
 	if(vehicle.health <= 0)
 		return FALSE
 
-	if(brain.is_friendly_target(vehicle))
-		return FALSE
-
-	return path_check(vehicle)
+	return TRUE
 
 /datum/human_ai_module/perception/proc/can_target_mob(mob/living/target)
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
 		return FALSE
 
+	if(!can_consider_living_target(target))
+		return FALSE
+
+	if(!can_engage_target(target))
+		return FALSE
+
+	var/distance = controller.get_distance_to(target)
+	if(!can_detect_mob_target(target, distance))
+		return FALSE
+
+	if(!has_safe_line_to_target(target))
+		return FALSE
+
+	return TRUE
+
+/datum/human_ai_module/perception/proc/can_consider_living_target(mob/living/target)
 	if(!istype(target))
 		return FALSE
 
@@ -315,45 +343,56 @@
 	if(!brain.should_shoot_to_kill() && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
 		return FALSE
 
-	if(brain.is_friendly_target(target))
+	return TRUE
+
+/datum/human_ai_module/perception/proc/can_engage_target(atom/movable/target)
+	return !brain.is_friendly_target(target)
+
+/datum/human_ai_module/perception/proc/can_detect_mob_target(mob/living/target, distance)
+	if(!brain.can_ignore_target_darkness() && distance > 1 && !has_lit_turf_near_living_target(target))
 		return FALSE
 
-	var/distance = controller.get_distance_to(target)
-
-	if(!brain.can_ignore_target_darkness() && distance > 1 && !can_detect_living_target(target))
-		return FALSE
-
-	if(HAS_TRAIT(target, TRAIT_CLOAKED) && controller.get_distance_to(target) > get_cloak_visible_range())
-		return FALSE
-
-	if(!path_check(target))
+	if(HAS_TRAIT(target, TRAIT_CLOAKED) && distance > get_cloak_visible_range())
 		return FALSE
 
 	return TRUE
 
-/datum/human_ai_module/perception/proc/can_detect_living_target(mob/living/target)
+/datum/human_ai_module/perception/proc/has_lit_turf_near_living_target(mob/living/target)
 	for(var/turf/tile in range(1, target))
 		if(tile.luminosity || (tile.dynamic_lumcount >= 1))
 			return TRUE
 
 	return FALSE
 
-/datum/human_ai_module/perception/proc/path_check(atom/movable/target)
+/datum/human_ai_module/perception/proc/has_safe_line_to_target(atom/target)
+	return get_fire_line_safety(target) != HUMAN_AI_FIRE_LINE_BLOCKED
+
+/datum/human_ai_module/perception/proc/get_fire_line_safety(atom/target, datum/human_ai_firearm_profile/gun_data = null)
 	if(!has_valid_owner())
-		return FALSE
+		return HUMAN_AI_FIRE_LINE_BLOCKED
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
-		return FALSE
+		return HUMAN_AI_FIRE_LINE_BLOCKED
 
 	if(!is_valid_target_ref(target))
-		return FALSE
+		return HUMAN_AI_FIRE_LINE_BLOCKED
 
 	var/turf/source_turf = controller.get_current_turf()
 	var/turf/target_turf = get_turf(target)
 	if(!source_turf || !target_turf)
-		return FALSE
+		return HUMAN_AI_FIRE_LINE_BLOCKED
 
 	var/list/turf_list = get_line(source_turf, target_turf, FALSE)
+	if(!has_clear_target_line(turf_list, target, controller))
+		return HUMAN_AI_FIRE_LINE_BLOCKED
+
+	turf_list.Cut(1, 2)
+	var/fire_line_safety = get_friendly_fire_line_safety(turf_list, target_turf)
+	if((fire_line_safety == HUMAN_AI_FIRE_LINE_CAUTION) && gun_data?.block_cautious_fire_line)
+		return HUMAN_AI_FIRE_LINE_BLOCKED
+	return fire_line_safety
+
+/datum/human_ai_module/perception/proc/has_clear_target_line(list/turf_list, atom/target, datum/human_tied_controller/controller)
 	for(var/turf/tile in turf_list)
 		if(tile.density)
 			return FALSE
@@ -362,18 +401,17 @@
 				if(istype(obstacle, /obj/structure/window) || istype(obstacle, /obj/structure/grille) || istype(obstacle, /obj/structure/barricade))
 					continue
 				return FALSE
+	return TRUE
 
-	turf_list.Cut(1, 2)
+/datum/human_ai_module/perception/proc/get_friendly_fire_line_safety(list/turf_list, turf/target_turf)
 	var/list/checked_turfs = list()
+	var/fire_line_safety = HUMAN_AI_FIRE_LINE_CLEAR
 	for(var/i in 1 to length(turf_list))
 		var/turf/tile = turf_list[i]
 		if(!checked_turfs[tile])
 			checked_turfs[tile] = TRUE
-			for(var/mob/living/carbon/human/possible_friendly in tile)
-				if(possible_friendly.body_position == LYING_DOWN)
-					continue
-				if(brain.is_friendly_target(possible_friendly))
-					return FALSE
+			if(has_blocking_friendly_on_direct_fire_turf(tile, target_turf))
+				return HUMAN_AI_FIRE_LINE_BLOCKED
 
 		if(i <= 3)
 			continue
@@ -382,12 +420,27 @@
 			if(checked_turfs[neighbor])
 				continue
 			checked_turfs[neighbor] = TRUE
-			for(var/mob/living/carbon/human/possible_friendly in neighbor)
-				if(possible_friendly.body_position == LYING_DOWN)
-					continue
-				if(brain.is_friendly_target(possible_friendly))
-					return FALSE
-	return TRUE
+			if(has_standing_friendly_on_fire_turf(neighbor))
+				fire_line_safety = HUMAN_AI_FIRE_LINE_CAUTION
+	return fire_line_safety
+
+/datum/human_ai_module/perception/proc/has_blocking_friendly_on_direct_fire_turf(turf/tile, turf/target_turf)
+	for(var/mob/living/carbon/human/possible_friendly in tile)
+		if(!brain.is_friendly_target(possible_friendly))
+			continue
+		if(tile == target_turf)
+			return TRUE
+		if(possible_friendly.body_position != LYING_DOWN)
+			return TRUE
+	return FALSE
+
+/datum/human_ai_module/perception/proc/has_standing_friendly_on_fire_turf(turf/tile)
+	for(var/mob/living/carbon/human/possible_friendly in tile)
+		if(possible_friendly.body_position == LYING_DOWN)
+			continue
+		if(brain.is_friendly_target(possible_friendly))
+			return TRUE
+	return FALSE
 
 /datum/human_ai_module/perception/proc/get_cloak_visible_range()
 	return 3
@@ -395,5 +448,5 @@
 /datum/human_ai_module/perception/proc/has_valid_owner()
 	return brain && brain.has_valid_tied_human()
 
-/datum/human_ai_module/perception/proc/is_valid_target_ref(atom/movable/target)
+/datum/human_ai_module/perception/proc/is_valid_target_ref(atom/target)
 	return target && !QDELETED(target)

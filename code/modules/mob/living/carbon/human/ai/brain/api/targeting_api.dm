@@ -23,6 +23,12 @@
 	var/datum/human_ai_module/perception/perception_module = get_perception_module()
 	return perception_module?.get_visible_target_candidates() || list()
 
+/datum/human_ai_brain/proc/get_fire_line_safety(atom/target, datum/human_ai_firearm_profile/gun_data = null)
+	var/datum/human_ai_module/perception/perception_module = get_perception_module()
+	if(!perception_module)
+		return HUMAN_AI_FIRE_LINE_BLOCKED
+	return perception_module.get_fire_line_safety(target, gun_data)
+
 /datum/human_ai_brain/proc/has_recent_projectile_threat()
 	var/datum/human_ai_module/perception/perception_module = get_perception_module()
 	return perception_module?.has_recent_projectile_threat()
@@ -55,6 +61,20 @@
 		return TRUE
 	return has_recent_projectile_threat()
 
+/datum/human_ai_brain/proc/get_current_target_turf()
+	RETURN_TYPE(/turf)
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	return targeting_module?.get_current_target_turf()
+
+/datum/human_ai_brain/proc/get_last_known_target_turf()
+	RETURN_TYPE(/turf)
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	return targeting_module?.get_last_known_target_turf()
+
+/datum/human_ai_brain/proc/has_recent_lost_target()
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	return targeting_module?.has_recent_lost_target()
+
 /datum/human_ai_brain/proc/has_offscreen_fire_target()
 	return has_recent_projectile_threat()
 
@@ -77,6 +97,10 @@
 /datum/human_ai_brain/proc/clear_target_turf()
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
 	targeting_module?.clear_target_turf()
+
+/datum/human_ai_brain/proc/clear_last_known_target()
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	targeting_module?.clear_last_known_target()
 
 /datum/human_ai_brain/proc/set_target_turf_direct(turf/new_target_turf)
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()

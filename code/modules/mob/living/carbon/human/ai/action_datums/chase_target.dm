@@ -9,7 +9,7 @@
 	if(!brain || !controller)
 		return 0
 
-	if(brain.is_in_cover())
+	if(brain.is_in_cover() && !brain.has_recent_lost_target())
 		return 0
 
 	var/turf/target_turf = brain.get_target_turf()

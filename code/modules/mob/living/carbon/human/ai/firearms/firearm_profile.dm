@@ -27,6 +27,8 @@
 	var/safe_human_adjacent_target_chance = 0
 	/// Percent chance to intentionally miss into less-safe adjacent turfs around a human target.
 	var/miss_human_adjacent_target_chance = 0
+	/// If TRUE, adjacent friendly fire-line caution is treated as blocked.
+	var/block_cautious_fire_line = FALSE
 
 /datum/human_ai_firearm_profile/proc/matches(obj/item/weapon/gun/firearm)
 	return firearm && is_type_in_list(firearm, gun_types)
@@ -112,6 +114,7 @@
 	optimal_range = 4
 	maximum_range = 5
 	primary_weight = 7
+	block_cautious_fire_line = TRUE
 
 /datum/human_ai_firearm_profile/flamer/m240t
 	gun_types = list(/obj/item/weapon/gun/flamer/M240T)
@@ -123,6 +126,7 @@
 	optimal_range = 6
 	disposable = TRUE
 	primary_weight = 15
+	block_cautious_fire_line = TRUE
 	aim_adjacent_to_human_targets = TRUE
 	direct_human_target_chance = 20
 	safe_human_adjacent_target_chance = 70
@@ -162,6 +166,7 @@
 	optimal_range = 7
 	maximum_range = 14
 	primary_weight = 9
+	block_cautious_fire_line = TRUE
 
 /datum/human_ai_firearm_profile/xm99
 	gun_types = list(/obj/item/weapon/gun/XM99)

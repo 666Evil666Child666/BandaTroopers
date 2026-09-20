@@ -7,6 +7,7 @@
 	var/rounds_burst_fired = 0
 	var/currently_firing
 	var/list/watched_turfs = list()
+	var/atom/watched_fire_target
 
 /datum/ai_action/fire_at_target/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
@@ -20,7 +21,7 @@
 		return 0
 
 	var/turf/target_turf = brain.get_ranged_fire_target_turf(gun_data)
-	if(!firing_line_check(context, target_turf))
+	if(!firing_line_check(context, target_turf, gun_data))
 		return 0
 
 	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
@@ -52,10 +53,12 @@
 
 /datum/ai_action/fire_at_target/proc/clear_watched_turfs()
 	if(!length(watched_turfs))
+		watched_fire_target = null
 		return
 	for(var/turf/T as anything in watched_turfs)
 		UnregisterSignal(T, COMSIG_TURF_ENTERED)
 	watched_turfs.Cut()
+	watched_fire_target = null
 
 /datum/ai_action/fire_at_target/trigger_action()
 	. = ..()
@@ -99,7 +102,7 @@
 		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!firing_line_check(context, aim_target))
+	if(!firing_line_check(context, aim_target, gun_data))
 		qdel(firearm_context)
 		return ONGOING_ACTION_COMPLETED
 
@@ -126,7 +129,7 @@
 		return ONGOING_ACTION_COMPLETED
 	return ONGOING_ACTION_UNFINISHED
 
-/datum/ai_action/fire_at_target/proc/firing_line_check(datum/human_ai_context/context, atom/target, listen = FALSE)
+/datum/ai_action/fire_at_target/proc/firing_line_check(datum/human_ai_context/context, atom/target, datum/human_ai_firearm_profile/gun_data = null, listen = FALSE)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!brain?.can_continue_runtime_work() || !controller) // SS220 EDIT: avoid post-lifecycle signal work from upstream firing callbacks
@@ -149,8 +152,12 @@
 			else if((tile_dist > 3) && thing.projectile_coverage >= PROJECTILE_COVERAGE_MEDIUM)
 				return FALSE
 
+	if(brain.get_fire_line_safety(target, gun_data) == HUMAN_AI_FIRE_LINE_BLOCKED)
+		return FALSE
+
 	if(listen)
 		clear_watched_turfs()
+		watched_fire_target = target
 
 	var/list/checked_turfs = list()
 	for(var/i in 2 to length(turf_list))
@@ -173,16 +180,6 @@
 				RegisterSignal(T, COMSIG_TURF_ENTERED, PROC_REF(cheap_friendly_check))
 				watched_turfs += T
 
-			for(var/mob/living/possible_friendly in T)
-				if(controller.is_puppet(possible_friendly))
-					continue
-
-				if(possible_friendly.body_position == LYING_DOWN)
-					continue
-
-				if(brain.is_friendly_target(possible_friendly))
-					return FALSE
-
 	return TRUE
 
 /datum/ai_action/fire_at_target/proc/cheap_friendly_check(datum/source, atom/movable/entering)
@@ -197,11 +194,11 @@
 	if(!istype(entering, /mob/living))
 		return
 
-	var/mob/living/H = entering
-	if(H.body_position == LYING_DOWN)
+	var/mob/living/possible_friendly = entering
+	if(!brain.is_friendly_target(possible_friendly))
 		return
 
-	if(brain.is_friendly_target(H))
+	if(brain.get_fire_line_safety(watched_fire_target || brain.get_aim_target(), brain.get_gun_data()) == HUMAN_AI_FIRE_LINE_BLOCKED)
 		stop_firing()
 		qdel(src)
 
@@ -291,7 +288,7 @@
 		qdel(src)
 		return
 
-	if(!firing_line_check(context, shoot_next, listen = TRUE))
+	if(!firing_line_check(context, shoot_next, gun_data, listen = TRUE))
 		stop_firing()
 		qdel(src)
 		return
