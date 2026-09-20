@@ -24,6 +24,8 @@
 			return 10
 
 	else if(brain.is_in_cover())
+		if(!brain.can_use_ranged_fire_line(controller, current_target, gun_data))
+			return 10
 		if(distance < gun_data.minimum_range)
 			return 10
 
@@ -73,11 +75,15 @@
 	else
 		range = gun_data.optimal_range
 
+	var/can_fire_from_position = brain.can_use_ranged_fire_line(controller, current_target, gun_data)
 	if(controller.get_distance_to(current_target) <= range)
-		return
+		if(!brain.is_in_cover() || can_fire_from_position)
+			return
 
 	if(brain.is_in_cover())
-		return ONGOING_ACTION_UNFINISHED
+		if(can_fire_from_position)
+			return ONGOING_ACTION_UNFINISHED
+		brain.end_cover()
 
 	if(!brain.move_to_atom(current_target))
 		return ONGOING_ACTION_COMPLETED

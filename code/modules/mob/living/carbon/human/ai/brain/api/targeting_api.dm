@@ -61,6 +61,21 @@
 		return TRUE
 	return has_recent_projectile_threat()
 
+/datum/human_ai_brain/proc/get_shared_combat_target_turf()
+	RETURN_TYPE(/turf)
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	return targeting_module?.get_current_target_turf()
+
+/datum/human_ai_brain/proc/has_shared_combat_target_turf()
+	return !!get_shared_combat_target_turf()
+
+/datum/human_ai_brain/proc/get_chase_target_turf()
+	RETURN_TYPE(/turf)
+	var/turf/target_turf = get_shared_combat_target_turf()
+	if(target_turf)
+		return target_turf
+	return get_recent_projectile_threat_turf()
+
 /datum/human_ai_brain/proc/get_current_target_turf()
 	RETURN_TYPE(/turf)
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()

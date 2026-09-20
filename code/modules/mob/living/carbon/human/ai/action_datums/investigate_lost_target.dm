@@ -69,7 +69,7 @@
 			if(controller.get_distance_from(target_turf) > 0)
 				return ONGOING_ACTION_UNFINISHED
 
-		controller.face_dir(pick(GLOB.cardinals))
+		face_investigation_center(controller)
 		current_investigation_point++
 		return ONGOING_ACTION_UNFINISHED
 
@@ -83,7 +83,17 @@
 
 	for(var/direction in GLOB.cardinals)
 		var/turf/nearby_turf = get_step(center, direction)
-		if(!nearby_turf || (nearby_turf in investigation_points))
+		if(!nearby_turf || nearby_turf.density || (nearby_turf in investigation_points))
 			continue
 
 		investigation_points += nearby_turf
+
+/datum/ai_action/investigate_lost_target/proc/face_investigation_center(datum/human_tied_controller/controller)
+	if(!controller || !investigation_center)
+		return FALSE
+
+	var/direction = controller.get_direction_to(investigation_center)
+	if(!direction)
+		return FALSE
+
+	return controller.face_dir(direction)

@@ -59,9 +59,12 @@
 
 /datum/human_ai_brain/proc/get_ranged_fire_target_turf(datum/human_ai_firearm_profile/gun_data = null)
 	RETURN_TYPE(/turf)
-	var/turf/target_turf = get_target_turf()
-	if(has_current_target() || can_fire_offscreen(target_turf, gun_data))
-		return target_turf
+	if(has_current_target())
+		return get_current_target_turf()
+
+	var/turf/threat_turf = get_recent_projectile_threat_turf()
+	if(can_fire_offscreen(threat_turf, gun_data))
+		return threat_turf
 	return null
 
 /datum/human_ai_brain/proc/can_reach_ranged_fire_target(datum/human_tied_controller/controller, turf/target_turf, maximum_range = null, datum/human_ai_firearm_profile/gun_data = null)
@@ -77,6 +80,33 @@
 	if(!target)
 		return FALSE
 	return can_reach_ranged_fire_target(controller, get_turf(target), maximum_range, gun_data)
+
+/datum/human_ai_brain/proc/can_use_ranged_fire_line(datum/human_tied_controller/controller, atom/target, datum/human_ai_firearm_profile/gun_data = null)
+	if(!can_continue_runtime_work() || !controller || !target)
+		return FALSE
+
+	if(isliving(target) && controller.get_distance_to(target) <= 1)
+		return TRUE
+
+	var/list/turf_list = controller.get_line_from_current_turf_to(target)
+	for(var/turf/tile in turf_list)
+		var/tile_dist = controller.get_distance_to(tile)
+		if(tile_dist > get_view_distance())
+			continue
+
+		if(tile.density)
+			return FALSE
+
+		for(var/obj/thing in tile)
+			if(!thing.unacidable || !thing.density)
+				continue
+
+			if((tile_dist <= 3) && (thing.projectile_coverage >= PROJECTILE_COVERAGE_HIGH))
+				return FALSE
+			else if((tile_dist > 3) && thing.projectile_coverage >= PROJECTILE_COVERAGE_MEDIUM)
+				return FALSE
+
+	return get_fire_line_safety(target, gun_data) != HUMAN_AI_FIRE_LINE_BLOCKED
 
 /datum/human_ai_brain/proc/get_ranged_fire_aim_target(datum/human_tied_controller/controller, atom/movable/current_target, turf/target_turf, datum/human_ai_firearm_profile/gun_data = null)
 	RETURN_TYPE(/atom)
@@ -167,8 +197,8 @@
 /datum/human_ai_brain/proc/should_defer_ranged_fire_target(atom/threat = null)
 	return should_defer_ranged_fire(threat)
 
-/datum/human_ai_brain/proc/should_defer_current_ranged_fire()
-	return should_defer_ranged_fire_target(get_aim_target())
+/datum/human_ai_brain/proc/should_defer_current_ranged_fire(datum/human_ai_firearm_profile/gun_data = null)
+	return should_defer_ranged_fire_target(get_current_target() || get_ranged_fire_target_turf(gun_data))
 
 /datum/human_ai_brain/proc/can_attempt_ranged_fire(datum/human_tied_controller/controller, obj/item/weapon/gun/primary_weapon, datum/human_ai_firearm_profile/gun_data = null, require_combat = TRUE, block_active_grenade = FALSE, check_view_distance = TRUE, check_reload = TRUE, check_tried_reload = TRUE)
 	if(!has_valid_tied_human())
@@ -189,7 +219,7 @@
 		return FALSE
 	if(check_view_distance && !can_reach_ranged_fire_target(controller, target_turf, get_view_distance(), gun_data))
 		return FALSE
-	if(should_defer_current_ranged_fire())
+	if(should_defer_current_ranged_fire(gun_data))
 		return FALSE
 	if(check_reload && should_reload())
 		return FALSE

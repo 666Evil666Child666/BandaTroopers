@@ -21,10 +21,14 @@
 		return 0
 
 	var/turf/target_turf = brain.get_ranged_fire_target_turf(gun_data)
-	if(!firing_line_check(context, target_turf, gun_data))
+	var/atom/fire_line_target = target_turf
+	var/atom/movable/current_target = brain.get_current_target()
+	if(current_target && controller.get_distance_to(current_target) <= 1)
+		fire_line_target = current_target
+	if(!firing_line_check(context, fire_line_target, gun_data))
 		return 0
 
-	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, brain.get_current_target(), target_turf)
+	var/datum/human_ai_firearm_context/firearm_context = new(primary_weapon, brain, current_target, target_turf)
 	var/datum/human_ai_firearm_handler/handler = firearm_context.get_handler()
 	var/can_queue_fire = handler?.can_queue_fire(firearm_context)
 	qdel(firearm_context)
@@ -80,7 +84,7 @@
 	if(!aim_target)
 		return ONGOING_ACTION_COMPLETED
 	var/turf/aim_turf = get_turf(aim_target)
-	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf)
+	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf, gun_data)
 	if(currently_firing || !brain.can_continue_fire_burst())
 		return ONGOING_ACTION_UNFINISHED
 
@@ -132,28 +136,10 @@
 /datum/ai_action/fire_at_target/proc/firing_line_check(datum/human_ai_context/context, atom/target, datum/human_ai_firearm_profile/gun_data = null, listen = FALSE)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain?.can_continue_runtime_work() || !controller) // SS220 EDIT: avoid post-lifecycle signal work from upstream firing callbacks
+	if(!brain?.can_use_ranged_fire_line(controller, target, gun_data)) // SS220 EDIT: avoid post-lifecycle signal work from upstream firing callbacks
 		return FALSE
+
 	var/list/turf_list = controller.get_line_from_current_turf_to(target)
-	for(var/turf/tile in turf_list)
-		var/tile_dist = controller.get_distance_to(tile)
-		if(tile_dist > brain.get_view_distance())
-			continue
-
-		if(tile.density)
-			return FALSE
-
-		for(var/obj/thing in tile)
-			if(!thing.unacidable || !thing.density)
-				continue
-
-			if((tile_dist <= 3) && (thing.projectile_coverage >= PROJECTILE_COVERAGE_HIGH)) // short range we allow for higher projectile coverage to be shot over
-				return FALSE
-			else if((tile_dist > 3) && thing.projectile_coverage >= PROJECTILE_COVERAGE_MEDIUM)
-				return FALSE
-
-	if(brain.get_fire_line_safety(target, gun_data) == HUMAN_AI_FIRE_LINE_BLOCKED)
-		return FALSE
 
 	if(listen)
 		clear_watched_turfs()
@@ -198,7 +184,7 @@
 	if(!brain.is_friendly_target(possible_friendly))
 		return
 
-	if(brain.get_fire_line_safety(watched_fire_target || brain.get_aim_target(), brain.get_gun_data()) == HUMAN_AI_FIRE_LINE_BLOCKED)
+	if(brain.get_fire_line_safety(watched_fire_target || brain.get_ranged_fire_target_turf(brain.get_gun_data()), brain.get_gun_data()) == HUMAN_AI_FIRE_LINE_BLOCKED)
 		stop_firing()
 		qdel(src)
 
@@ -211,7 +197,12 @@
 		qdel(src)
 		return
 
-	var/turf/target_turf = brain.get_target_turf()
+	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
+	var/turf/target_turf = brain.get_ranged_fire_target_turf(gun_data)
+	if(!target_turf)
+		stop_firing()
+		qdel(src)
+		return
 
 	controller.set_combat_intent()
 
@@ -220,7 +211,6 @@
 
 	currently_firing = TRUE
 
-	var/datum/human_ai_firearm_profile/gun_data = brain.get_gun_data()
 	if(brain.should_reload()) // note that bullet removal comes after comsig is triggered
 		if(gun_data?.disposable)
 			var/obj/item/weapon/gun/current_primary_weapon = brain.get_primary_weapon()
@@ -231,7 +221,7 @@
 		qdel(src)
 		return
 
-	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf)
+	var/should_fire_offscreen = brain.can_fire_offscreen(target_turf, gun_data)
 	var/atom/movable/current_target = brain.get_current_target()
 	var/shoot_next = current_target
 

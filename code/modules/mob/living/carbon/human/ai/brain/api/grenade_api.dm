@@ -50,7 +50,7 @@
 
 /datum/human_ai_brain/proc/get_grenade_throw_target_turf()
 	RETURN_TYPE(/turf)
-	return get_target_turf()
+	return get_shared_combat_target_turf() || get_recent_projectile_threat_turf()
 
 /datum/human_ai_brain/proc/get_grenade_throw_source()
 	RETURN_TYPE(/obj/item)

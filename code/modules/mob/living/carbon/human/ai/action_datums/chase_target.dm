@@ -15,7 +15,7 @@
 	if(brain.is_in_cover())
 		return 0
 
-	var/turf/target_turf = brain.get_target_turf()
+	var/turf/target_turf = brain.get_chase_target_turf()
 	if(!target_turf)
 		return 0
 
@@ -47,7 +47,7 @@
 	if(brain.has_recent_lost_target())
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/target_turf = brain.get_target_turf()
+	var/turf/target_turf = brain.get_chase_target_turf()
 	if(QDELETED(target_turf) || brain.has_current_target())
 		return ONGOING_ACTION_COMPLETED
 

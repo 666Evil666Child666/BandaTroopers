@@ -328,6 +328,9 @@
 	if(!can_detect_mob_target(target, distance))
 		return FALSE
 
+	if(distance <= 1)
+		return TRUE
+
 	if(!has_safe_line_to_target(target))
 		return FALSE
 

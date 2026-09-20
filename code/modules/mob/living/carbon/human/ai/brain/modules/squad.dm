@@ -181,7 +181,7 @@
 	for(var/datum/human_ai_brain/squaddie as anything in squad_datum.ai_in_squad)
 		if(!squaddie.has_valid_tied_human())
 			continue
-		if(squaddie.has_target_turf())
+		if(squaddie.has_shared_combat_target_turf())
 			continue
 		var/datum/human_ai_context/squaddie_context = squaddie.create_context()
 		var/datum/human_tied_controller/squaddie_controller = squaddie_context.controller
@@ -192,4 +192,7 @@
 		var/atom/movable/current_target = brain.get_current_target()
 		if(!squaddie.can_target(current_target))
 			continue
-		squaddie.set_target_turf_direct(brain.get_target_turf())
+		var/turf/shared_target_turf = brain.get_shared_combat_target_turf()
+		if(!shared_target_turf)
+			continue
+		squaddie.set_target_turf_direct(shared_target_turf)
