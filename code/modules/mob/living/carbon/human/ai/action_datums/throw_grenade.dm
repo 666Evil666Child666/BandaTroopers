@@ -28,6 +28,7 @@
 /datum/ai_action/throw_grenade/get_context_conflicts(datum/human_ai_context/context)
 	. = ..()
 	. += /datum/ai_action/chase_target
+	. += /datum/ai_action/investigate_lost_target
 	. += /datum/ai_action/sniper_nest
 
 /datum/ai_action/throw_grenade/Added()

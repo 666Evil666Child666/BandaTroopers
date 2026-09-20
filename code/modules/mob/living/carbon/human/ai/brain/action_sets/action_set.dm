@@ -53,6 +53,7 @@
 	action_whitelist = list(
 		/datum/ai_action/chase_target,
 		/datum/ai_action/follow_leader,
+		/datum/ai_action/investigate_lost_target,
 		/datum/ai_action/patrol_waypoints,
 		/datum/ai_action/quick_approach,
 	)
