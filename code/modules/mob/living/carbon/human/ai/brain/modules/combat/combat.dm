@@ -1,6 +1,6 @@
 /datum/human_ai_module/combat
 	module_id = "combat"
-	required_module_types = list(/datum/human_ai_module/targeting, /datum/human_ai_module/perception)
+	required_module_types = list(/datum/human_ai_module/targeting)
 
 	/// Ref to the last turf that the AI shot at
 	var/turf/shot_at
@@ -21,29 +21,29 @@
 /datum/human_ai_module/combat/suspend_module(clear_inventory = FALSE)
 	reset_combat()
 
+/datum/human_ai_module/combat/proc/can_continue_combat_work()
+	return brain?.can_continue_runtime_work()
+
 /datum/human_ai_module/combat/process_module(delta_time)
+	if(!can_continue_combat_work())
+		return
 	if(brain.has_current_target())
 		enter_combat()
 
 /datum/human_ai_module/combat/on_ai_event(datum/human_ai_event/event)
 	if(event.event_type == HUMAN_AI_EVENT_PROJECTILE_THREAT)
 		var/obj/projectile/bullet = event.data?["bullet"]
-		on_projectile_threat(bullet, event.data?["from_direct_hit"])
+		on_projectile_threat(bullet, event.data?["from_direct_hit"], event.data?["threat_turf"])
 
-/datum/human_ai_module/combat/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
-	var/datum/human_ai_module/perception/perception_module = get_perception_module()
-	if(!perception_module?.has_recent_threat())
+/datum/human_ai_module/combat/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, turf/threat_turf = null)
+	if(!threat_turf)
 		return
 
 	enter_combat()
 
-/datum/human_ai_module/combat/proc/get_perception_module()
-	RETURN_TYPE(/datum/human_ai_module/perception)
-	return brain?.get_perception_module()
-
 /datum/human_ai_module/combat/proc/enter_combat()
 	SIGNAL_HANDLER
-	if(!brain.can_continue_runtime_work())
+	if(!can_continue_combat_work())
 		return
 
 	var/was_in_combat = in_combat
@@ -58,7 +58,7 @@
 		in_combat = FALSE
 		return
 
-	if(!brain.can_continue_runtime_work())
+	if(!can_continue_combat_work())
 		return
 
 	if(in_combat)

@@ -10,6 +10,9 @@
 	controller.register_signal_for(src, COMSIG_MOB_PICKUP_ITEM, PROC_REF(on_item_pickup))
 	controller.register_signal_for(src, COMSIG_MOB_DROP_ITEM, PROC_REF(on_item_drop))
 
+/datum/human_ai_module/inventory/proc/can_handle_runtime_inventory_signal()
+	return can_continue_inventory_work()
+
 /datum/human_ai_module/inventory/proc/on_equipment_dropped(obj/item/source, mob/dropper)
 	SIGNAL_HANDLER
 
@@ -40,10 +43,14 @@
 
 /datum/human_ai_module/inventory/proc/invalidate_inventory_runtime_caches()
 	invalidate_nearby_item_search()
-	brain.on_inventory_runtime_changed()
+	if(can_handle_runtime_inventory_signal())
+		brain.on_inventory_runtime_changed()
 
 /datum/human_ai_module/inventory/proc/on_item_equip(datum/source, obj/item/equipment, slot)
 	SIGNAL_HANDLER
+	if(!can_handle_runtime_inventory_signal())
+		return
+
 	unqueue_pickup(equipment)
 	invalidate_inventory_runtime_caches()
 
@@ -68,6 +75,9 @@
 
 /datum/human_ai_module/inventory/proc/on_item_unequip(datum/source, obj/item/equipment, slot)
 	SIGNAL_HANDLER
+	if(!can_handle_runtime_inventory_signal())
+		return
+
 	invalidate_inventory_runtime_caches()
 
 	handle_unequipped_storage(equipment, slot)
@@ -88,13 +98,15 @@
 /datum/human_ai_module/inventory/proc/on_item_pickup(datum/source, obj/item/picked_up)
 	SIGNAL_HANDLER
 
-	brain.on_inventory_runtime_changed()
+	if(!can_handle_runtime_inventory_signal())
+		return
+
+	invalidate_inventory_runtime_caches()
 
 	handle_picked_up_primary_weapon(picked_up)
 
 	unqueue_pickup(picked_up)
 	handle_picked_up_active_grenade(picked_up)
-	invalidate_nearby_item_search()
 
 /datum/human_ai_module/inventory/proc/handle_picked_up_primary_weapon(obj/item/picked_up)
 	if(!primary_weapon && isgun(picked_up) && can_select_firearm(picked_up))
@@ -109,6 +121,9 @@
 
 /datum/human_ai_module/inventory/proc/on_item_drop(datum/source, obj/item/dropped)
 	SIGNAL_HANDLER
+	if(!can_handle_runtime_inventory_signal())
+		return
+
 	invalidate_inventory_runtime_caches()
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller || controller.is_zombie())

@@ -6,28 +6,16 @@
 	var/list/action_blacklist = list()
 
 /datum/human_ai_action_set/proc/get_action_whitelist(list/resolving_action_set_types = null)
-	if(!resolving_action_set_types)
-		resolving_action_set_types = list()
-	if(type in resolving_action_set_types)
-		stack_trace("Human AI action set issue: cyclic included action set [type]")
-		return list()
-
-	resolving_action_set_types += type
-	var/list/resolved_actions = list()
-	for(var/action_set_type as anything in included_action_set_types)
-		if(!ispath(action_set_type, /datum/human_ai_action_set))
-			stack_trace("Human AI action set issue: invalid included action set [action_set_type]")
-			continue
-
-		var/datum/human_ai_action_set/action_set = new action_set_type()
-		resolved_actions |= action_set.get_action_whitelist(resolving_action_set_types)
-		qdel(action_set)
-
-	resolving_action_set_types -= type
-	resolved_actions |= action_whitelist
-	return resolved_actions
+	return get_resolved_action_list(FALSE, resolving_action_set_types)
 
 /datum/human_ai_action_set/proc/get_action_blacklist(list/resolving_action_set_types = null)
+	return get_resolved_action_list(TRUE, resolving_action_set_types)
+
+/datum/human_ai_action_set/proc/get_local_action_list(resolve_blacklist = FALSE)
+	var/list/local_actions = resolve_blacklist ? action_blacklist : action_whitelist
+	return local_actions || list()
+
+/datum/human_ai_action_set/proc/get_resolved_action_list(resolve_blacklist = FALSE, list/resolving_action_set_types = null)
 	if(!resolving_action_set_types)
 		resolving_action_set_types = list()
 	if(type in resolving_action_set_types)
@@ -42,11 +30,11 @@
 			continue
 
 		var/datum/human_ai_action_set/action_set = new action_set_type()
-		resolved_actions |= action_set.get_action_blacklist(resolving_action_set_types)
+		resolved_actions |= action_set.get_resolved_action_list(resolve_blacklist, resolving_action_set_types)
 		qdel(action_set)
 
 	resolving_action_set_types -= type
-	resolved_actions |= action_blacklist
+	resolved_actions |= get_local_action_list(resolve_blacklist)
 	return resolved_actions
 
 /datum/human_ai_action_set/movement

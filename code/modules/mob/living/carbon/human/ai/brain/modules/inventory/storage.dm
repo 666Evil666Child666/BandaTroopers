@@ -94,6 +94,8 @@
 /datum/human_ai_module/inventory/proc/equip_item_from_equipment_map(object_type, obj/item/object_ref)
 	if(!object_type || !object_ref)
 		return
+	if(!can_continue_inventory_work())
+		return FALSE
 
 	var/object_loc = get_equipment_location(object_ref, object_type)
 	var/obj/item/storage/storage_object = get_object_from_loc(object_loc)
@@ -134,7 +136,7 @@
 /datum/human_ai_module/inventory/proc/store_item_as_types(obj/item/object_ref, object_loc, list/slot_types)
 	// SS220 EDIT - START: late AI store callbacks can outlive the held item, owner, or original storage slot
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!brain.has_valid_tied_human() || !controller || QDELETED(object_ref))
+	if(!can_continue_inventory_work() || !brain.has_valid_tied_human() || !controller || QDELETED(object_ref))
 		unqueue_pickup(object_ref)
 		forget_equipped_item_origin(object_ref)
 		remove_from_equipment_maps(object_ref)

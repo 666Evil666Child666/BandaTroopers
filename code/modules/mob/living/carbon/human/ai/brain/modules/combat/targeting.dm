@@ -29,7 +29,12 @@
 	clear_target_turf()
 	lose_target(FALSE)
 
+/datum/human_ai_module/targeting/proc/can_continue_targeting_work()
+	return brain?.can_continue_runtime_work()
+
 /datum/human_ai_module/targeting/process_module(delta_time)
+	if(!can_continue_targeting_work())
+		return
 	if(!has_current_target())
 		set_target(get_target())
 
@@ -37,7 +42,7 @@
 	switch(event.event_type)
 		if(HUMAN_AI_EVENT_PROJECTILE_THREAT)
 			var/obj/projectile/bullet = event.data?["bullet"]
-			on_projectile_threat(bullet, event.data?["from_direct_hit"])
+			on_projectile_threat(bullet, event.data?["from_direct_hit"], event.data?["threat_source"])
 		if(HUMAN_AI_EVENT_COMBAT_EXIT_STARTED)
 			on_combat_exit_started(event.data?["should_holster_primary"])
 		if(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED)
@@ -47,26 +52,32 @@
 		if(HUMAN_AI_EVENT_MOVED)
 			on_moved(event.data?["oldloc"], event.data?["direction"], event.data?["forced"])
 
-/datum/human_ai_module/targeting/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
+/datum/human_ai_module/targeting/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, atom/movable/firer = null)
+	if(!can_continue_targeting_work())
+		return
+
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
 		return
 
-	var/datum/human_ai_module/perception/perception_module = get_perception_module()
-	var/atom/movable/firer = perception_module?.get_recent_threat_source()
 	if(!firer)
 		return
 
-	if(!perception_module.can_target(firer))
+	if(!brain.can_target(firer))
 		return
 
 	if(controller.get_distance_to(firer) <= brain.get_targeting_view_distance())
 		set_target(firer)
 
 /datum/human_ai_module/targeting/on_combat_exit_started(should_holster_primary = TRUE)
+	if(!can_continue_targeting_work())
+		return
 	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/on_combat_exit_finished(list/combat_exit_context)
+	if(!can_continue_targeting_work())
+		return
+
 	if(combat_exit_context?["force_clear"])
 		lose_target(FALSE)
 
@@ -74,13 +85,20 @@
 		clear_target_turf()
 
 /datum/human_ai_module/targeting/on_body_position_changed(new_position, old_position)
+	if(!can_continue_targeting_work())
+		return
 	if(has_current_target())
 		update_target_pos() // SS220 EDIT: refresh transient combat targeting state after knockdown recovery
 
 /datum/human_ai_module/targeting/on_moved(atom/oldloc, direction, forced)
+	if(!can_continue_targeting_work())
+		return
 	update_target_pos()
 
 /datum/human_ai_module/targeting/proc/set_target(atom/movable/new_target)
+	if(!can_continue_targeting_work())
+		return
+
 	lose_target(FALSE)
 
 	if(!is_valid_target_ref(new_target))
@@ -202,12 +220,17 @@
 	SIGNAL_HANDLER
 	lose_target(FALSE)
 
+/datum/human_ai_module/targeting/proc/can_handle_runtime_target_signal()
+	return can_continue_targeting_work()
+
 /datum/human_ai_module/targeting/proc/on_target_move(atom/oldloc, dir, forced)
 	SIGNAL_HANDLER
+	if(!can_handle_runtime_target_signal())
+		return
 	update_target_pos()
 
 /datum/human_ai_module/targeting/proc/update_target_pos()
-	if(!brain || !brain.has_valid_tied_human())
+	if(!can_continue_targeting_work() || !brain.has_valid_tied_human())
 		target_turf = null
 		return
 	var/datum/human_tied_controller/controller = context?.controller
@@ -222,14 +245,13 @@
 			lose_target()
 
 /datum/human_ai_module/targeting/proc/get_target()
-	if(!has_valid_owner())
+	if(!can_continue_targeting_work() || !has_valid_owner())
 		return null
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
 		return null
 
-	var/datum/human_ai_module/perception/perception_module = get_perception_module()
-	var/list/viable_targets = perception_module?.get_visible_target_candidates() || list()
+	var/list/viable_targets = brain.get_visible_target_candidates()
 	var/atom/movable/closest_target
 	var/smallest_distance = INFINITY
 
@@ -264,10 +286,6 @@
 
 /datum/human_ai_module/targeting/proc/has_valid_owner()
 	return brain && brain.has_valid_tied_human()
-
-/datum/human_ai_module/targeting/proc/get_perception_module()
-	RETURN_TYPE(/datum/human_ai_module/perception)
-	return brain?.get_perception_module()
 
 /datum/human_ai_module/targeting/proc/is_valid_target_ref(atom/movable/target)
 	return target && !QDELETED(target)

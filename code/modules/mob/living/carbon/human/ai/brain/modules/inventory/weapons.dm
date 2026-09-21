@@ -5,8 +5,7 @@
 		new_gun = null
 	primary_weapon = new_gun
 	appraise_primary()
-	invalidate_nearby_item_search()
-	brain.on_inventory_runtime_changed()
+	invalidate_inventory_runtime_caches()
 	if(primary_weapon)
 		RegisterSignal(primary_weapon, COMSIG_PARENT_QDELETING, PROC_REF(on_primary_delete), TRUE)
 
@@ -48,7 +47,7 @@
 /// Unholsters the AI's primary weapon, dropping anything that might obstruct it.
 /datum/human_ai_module/inventory/proc/unholster_primary()
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!primary_weapon || !brain.can_continue_runtime_work() || !controller)
+	if(!primary_weapon || !can_continue_inventory_work() || !controller)
 		return FALSE
 	if(controller.get_l_hand() == primary_weapon || controller.get_r_hand() == primary_weapon)
 		return ensure_primary_hand(primary_weapon)
@@ -71,7 +70,7 @@
 /// Tells the AI to wield their primary weapon, can be called if they aren't holding it or if they are already wielding it
 /datum/human_ai_module/inventory/proc/wield_primary()
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!primary_weapon || !brain.can_continue_runtime_work() || !controller)
+	if(!primary_weapon || !can_continue_inventory_work() || !controller)
 		return FALSE
 	if(!ensure_primary_hand(primary_weapon))
 		return FALSE
@@ -84,14 +83,13 @@
 	if(!wield_primary())
 		return FALSE
 	sleep(max(primary_weapon?.wield_delay, brain.get_action_delay()))
-	// return brain.can_continue_runtime_work()
-	return !QDELETED(src) && brain?.can_continue_runtime_work()
+	return !QDELETED(src) && can_continue_inventory_work()
 	// SS220 EDIT - END
 
 /// Tells the AI to unwield *something*, prioritizing melee
 /datum/human_ai_module/inventory/proc/unholster_any_weapon()
 	var/datum/human_tied_controller/controller = src.context?.controller
-	if(!controller)
+	if(!can_continue_inventory_work() || !controller)
 		return FALSE
 
 	if(controller.is_zombie())
@@ -118,7 +116,7 @@
 /// Holsters the AI's primary weapon if possible
 /datum/human_ai_module/inventory/proc/holster_primary()
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller)
+	if(!primary_weapon || !can_continue_inventory_work() || !controller)
 		return FALSE
 
 	if(controller.get_s_store() || (controller.get_l_hand() != primary_weapon && controller.get_r_hand() != primary_weapon))
@@ -133,7 +131,7 @@
 /// Assuming an item is in the AI's hands, this ensures it is their actively selected hand
 /datum/human_ai_module/inventory/proc/ensure_primary_hand(obj/item/held_item)
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!held_item || !brain.can_continue_runtime_work() || !controller)
+	if(!held_item || !can_continue_inventory_work() || !controller)
 		return FALSE
 	if(controller.get_inactive_hand() == held_item)
 		controller.swap_hand()

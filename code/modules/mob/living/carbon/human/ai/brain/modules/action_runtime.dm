@@ -9,7 +9,7 @@
 	var/list/ongoing_actions = list()
 
 /datum/human_ai_module/action_runtime/proc/clear_actions()
-	for(var/action in ongoing_actions)
+	for(var/action in ongoing_actions.Copy())
 		qdel(action)
 
 	ongoing_actions.Cut()
@@ -33,26 +33,16 @@
 
 	return FALSE
 
-/datum/human_ai_module/action_runtime/proc/process_actions(delta_time)
-	var/datum/human_ai_context/runtime_context = brain.create_context()
-	if(!runtime_context.can_continue())
-		qdel(runtime_context)
-		return FALSE
-
-	// List all allowed action types for AI to consider
-	if(isnull(action_whitelist))
-		stack_trace("Human AI action runtime issue: missing action whitelist")
-		qdel(runtime_context)
-		return FALSE
-
-	var/list/allowed_actions = action_whitelist.Copy() // SS220 EDIT: runtime selection must not mutate preset whitelists
-	allowed_actions -= action_blacklist
-	for(var/datum/ongoing_action as anything in ongoing_actions)
+/datum/human_ai_module/action_runtime/proc/get_allowed_action_types()
+	var/list/allowed_actions = action_whitelist?.Copy() || list() // SS220 EDIT: runtime selection must not mutate preset whitelists
+	if(action_blacklist)
+		allowed_actions -= action_blacklist
+	for(var/datum/ongoing_action as anything in ongoing_actions.Copy())
 		if(is_type_in_list(ongoing_action, allowed_actions))
 			allowed_actions -= ongoing_action.type
+	return allowed_actions
 
-	var/grenade_throw_in_progress = brain.has_throw_in_progress()
-
+/datum/human_ai_module/action_runtime/proc/start_selected_actions(datum/human_ai_context/runtime_context, list/allowed_actions, grenade_throw_in_progress = FALSE)
 	// Create assoc list of selected AI actions and their weight
 	var/list/possible_actions = list()
 	for(var/action_type in shuffle(allowed_actions))
@@ -87,7 +77,26 @@
 		message_admins("action of type [action_type] was added to [runtime_context.controller.get_real_name()]")
 #endif
 
-	for(var/datum/ai_action/action as anything in ongoing_actions)
+/datum/human_ai_module/action_runtime/proc/process_actions(delta_time)
+	var/datum/human_ai_context/runtime_context = brain.create_context()
+	if(!runtime_context.can_continue())
+		qdel(runtime_context)
+		return FALSE
+
+	// List all allowed action types for AI to consider
+	if(isnull(action_whitelist))
+		stack_trace("Human AI action runtime issue: missing action whitelist")
+		qdel(runtime_context)
+		return FALSE
+
+	var/list/allowed_actions = get_allowed_action_types()
+	var/grenade_throw_in_progress = brain.has_throw_in_progress()
+	start_selected_actions(runtime_context, allowed_actions, grenade_throw_in_progress)
+
+	var/list/actions_to_process = ongoing_actions.Copy()
+	for(var/datum/ai_action/action as anything in actions_to_process)
+		if(!(action in ongoing_actions))
+			continue
 		if(!action.brain)
 			ongoing_actions -= action
 			continue
@@ -95,6 +104,8 @@
 		if(grenade_throw_in_progress && (action.action_flags & ACTION_USING_HANDS))
 			continue
 		var/retval = action.trigger_action()
+		if(QDELETED(action) || !(action in ongoing_actions))
+			continue
 		switch(retval)
 			if(ONGOING_ACTION_UNFINISHED_BLOCK)
 				qdel(runtime_context)

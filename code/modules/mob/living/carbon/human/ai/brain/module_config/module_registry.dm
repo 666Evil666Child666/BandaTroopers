@@ -53,7 +53,7 @@
 // ==================== Lookup ====================
 // Reads the registry source of truth for a known module type.
 /datum/human_ai_module_config/proc/get_module_by_type(module_type)
-	if(!modules_by_type)
+	if(!ispath(module_type, /datum/human_ai_module) || !modules_by_type)
 		return null
 	return modules_by_type[module_type]
 

@@ -66,9 +66,18 @@
 /datum/human_ai_module/health/proc/can_retry_self_treatment()
 	return cant_be_treated_stacks < treatment_stack_threshold
 
+/datum/human_ai_module/health/proc/can_continue_health_work()
+	return brain?.can_continue_runtime_work()
+
 /datum/human_ai_module/health/proc/increment_treatment_stacks()
+	if(!can_continue_health_work())
+		return
+
 	cant_be_treated_stacks++
 	addtimer(CALLBACK(src, PROC_REF(clear_treatment_stacks)), 5 SECONDS, TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
 
 /datum/human_ai_module/health/proc/clear_treatment_stacks()
+	if(QDELETED(src) || !can_continue_health_work())
+		return
+
 	cant_be_treated_stacks = 0

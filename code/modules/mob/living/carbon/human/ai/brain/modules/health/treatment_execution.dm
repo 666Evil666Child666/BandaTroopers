@@ -68,6 +68,8 @@
 		return FALSE
 
 	sleep(brain.get_action_delay())
+	if(!can_continue_health_work())
+		return FALSE
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return FALSE
 	controller.ai_use(item, target)
@@ -97,6 +99,8 @@
 		return FALSE
 
 	sleep(brain.get_action_delay())
+	if(!can_continue_health_work())
+		return FALSE
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return FALSE
 	controller.ai_use(item, self_target)

@@ -31,6 +31,9 @@
 	to_pickup.Cut()
 
 /datum/human_ai_module/inventory/proc/should_run_nearby_item_search()
+	if(!can_continue_inventory_work())
+		return FALSE
+
 	if(brain.should_suspend_nearby_item_search())
 		return FALSE
 
@@ -46,6 +49,8 @@
 
 /// SS220 EDIT: delayed reset of active_grenade_found - gives throw-back action one scheduler tick to spawn before clearing
 /datum/human_ai_module/inventory/proc/clear_active_grenade_if_stale(obj/item/explosive/grenade/grenade)
+	if(QDELETED(src) || !can_continue_inventory_work() || QDELETED(grenade))
+		return
 	if(brain.get_active_grenade() == grenade && !brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
 		brain.clear_active_grenade()
 

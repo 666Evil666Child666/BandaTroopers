@@ -1,18 +1,28 @@
 /datum/human_ai_module/health/proc/set_injured_ally(mob/living/new_target)
-	if(!new_target)
+	if(!can_continue_health_work() || !new_target)
 		return
 
+	if(found_injured_ally == new_target)
+		return
+
+	lose_injured_ally()
 	RegisterSignal(new_target, COMSIG_PARENT_QDELETING, PROC_REF(lose_injured_ally), TRUE)
 	RegisterSignal(new_target, COMSIG_MOB_DEATH, PROC_REF(lose_injured_ally), TRUE)
 	found_injured_ally = new_target
 
 /datum/human_ai_module/health/proc/lose_injured_ally()
+	if(QDELETED(src))
+		return
+
 	if(found_injured_ally)
 		UnregisterSignal(found_injured_ally, COMSIG_PARENT_QDELETING)
 		UnregisterSignal(found_injured_ally, COMSIG_MOB_DEATH)
 	found_injured_ally = null
 
 /datum/human_ai_module/health/proc/get_injured_ally()
+	if(!can_continue_health_work())
+		return null
+
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
 		return null

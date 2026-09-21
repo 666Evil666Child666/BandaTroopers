@@ -100,7 +100,10 @@
 	if(!length(action_types) || !action_runtime_module)
 		return
 
-	for(var/datum/ai_action/ongoing_action as anything in action_runtime_module.ongoing_actions)
+	var/list/actions_to_cancel = action_runtime_module.ongoing_actions.Copy()
+	for(var/datum/ai_action/ongoing_action as anything in actions_to_cancel)
+		if(!(ongoing_action in action_runtime_module.ongoing_actions))
+			continue
 		if((ongoing_action != except_action) && (ongoing_action.type in action_types))
 			qdel(ongoing_action)
 
@@ -136,7 +139,9 @@
 	var/datum/human_ai_module/action_runtime/action_runtime_module = get_action_runtime_module()
 	if(!action_runtime_module)
 		return FALSE
-	for(var/datum/ai_action/ongoing_action as anything in action_runtime_module.ongoing_actions)
+	for(var/datum/ai_action/ongoing_action as anything in action_runtime_module.ongoing_actions.Copy())
+		if(!(ongoing_action in action_runtime_module.ongoing_actions))
+			continue
 		if(istype(ongoing_action, /datum/ai_action/throw_grenade))
 			var/datum/ai_action/throw_grenade/throw_grenade_action = ongoing_action
 			if(throw_grenade_action.mid_throw)

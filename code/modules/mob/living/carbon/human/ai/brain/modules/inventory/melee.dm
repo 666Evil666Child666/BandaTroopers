@@ -3,7 +3,7 @@
 	if(!drawn_melee_weapon)
 		return TRUE
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller)
+	if(!can_continue_inventory_work() || !controller)
 		return FALSE
 
 	if(!controller.is_item_equipped_or_held(drawn_melee_weapon))
@@ -19,7 +19,7 @@
 /// Melee system currently only supports bootknives.
 /datum/human_ai_module/inventory/proc/unholster_melee()
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller)
+	if(!can_continue_inventory_work() || !controller)
 		return FALSE
 
 	if(controller.has_item_in_hands())

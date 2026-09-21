@@ -71,11 +71,17 @@
 	else
 		invalidate_nearby_item_search()
 
+/datum/human_ai_module/inventory/proc/can_continue_inventory_work()
+	return brain?.can_continue_runtime_work()
+
 /datum/human_ai_module/inventory/resume_module(previous_lifecycle_state)
 	appraise_inventory()
 	invalidate_nearby_item_search()
 
 /datum/human_ai_module/inventory/process_module(delta_time)
+	if(!can_continue_inventory_work())
+		return
+
 	var/datum/human_tied_controller/controller = context?.controller
 	if(controller && !controller.is_zombie() && should_run_nearby_item_search())
 		item_search(controller.get_range(2))
@@ -175,7 +181,7 @@
 
 /datum/human_ai_module/inventory/proc/clear_main_hand()
 	var/datum/human_tied_controller/controller = context?.controller
-	if(!controller)
+	if(!can_continue_inventory_work() || !controller)
 		return
 
 	var/obj/item/active_hand = controller.get_active_hand()

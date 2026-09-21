@@ -45,6 +45,12 @@
 
 // ==================== Action-driven composition ====================
 // Converts preset action whitelist/blacklist into the module set required to run those actions.
+/datum/human_ai_module_config/proc/get_effective_action_types()
+	var/list/action_types = action_whitelist?.Copy() || list()
+	if(action_blacklist)
+		action_types -= action_blacklist
+	return action_types
+
 /datum/human_ai_module_config/proc/get_module_types_to_setup()
 	if(isnull(action_whitelist))
 		report_action_policy_issue("missing action whitelist")
@@ -54,8 +60,7 @@
 		return get_base_module_types()
 
 	var/list/module_types = get_expanded_module_types(get_base_module_types())
-	var/list/action_types = action_whitelist.Copy()
-	action_types -= action_blacklist
+	var/list/action_types = get_effective_action_types()
 
 	for(var/action_type as anything in action_types)
 		if(!ispath(action_type, /datum/ai_action))
@@ -139,8 +144,7 @@
 	if(isnull(action_whitelist) || !length(action_whitelist))
 		return
 
-	var/list/action_types = action_whitelist.Copy()
-	action_types -= action_blacklist
+	var/list/action_types = get_effective_action_types()
 	for(var/action_type as anything in action_types)
 		var/datum/ai_action/action = GLOB.AI_actions[action_type]
 		if(!action)
