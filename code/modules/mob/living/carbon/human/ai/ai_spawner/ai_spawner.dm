@@ -26,7 +26,7 @@
 
 
 /datum/human_ai_spawner_menu/New()
-	usr.client.click_intercept = src
+	usr?.client?.click_intercept = src
 	if(!length(lazy_ui_data))
 		for(var/datum/human_ai_equipment_preset/preset_type as anything in subtypesof(/datum/human_ai_equipment_preset))
 			if(!preset_type::name || !preset_type::path)
@@ -34,7 +34,11 @@
 			var/datum/human_ai_equipment_preset/preset_obj = new preset_type()
 			//GLOB.human_ai_equipment_presets["[preset_type]"] = preset_obj
 			add_preset(preset_obj.path, preset_obj.desc, update_ui = FALSE)
+			qdel(preset_obj)
 
+/datum/human_ai_spawner_menu/Destroy(force, ...)
+	QDEL_NULL(species_dummy)
+	return ..()
 
 /datum/human_ai_spawner_menu/ui_close(mob/user)
 	. = ..()
@@ -223,7 +227,7 @@
 			selected_faction = params["selected_faction"]
 			spawn_click_intercept = TRUE
 			current_click_intercept_action = SPAWN_CLICK_INTERCEPT_ACTION
-			usr.client.click_intercept = src
+			ui.user?.client?.click_intercept = src
 			return TRUE
 		if("add_preset")
 			var/datum/equipment_preset/dresscode = tgui_input_list(ui.user, "Pick a Preset", "Equipment", GLOB.gear_name_presets_list)
@@ -245,7 +249,7 @@
 			zombie_delimb_multi = delimb_multi
 			SStgui.try_update_ui(usr, src, ui)
 		if("auto_clean")
-			zombie_outer_wear = !zombie_outer_wear
+			auto_clean = !auto_clean
 			if(auto_clean)
 				GLOB.gm_set_zombie_disable_auto_clean = TRUE
 			else
