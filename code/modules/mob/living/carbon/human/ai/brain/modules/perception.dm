@@ -192,6 +192,18 @@
 /datum/human_ai_module/perception/proc/get_recent_projectile_threat_angle()
 	return get_recent_threat_angle()
 
+/datum/human_ai_module/perception/proc/can_fire_offscreen(turf/target_turf, datum/human_ai_firearm_profile/gun_data = null)
+	if(!target_turf || !has_recent_projectile_threat())
+		return FALSE
+	if(get_recent_projectile_threat_turf() != target_turf)
+		return FALSE
+	var/atom/movable/threat_source = get_recent_projectile_threat_source()
+	if(threat_source && !QDELETED(threat_source) && brain.is_friendly_target(threat_source))
+		return FALSE
+	if(!gun_data)
+		return TRUE
+	return gun_data.maximum_range > brain.get_view_distance()
+
 /datum/human_ai_module/perception/proc/can_remember_projectile_threat_source(atom/movable/source)
 	return can_remember_threat_source(source)
 

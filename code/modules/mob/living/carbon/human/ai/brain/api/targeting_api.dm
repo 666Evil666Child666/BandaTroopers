@@ -94,16 +94,10 @@
 	return has_recent_projectile_threat()
 
 /datum/human_ai_brain/proc/can_fire_offscreen(turf/target_turf, datum/human_ai_firearm_profile/gun_data = null)
-	if(!target_turf || !has_recent_projectile_threat())
+	var/datum/human_ai_module/perception/perception_module = get_perception_module()
+	if(!perception_module)
 		return FALSE
-	if(get_recent_projectile_threat_turf() != target_turf)
-		return FALSE
-	var/atom/movable/threat_source = get_recent_projectile_threat_source()
-	if(threat_source && !QDELETED(threat_source) && is_friendly_target(threat_source))
-		return FALSE
-	if(!gun_data)
-		return TRUE
-	return gun_data.maximum_range > get_view_distance()
+	return perception_module.can_fire_offscreen(target_turf, gun_data)
 
 /datum/human_ai_brain/proc/lose_target()
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
