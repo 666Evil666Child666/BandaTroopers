@@ -1,5 +1,12 @@
 /datum/human_ai_module/grenade
 	module_id = "grenade"
+	required_module_types = list(
+		/datum/human_ai_module/action_runtime,
+		/datum/human_ai_module/combat,
+		/datum/human_ai_module/inventory,
+		/datum/human_ai_module/perception,
+		/datum/human_ai_module/targeting,
+	)
 	/// A nearby found active grenade which AI will try and toss back
 	var/obj/item/explosive/grenade/active_grenade_found
 	/// If TRUE, may enter the grenade throw-back action from nearby live grenades.
@@ -45,3 +52,47 @@
 		return FALSE
 
 	return brain.has_ongoing_throw_action_in_progress()
+
+/datum/human_ai_module/grenade/proc/set_throwback_enabled(enabled)
+	can_throw_back_grenades = enabled
+	if(!enabled)
+		clear_active_grenade()
+
+/datum/human_ai_module/grenade/proc/set_throwing_enabled(enabled)
+	grenading_allowed = enabled
+
+/datum/human_ai_module/grenade/proc/get_grenade_throw_target_turf()
+	RETURN_TYPE(/turf)
+	return brain.get_shared_combat_target_turf() || brain.get_recent_projectile_threat_turf()
+
+/datum/human_ai_module/grenade/proc/get_grenade_throw_source()
+	RETURN_TYPE(/obj/item)
+	return brain.find_grenade_for_throw()
+
+/datum/human_ai_module/grenade/proc/can_attempt_grenade_throw(require_combat = TRUE, require_throw_source = TRUE)
+	if(!can_throw_grenades())
+		return FALSE
+	if(require_combat && !brain.is_in_combat())
+		return FALSE
+	if(!get_grenade_throw_target_turf())
+		return FALSE
+	if(require_throw_source && !get_grenade_throw_source())
+		return FALSE
+	return TRUE
+
+/datum/human_ai_module/grenade/proc/get_active_throwback_grenade()
+	RETURN_TYPE(/obj/item/explosive/grenade)
+	var/obj/item/explosive/grenade/active_grenade = get_active_grenade()
+	if(QDELETED(active_grenade))
+		return null
+	return active_grenade
+
+/datum/human_ai_module/grenade/proc/can_attempt_grenade_throwback(datum/human_tied_controller/controller, max_distance)
+	if(!controller)
+		return FALSE
+	if(!can_throw_back())
+		return FALSE
+	var/obj/item/explosive/grenade/active_grenade = get_active_throwback_grenade()
+	if(!active_grenade)
+		return FALSE
+	return controller.get_distance_to(active_grenade) <= max_distance

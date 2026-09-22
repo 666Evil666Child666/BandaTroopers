@@ -15,6 +15,12 @@
 	in_combat = FALSE
 	shot_at = null
 
+/datum/human_ai_module/combat/proc/is_in_combat()
+	return in_combat
+
+/datum/human_ai_module/combat/proc/set_shot_at_turf(turf/target_turf)
+	shot_at = get_turf(target_turf)
+
 /datum/human_ai_module/combat/reset_module()
 	reset_combat()
 

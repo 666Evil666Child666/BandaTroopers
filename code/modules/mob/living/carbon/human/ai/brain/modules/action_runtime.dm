@@ -33,6 +33,53 @@
 
 	return FALSE
 
+/datum/human_ai_module/action_runtime/proc/cancel_ongoing_actions_by_type(list/action_types, datum/ai_action/except_action = null)
+	if(!length(action_types))
+		return
+
+	var/list/actions_to_cancel = ongoing_actions.Copy()
+	for(var/datum/ai_action/ongoing_action as anything in actions_to_cancel)
+		if(!(ongoing_action in ongoing_actions))
+			continue
+		if((ongoing_action != except_action) && (ongoing_action.type in action_types))
+			qdel(ongoing_action)
+
+/datum/human_ai_module/action_runtime/proc/remove_ongoing_action(datum/ai_action/action)
+	ongoing_actions -= action
+
+/datum/human_ai_module/action_runtime/proc/add_action_blacklist(list/action_types)
+	if(!length(action_types))
+		return
+	if(!action_blacklist)
+		action_blacklist = list()
+	for(var/action_type as anything in action_types)
+		action_blacklist |= action_type
+	cancel_ongoing_actions_by_type(action_types)
+
+/datum/human_ai_module/action_runtime/proc/remove_action_blacklist(list/action_types)
+	if(!length(action_types) || !action_blacklist)
+		return
+	for(var/action_type as anything in action_types)
+		action_blacklist -= action_type
+	if(!length(action_blacklist))
+		action_blacklist = null
+
+/datum/human_ai_module/action_runtime/proc/has_ongoing_throw_action_in_progress()
+	for(var/datum/ai_action/ongoing_action as anything in ongoing_actions.Copy())
+		if(!(ongoing_action in ongoing_actions))
+			continue
+		if(istype(ongoing_action, /datum/ai_action/throw_grenade))
+			var/datum/ai_action/throw_grenade/throw_grenade_action = ongoing_action
+			if(throw_grenade_action.mid_throw)
+				return TRUE
+
+		if(istype(ongoing_action, /datum/ai_action/throw_back_nade))
+			var/datum/ai_action/throw_back_nade/throw_back_action = ongoing_action
+			if(throw_back_action.mid_throw)
+				return TRUE
+
+	return FALSE
+
 /datum/human_ai_module/action_runtime/proc/get_allowed_action_types()
 	var/list/allowed_actions = action_whitelist?.Copy() || list() // SS220 EDIT: runtime selection must not mutate preset whitelists
 	if(action_blacklist)

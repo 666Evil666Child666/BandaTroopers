@@ -12,11 +12,11 @@
 /datum/human_ai_brain/proc/get_sniper_home()
 	RETURN_TYPE(/turf)
 	var/datum/human_ai_module/emplacement/emplacement_module = get_emplacement_module()
-	return emplacement_module?.sniper_home
+	return emplacement_module?.get_sniper_home()
 
 /datum/human_ai_brain/proc/get_sniper_dir()
 	var/datum/human_ai_module/emplacement/emplacement_module = get_emplacement_module()
-	return emplacement_module?.sniper_dir
+	return emplacement_module?.get_sniper_dir()
 
 /datum/human_ai_brain/proc/has_machinegunner_home()
 	var/datum/human_ai_module/emplacement/emplacement_module = get_emplacement_module()
@@ -29,12 +29,14 @@
 /datum/human_ai_brain/proc/get_machinegunner_home()
 	RETURN_TYPE(/turf)
 	var/datum/human_ai_module/emplacement/emplacement_module = get_emplacement_module()
-	return emplacement_module?.machinegunner_home
+	return emplacement_module?.get_machinegunner_home()
 
 /datum/human_ai_brain/proc/get_machinegunner_dir()
 	var/datum/human_ai_module/emplacement/emplacement_module = get_emplacement_module()
-	return emplacement_module?.machinegunner_dir
+	return emplacement_module?.get_machinegunner_dir()
 
 /datum/human_ai_brain/proc/is_stationary_fire_blocked()
-	var/datum/human_ai_module/guns/guns_module = get_guns_module()
-	return guns_module?.has_tried_reload() || should_block_stationary_fire_for_cover() || is_healing_someone()
+	var/datum/human_ai_module/emplacement/emplacement_module = get_emplacement_module()
+	if(!emplacement_module)
+		return FALSE
+	return emplacement_module.is_stationary_fire_blocked()

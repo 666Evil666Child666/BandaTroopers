@@ -50,31 +50,29 @@
 /datum/human_ai_brain/proc/get_target_turf()
 	RETURN_TYPE(/turf)
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	var/turf/target_turf = targeting_module?.get_target_turf()
-	if(target_turf)
-		return target_turf
-	return get_recent_projectile_threat_turf()
+	return targeting_module?.get_target_or_threat_turf()
 
 /datum/human_ai_brain/proc/has_target_turf()
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	if(targeting_module?.has_target_turf())
-		return TRUE
-	return has_recent_projectile_threat()
+	if(!targeting_module)
+		return FALSE
+	return targeting_module.has_target_or_threat_turf()
 
 /datum/human_ai_brain/proc/get_shared_combat_target_turf()
 	RETURN_TYPE(/turf)
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
-	return targeting_module?.get_current_target_turf()
+	return targeting_module?.get_shared_combat_target_turf()
 
 /datum/human_ai_brain/proc/has_shared_combat_target_turf()
-	return !!get_shared_combat_target_turf()
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	if(!targeting_module)
+		return FALSE
+	return targeting_module.has_shared_combat_target_turf()
 
 /datum/human_ai_brain/proc/get_chase_target_turf()
 	RETURN_TYPE(/turf)
-	var/turf/target_turf = get_shared_combat_target_turf()
-	if(target_turf)
-		return target_turf
-	return get_recent_projectile_threat_turf()
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	return targeting_module?.get_chase_target_turf()
 
 /datum/human_ai_brain/proc/get_current_target_turf()
 	RETURN_TYPE(/turf)

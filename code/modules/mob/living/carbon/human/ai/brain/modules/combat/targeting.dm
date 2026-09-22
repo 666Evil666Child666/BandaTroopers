@@ -138,6 +138,32 @@
 /datum/human_ai_module/targeting/proc/has_target_turf()
 	return !!get_target_turf()
 
+/datum/human_ai_module/targeting/proc/get_target_or_threat_turf()
+	RETURN_TYPE(/turf)
+	var/turf/current_target_turf = get_target_turf()
+	if(current_target_turf)
+		return current_target_turf
+	return brain.get_recent_projectile_threat_turf()
+
+/datum/human_ai_module/targeting/proc/has_target_or_threat_turf()
+	if(has_target_turf())
+		return TRUE
+	return brain.has_recent_projectile_threat()
+
+/datum/human_ai_module/targeting/proc/get_shared_combat_target_turf()
+	RETURN_TYPE(/turf)
+	return get_current_target_turf()
+
+/datum/human_ai_module/targeting/proc/has_shared_combat_target_turf()
+	return !!get_shared_combat_target_turf()
+
+/datum/human_ai_module/targeting/proc/get_chase_target_turf()
+	RETURN_TYPE(/turf)
+	var/turf/shared_target_turf = get_shared_combat_target_turf()
+	if(shared_target_turf)
+		return shared_target_turf
+	return brain.get_recent_projectile_threat_turf()
+
 /datum/human_ai_module/targeting/proc/get_current_target_turf()
 	RETURN_TYPE(/turf)
 	return target_turf

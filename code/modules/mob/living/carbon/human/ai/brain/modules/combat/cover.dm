@@ -1,6 +1,6 @@
 /datum/human_ai_module/cover
 	module_id = "cover"
-	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/targeting, /datum/human_ai_module/profile)
+	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/orders, /datum/human_ai_module/targeting, /datum/human_ai_module/profile)
 
 	/// If TRUE, AI is currently in some form of cover
 	var/in_cover = FALSE
@@ -19,9 +19,44 @@
 /datum/human_ai_module/cover/proc/has_cover()
 	return !!current_cover
 
+/datum/human_ai_module/cover/proc/has_pending_cover()
+	return has_cover() && !is_in_cover()
+
 /datum/human_ai_module/cover/proc/get_current_cover()
 	RETURN_TYPE(/turf)
 	return current_cover
+
+/datum/human_ai_module/cover/proc/start_cover_search_cooldown(cooldown)
+	COOLDOWN_START(src, cover_search_cooldown, cooldown)
+
+/datum/human_ai_module/cover/proc/get_cover_destination()
+	RETURN_TYPE(/turf)
+	return get_current_cover()
+
+/datum/human_ai_module/cover/proc/should_hold_cover_position_against_target(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
+	if(!is_in_cover())
+		return FALSE
+	var/atom/movable/current_target = brain.get_current_target()
+	if(!current_target || !controller)
+		return FALSE
+	return !(controller.get_distance_to(current_target) > gun_data?.minimum_range)
+
+/datum/human_ai_module/cover/proc/can_attempt_cover_move(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
+	if(!brain.has_valid_tied_human() || !controller)
+		return FALSE
+	if(!has_cover())
+		return FALSE
+	if(!brain.can_move_for_action())
+		return FALSE
+	if(should_hold_cover_position_against_target(controller, gun_data))
+		return FALSE
+	return TRUE
+
+/datum/human_ai_module/cover/proc/should_block_movement_for_pending_cover()
+	return has_pending_cover()
+
+/datum/human_ai_module/cover/proc/should_block_stationary_fire_for_cover()
+	return has_cover()
 
 /datum/human_ai_module/cover/proc/enter_cover()
 	in_cover = TRUE
