@@ -78,8 +78,8 @@
 
 /datum/human_ai_module/faction/on_ai_event(datum/human_ai_event/event)
 	if(event.event_type == HUMAN_AI_EVENT_PROJECTILE_THREAT)
-		var/obj/projectile/bullet = event.data?["bullet"]
-		on_projectile_threat(bullet, event.data?["from_direct_hit"], event.data?["threat_source"])
+		var/obj/projectile/bullet = event.get_projectile()
+		on_projectile_threat(bullet, event.is_from_direct_hit(), event.get_threat_source())
 
 /datum/human_ai_module/faction/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, atom/movable/threat_source = null)
 	if(!threat_source)

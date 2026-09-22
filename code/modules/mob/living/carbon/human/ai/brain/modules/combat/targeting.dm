@@ -41,16 +41,16 @@
 /datum/human_ai_module/targeting/on_ai_event(datum/human_ai_event/event)
 	switch(event.event_type)
 		if(HUMAN_AI_EVENT_PROJECTILE_THREAT)
-			var/obj/projectile/bullet = event.data?["bullet"]
-			on_projectile_threat(bullet, event.data?["from_direct_hit"], event.data?["threat_source"])
+			var/obj/projectile/bullet = event.get_projectile()
+			on_projectile_threat(bullet, event.is_from_direct_hit(), event.get_threat_source())
 		if(HUMAN_AI_EVENT_COMBAT_EXIT_STARTED)
-			on_combat_exit_started(event.data?["should_holster_primary"])
+			on_combat_exit_started(event.should_holster_primary())
 		if(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED)
-			on_combat_exit_finished(event.data?["combat_exit_context"])
+			on_combat_exit_finished(event.get_combat_exit_context())
 		if(HUMAN_AI_EVENT_BODY_POSITION_CHANGED)
-			on_body_position_changed(event.data?["new_position"], event.data?["old_position"])
+			on_body_position_changed(event.get_new_body_position(), event.get_old_body_position())
 		if(HUMAN_AI_EVENT_MOVED)
-			on_moved(event.data?["oldloc"], event.data?["direction"], event.data?["forced"])
+			on_moved(event.get_old_location(), event.get_direction(), event.was_forced_move())
 
 /datum/human_ai_module/targeting/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, atom/movable/firer = null)
 	if(!can_continue_targeting_work())
@@ -121,7 +121,7 @@
 	clear_last_known_target()
 
 	if(brain)
-		brain.on_target_changed(null, current_target)
+		brain.emit_target_changed(null, current_target)
 
 /datum/human_ai_module/targeting/proc/set_target_turf_direct(turf/new_target_turf)
 	target_turf = new_target_turf
@@ -232,7 +232,7 @@
 		clear_last_known_target()
 
 	if(brain)
-		brain.on_target_changed(old_target, null)
+		brain.emit_target_changed(old_target, null)
 
 /datum/human_ai_module/targeting/proc/on_target_delete(datum/source, force)
 	SIGNAL_HANDLER

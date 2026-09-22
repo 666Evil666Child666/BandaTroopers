@@ -91,15 +91,15 @@
 		if(HUMAN_AI_EVENT_INITIALIZED)
 			on_initialized()
 		if(HUMAN_AI_EVENT_TARGET_CHANGED)
-			var/atom/movable/old_target = event.data?["old_target"]
-			var/atom/movable/new_target = event.data?["new_target"]
+			var/atom/movable/old_target = event.get_old_target()
+			var/atom/movable/new_target = event.get_new_target()
 			on_target_changed(old_target, new_target)
 		if(HUMAN_AI_EVENT_COMBAT_EXIT_STARTED)
-			on_combat_exit_started(event.data?["should_holster_primary"])
+			on_combat_exit_started(event.should_holster_primary())
 		if(HUMAN_AI_EVENT_SPECIES_CHANGED)
-			on_species_changed(event.data?["new_species"])
+			on_species_changed(event.get_new_species())
 		if(HUMAN_AI_EVENT_BODY_POSITION_CHANGED)
-			on_body_position_changed(event.data?["new_position"], event.data?["old_position"])
+			on_body_position_changed(event.get_new_body_position(), event.get_old_body_position())
 
 /datum/human_ai_module/inventory/on_target_changed(atom/movable/old_target, atom/movable/new_target)
 	invalidate_nearby_item_search()

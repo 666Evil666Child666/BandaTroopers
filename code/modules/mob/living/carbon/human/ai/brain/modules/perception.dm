@@ -32,7 +32,7 @@
 
 /datum/human_ai_module/perception/on_ai_event(datum/human_ai_event/event)
 	if(event.event_type == HUMAN_AI_EVENT_MOVED)
-		on_moved(event.data?["oldloc"], event.data?["direction"], event.data?["forced"])
+		on_moved(event.get_old_location(), event.get_direction(), event.was_forced_move())
 
 /datum/human_ai_module/perception/on_moved(atom/oldloc, direction, forced)
 	setup_detection_radius()
@@ -110,7 +110,7 @@
 		return
 
 	remember_projectile_threat(bullet)
-	brain.on_projectile_threat(bullet, FALSE, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
+	brain.emit_projectile_threat(bullet, FALSE, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
 
 /datum/human_ai_module/perception/proc/on_shot(datum/source, damage_result, ammo_flags, obj/projectile/bullet)
 	SIGNAL_HANDLER
@@ -122,7 +122,7 @@
 		return
 
 	remember_projectile_threat(bullet)
-	brain.on_projectile_threat(bullet, TRUE, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
+	brain.emit_projectile_threat(bullet, TRUE, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
 
 /datum/human_ai_module/perception/proc/can_process_detection()
 	return brain?.can_continue_runtime_work()

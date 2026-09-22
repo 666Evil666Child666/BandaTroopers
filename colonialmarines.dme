@@ -2189,6 +2189,7 @@
 #include "code\modules\mob\living\carbon\human\ai\brain\api\melee_api.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\api\navigation_api.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\api\orders_api.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\api\perception_api.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\api\profile_api.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\api\squad_api.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\api\targeting_api.dm"

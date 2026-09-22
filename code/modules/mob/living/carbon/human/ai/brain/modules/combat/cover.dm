@@ -85,14 +85,14 @@
 
 	switch(event.event_type)
 		if(HUMAN_AI_EVENT_PROJECTILE_THREAT)
-			var/obj/projectile/bullet = event.data?["bullet"]
-			on_projectile_threat(bullet, event.data?["from_direct_hit"], event.data?["threat_source"], event.data?["threat_angle"])
+			var/obj/projectile/bullet = event.get_projectile()
+			on_projectile_threat(bullet, event.is_from_direct_hit(), event.get_threat_source(), event.get_threat_angle())
 		if(HUMAN_AI_EVENT_COMBAT_ENTERED)
-			on_combat_entered(event.data?["was_in_combat"])
+			on_combat_entered(event.was_in_combat())
 		if(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED)
-			on_combat_exit_finished(event.data?["combat_exit_context"])
+			on_combat_exit_finished(event.get_combat_exit_context())
 		if(HUMAN_AI_EVENT_MOVED)
-			on_moved(event.data?["oldloc"], event.data?["direction"], event.data?["forced"])
+			on_moved(event.get_old_location(), event.get_direction(), event.was_forced_move())
 
 /datum/human_ai_module/cover/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, atom/movable/threat_source = null, threat_angle = null)
 	if(!can_continue_cover_work())

@@ -33,9 +33,9 @@
 		if(HUMAN_AI_EVENT_RESET_BEFORE_WAKE_CLEAR, HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR)
 			on_reset()
 		if(HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_BEFORE_WAKE_CLEAR, HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_AFTER_WAKE_CLEAR)
-			on_lifecycle_suspended(event.data?["new_lifecycle_state"], event.data?["clear_inventory"])
+			on_lifecycle_suspended(event.get_new_lifecycle_state(), event.should_clear_inventory())
 		if(HUMAN_AI_EVENT_LIFECYCLE_RESUMED)
-			on_lifecycle_resumed(event.data?["previous_lifecycle_state"])
+			on_lifecycle_resumed(event.get_previous_lifecycle_state())
 		else
 			on_ai_event(event)
 

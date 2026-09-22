@@ -38,8 +38,8 @@
 
 /datum/human_ai_module/combat/on_ai_event(datum/human_ai_event/event)
 	if(event.event_type == HUMAN_AI_EVENT_PROJECTILE_THREAT)
-		var/obj/projectile/bullet = event.data?["bullet"]
-		on_projectile_threat(bullet, event.data?["from_direct_hit"], event.data?["threat_turf"])
+		var/obj/projectile/bullet = event.get_projectile()
+		on_projectile_threat(bullet, event.is_from_direct_hit(), event.get_threat_turf())
 
 /datum/human_ai_module/combat/on_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, turf/threat_turf = null)
 	if(!threat_turf)
@@ -53,14 +53,14 @@
 		return
 
 	var/was_in_combat = in_combat
-	brain.on_combat_entered(was_in_combat)
+	brain.emit_combat_entered(was_in_combat)
 	in_combat = TRUE
 	addtimer(CALLBACK(brain, TYPE_PROC_REF(/datum/human_ai_brain, exit_combat)), rand(combat_decay_time_min, combat_decay_time_max), TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
 	SShuman_ai.combat_ever_started = TRUE
 
 /datum/human_ai_module/combat/proc/exit_combat()
 	if(!brain.has_valid_tied_human())
-		brain.on_combat_exit_force_cleared()
+		brain.emit_combat_exit_force_cleared()
 		in_combat = FALSE
 		return
 
@@ -68,8 +68,8 @@
 		return
 
 	if(in_combat)
-		brain.on_combat_exit_started()
+		brain.emit_combat_exit_started()
 
-	brain.on_combat_exit_finished()
+	brain.emit_combat_exit_finished()
 
 	in_combat = FALSE
