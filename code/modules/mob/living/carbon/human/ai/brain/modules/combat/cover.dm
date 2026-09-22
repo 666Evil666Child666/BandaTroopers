@@ -164,7 +164,7 @@
 		return
 
 	COOLDOWN_START(src, cover_search_cooldown, 10 SECONDS)
-	brain?.on_cover_scan_started()
+	brain?.notify_cover_scan_started()
 
 	var/list/turf_dict = list()
 	var/cover_dir = reverse_direction(angle2dir4ai(angle))

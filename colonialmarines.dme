@@ -2174,6 +2174,7 @@
 #include "code\modules\mob\living\carbon\human\ai\ai_spawner\ai_spawner.dm"
 #include "code\modules\mob\living\carbon\human\ai\ai_spawner\spawn_helper.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain.dm"
+#include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_event_emitters.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_extension_hooks.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\ai_brain_module_facades.dm"
 #include "code\modules\mob\living\carbon\human\ai\brain\api\action_runtime_api.dm"

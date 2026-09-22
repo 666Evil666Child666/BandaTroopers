@@ -30,7 +30,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	controller.register_signal_for(src, COMSIG_HUMAN_SET_SPECIES, PROC_REF(on_species_change))
 	controller.register_signal_for(src, COMSIG_LIVING_SET_BODY_POSITION, PROC_REF(on_body_position_change)) // SS220 EDIT: standing back up should wake shared human AI immediately
 	GLOB.human_ai_brains += src
-	emit_ai_event(HUMAN_AI_EVENT_INITIALIZED)
+	emit_initialized()
 
 /datum/human_ai_brain/Destroy(force, ...)
 	GLOB.human_ai_brains -= src
@@ -57,9 +57,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	module_config.configure_module_lists(src)
 
 /datum/human_ai_brain/proc/reset_ai()
-	emit_ai_event(HUMAN_AI_EVENT_RESET_BEFORE_WAKE_CLEAR)
+	emit_reset_before_wake_clear()
 	wake_rethink_queued_at = -1 // SS220 EDIT: reset must always cancel deferred wake-up recovery before owner teardown finishes
-	emit_ai_event(HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR)
+	emit_reset_after_wake_clear()
 
 /datum/human_ai_brain/proc/shutdown_runtime()
 	if(runtime_shutdown_started)
@@ -125,9 +125,9 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 		"new_lifecycle_state" = new_lifecycle_state,
 		"clear_inventory" = clear_inventory,
 	)
-	emit_ai_event(HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_BEFORE_WAKE_CLEAR, lifecycle_context)
+	emit_lifecycle_suspended_before_wake_clear(lifecycle_context)
 	wake_rethink_queued_at = -1
-	emit_ai_event(HUMAN_AI_EVENT_LIFECYCLE_SUSPENDED_AFTER_WAKE_CLEAR, lifecycle_context)
+	emit_lifecycle_suspended_after_wake_clear(lifecycle_context)
 
 /datum/human_ai_brain/proc/suspend_for_death()
 	suspend_runtime(HUMAN_AI_LIFECYCLE_DEAD)
@@ -161,9 +161,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(previous_lifecycle_state == HUMAN_AI_LIFECYCLE_INVALID)
 		return FALSE
 
-	emit_ai_event(HUMAN_AI_EVENT_LIFECYCLE_RESUMED, list(
-		"previous_lifecycle_state" = previous_lifecycle_state,
-	))
+	emit_lifecycle_resumed(previous_lifecycle_state)
 	brain_resume_modular_runtime()
 	return TRUE
 
@@ -202,49 +200,6 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 			return TRUE
 	return FALSE
 
-/datum/human_ai_brain/proc/emit_target_changed(atom/movable/old_target, atom/movable/new_target)
-	emit_ai_event(HUMAN_AI_EVENT_TARGET_CHANGED, list(
-		"old_target" = old_target,
-		"new_target" = new_target,
-	))
-
-/datum/human_ai_brain/proc/emit_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE, atom/movable/threat_source = null, turf/threat_turf = null, threat_angle = null)
-	emit_ai_event(HUMAN_AI_EVENT_PROJECTILE_THREAT, list(
-		"bullet" = bullet,
-		"from_direct_hit" = from_direct_hit,
-		"threat_source" = threat_source,
-		"threat_turf" = threat_turf,
-		"threat_angle" = threat_angle,
-	))
-
-/datum/human_ai_brain/proc/emit_combat_entered(was_in_combat)
-	emit_ai_event(HUMAN_AI_EVENT_COMBAT_ENTERED, list(
-		"was_in_combat" = was_in_combat,
-	))
-
-/datum/human_ai_brain/proc/emit_combat_exit_started()
-	var/datum/human_tied_controller/controller = get_tied_controller()
-	controller?.set_safe_intent()
-	var/should_holster_primary = !has_sniper_home()
-	emit_ai_event(HUMAN_AI_EVENT_COMBAT_EXIT_STARTED, list(
-		"should_holster_primary" = should_holster_primary,
-	))
-
-/datum/human_ai_brain/proc/emit_combat_exit_finished()
-	var/list/combat_exit_context = list("clear_target_turf" = FALSE)
-	emit_ai_event(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, list(
-		"combat_exit_context" = combat_exit_context,
-	))
-
-/datum/human_ai_brain/proc/emit_combat_exit_force_cleared()
-	var/list/combat_exit_context = list(
-		"clear_target_turf" = TRUE,
-		"force_clear" = TRUE,
-	)
-	emit_ai_event(HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED, list(
-		"combat_exit_context" = combat_exit_context,
-	))
-
 /datum/human_ai_brain/proc/can_ignore_target_darkness()
 	if(!target_vision_modules)
 		return FALSE
@@ -269,9 +224,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 
 /datum/human_ai_brain/proc/on_species_change(datum/source, new_species)
 	SIGNAL_HANDLER
-	emit_ai_event(HUMAN_AI_EVENT_SPECIES_CHANGED, list(
-		"new_species" = new_species,
-	))
+	emit_species_changed(new_species)
 
 /datum/human_ai_brain/proc/on_body_position_change(datum/source, new_position, old_position)
 	SIGNAL_HANDLER
@@ -282,10 +235,7 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!controller?.can_stand_up())
 		return
 
-	emit_ai_event(HUMAN_AI_EVENT_BODY_POSITION_CHANGED, list(
-		"new_position" = new_position,
-		"old_position" = old_position,
-	))
+	emit_body_position_changed(new_position, old_position)
 
 	if((last_process_tick == world.time) || (wake_rethink_queued_at == world.time))
 		return
@@ -313,8 +263,4 @@ GLOBAL_LIST_EMPTY(human_ai_brains)
 	if(!has_valid_tied_human())
 		return
 
-	emit_ai_event(HUMAN_AI_EVENT_MOVED, list(
-		"oldloc" = oldloc,
-		"direction" = direction,
-		"forced" = forced,
-	))
+	emit_moved(oldloc, direction, forced)

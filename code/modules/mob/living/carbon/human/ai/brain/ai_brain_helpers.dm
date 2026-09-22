@@ -16,4 +16,4 @@
 /// Announces whenever an AI is handcuffed so that GMs can force someone in or take over themselves
 /datum/human_ai_brain/proc/on_handcuffed(datum/source)
 	SIGNAL_HANDLER
-	emit_ai_event(HUMAN_AI_EVENT_HANDCUFFED)
+	emit_handcuffed()

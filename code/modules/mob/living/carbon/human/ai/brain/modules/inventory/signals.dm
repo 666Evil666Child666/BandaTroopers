@@ -44,7 +44,7 @@
 /datum/human_ai_module/inventory/proc/invalidate_inventory_runtime_caches()
 	invalidate_nearby_item_search()
 	if(can_handle_runtime_inventory_signal())
-		brain.on_inventory_runtime_changed()
+		brain.notify_inventory_runtime_changed()
 
 /datum/human_ai_module/inventory/proc/on_item_equip(datum/source, obj/item/equipment, slot)
 	SIGNAL_HANDLER
