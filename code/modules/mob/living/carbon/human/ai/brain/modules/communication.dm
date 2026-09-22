@@ -146,6 +146,10 @@
 /datum/human_ai_module/communication/proc/set_reload_line_chance(new_chance)
 	reload_line_chance = new_chance
 
+/datum/human_ai_module/communication/proc/get_owner_primary_weapon()
+	RETURN_TYPE(/obj/item/weapon/gun)
+	return brain.get_primary_weapon()
+
 /datum/human_ai_module/communication/proc/apply_faction_lines(
 	list/new_enter_combat_lines,
 	list/new_exit_combat_lines,
@@ -222,7 +226,7 @@
 	emit_ai_voiceline(pick(grenade_thrown_lines))
 
 /datum/human_ai_module/communication/proc/say_reload_line(chance = reload_line_chance)
-	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = get_owner_primary_weapon()
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!length(reload_lines) || !prob(chance) || controller?.is_health_below(HEALTH_THRESHOLD_CRIT) || !primary_weapon)
 		return

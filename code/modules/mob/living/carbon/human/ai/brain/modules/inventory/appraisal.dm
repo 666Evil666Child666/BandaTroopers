@@ -5,8 +5,8 @@
 	if(!controller)
 		return
 
-	if(brain.get_previous_faction() != controller.get_faction())
-		brain.set_previous_faction(controller.get_faction())
+	if(get_owner_previous_faction() != controller.get_faction())
+		set_owner_previous_faction(controller.get_faction())
 		var/datum/human_ai_faction/our_faction = SShuman_ai.human_ai_factions[controller.get_faction()]
 		our_faction?.apply_faction_data(brain)
 
@@ -19,7 +19,7 @@
 	if(isgun(controller.get_s_store()) && (controller.get_s_store() != primary_weapon))
 		add_secondary_weapon(controller.get_s_store())
 
-	brain.clear_tried_reload() // We don't really need to do this in a smart way
+	clear_owner_tried_reload() // We don't really need to do this in a smart way
 	if(belt)
 		appraise_belt()
 

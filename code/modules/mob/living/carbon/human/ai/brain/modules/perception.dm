@@ -127,6 +127,24 @@
 /datum/human_ai_module/perception/proc/can_process_detection()
 	return brain?.can_continue_runtime_work()
 
+/datum/human_ai_module/perception/proc/is_owner_friendly_target(atom/target)
+	return brain.is_friendly_target(target)
+
+/datum/human_ai_module/perception/proc/get_owner_view_distance()
+	return brain.get_view_distance()
+
+/datum/human_ai_module/perception/proc/has_owner_scope_vision()
+	return brain.has_scope_vision()
+
+/datum/human_ai_module/perception/proc/get_owner_targeting_view_distance()
+	return brain.get_targeting_view_distance()
+
+/datum/human_ai_module/perception/proc/should_owner_shoot_to_kill()
+	return brain.should_shoot_to_kill()
+
+/datum/human_ai_module/perception/proc/can_owner_ignore_target_darkness()
+	return brain.can_ignore_target_darkness()
+
 /datum/human_ai_module/perception/proc/is_projectile_debounced(obj/projectile/bullet)
 	return (last_detected_projectile == bullet) && (last_detected_projectile_time == world.time)
 
@@ -198,11 +216,11 @@
 	if(get_recent_projectile_threat_turf() != target_turf)
 		return FALSE
 	var/atom/movable/threat_source = get_recent_projectile_threat_source()
-	if(threat_source && !QDELETED(threat_source) && brain.is_friendly_target(threat_source))
+	if(threat_source && !QDELETED(threat_source) && is_owner_friendly_target(threat_source))
 		return FALSE
 	if(!gun_data)
 		return TRUE
-	return gun_data.maximum_range > brain.get_view_distance()
+	return gun_data.maximum_range > get_owner_view_distance()
 
 /datum/human_ai_module/perception/proc/can_remember_projectile_threat_source(atom/movable/source)
 	return can_remember_threat_source(source)
@@ -228,11 +246,11 @@
 	var/list/dir_cone
 	var/rear_view_penalty = 0
 
-	if(brain.has_scope_vision())
+	if(has_owner_scope_vision())
 		dir_cone = controller.get_reverse_dir_cone()
-		rear_view_penalty = brain.get_targeting_view_distance() / 7 - 1
+		rear_view_penalty = get_owner_targeting_view_distance() / 7 - 1
 
-	for(var/atom/movable/potential_target in controller.get_view(brain.get_targeting_view_distance()))
+	for(var/atom/movable/potential_target in controller.get_view(get_owner_targeting_view_distance()))
 		if(controller.is_puppet(potential_target))
 			continue
 
@@ -258,7 +276,7 @@
 	if(!is_valid_target_ref(target))
 		return FALSE
 
-	if(!brain.has_scope_vision())
+	if(!has_owner_scope_vision())
 		return TRUE
 
 	if((distance > 7) && !(controller.get_direction_to(target) in dir_cone))
@@ -266,7 +284,7 @@
 
 	if(istype(target, /mob/living))
 		var/rear_view_check = (controller.get_direction_to(target) in controller.get_reverse_dir_cone())
-		if(rear_view_check && (distance > brain.get_targeting_view_distance() - rear_view_penalty))
+		if(rear_view_check && (distance > get_owner_targeting_view_distance() - rear_view_penalty))
 			return FALSE
 
 	return TRUE
@@ -355,16 +373,16 @@
 	if(target.stat == DEAD)
 		return FALSE
 
-	if(!brain.should_shoot_to_kill() && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
+	if(!should_owner_shoot_to_kill() && (target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in target.effects_list)))
 		return FALSE
 
 	return TRUE
 
 /datum/human_ai_module/perception/proc/can_engage_target(atom/movable/target)
-	return !brain.is_friendly_target(target)
+	return !is_owner_friendly_target(target)
 
 /datum/human_ai_module/perception/proc/can_detect_mob_target(mob/living/target, distance)
-	if(!brain.can_ignore_target_darkness() && distance > 1 && !has_lit_turf_near_living_target(target))
+	if(!can_owner_ignore_target_darkness() && distance > 1 && !has_lit_turf_near_living_target(target))
 		return FALSE
 
 	if(HAS_TRAIT(target, TRAIT_CLOAKED) && distance > get_cloak_visible_range())
@@ -441,7 +459,7 @@
 
 /datum/human_ai_module/perception/proc/has_blocking_friendly_on_direct_fire_turf(turf/tile, turf/target_turf)
 	for(var/mob/living/carbon/human/possible_friendly in tile)
-		if(!brain.is_friendly_target(possible_friendly))
+		if(!is_owner_friendly_target(possible_friendly))
 			continue
 		if(tile == target_turf)
 			return TRUE
@@ -453,7 +471,7 @@
 	for(var/mob/living/carbon/human/possible_friendly in tile)
 		if(possible_friendly.body_position == LYING_DOWN)
 			continue
-		if(brain.is_friendly_target(possible_friendly))
+		if(is_owner_friendly_target(possible_friendly))
 			return TRUE
 	return FALSE
 

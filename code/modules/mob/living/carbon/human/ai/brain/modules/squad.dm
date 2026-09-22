@@ -144,6 +144,14 @@
 	var/datum/human_ai_squad/squad_datum = get_squad_datum()
 	return squad_datum?.ai_in_squad || list()
 
+/datum/human_ai_module/squad/proc/get_owner_current_target()
+	RETURN_TYPE(/atom/movable)
+	return brain.get_current_target()
+
+/datum/human_ai_module/squad/proc/get_owner_shared_combat_target_turf()
+	RETURN_TYPE(/turf)
+	return brain.get_shared_combat_target_turf()
+
 /datum/human_ai_module/squad/proc/add_to_squad(new_id)
 	if(isnull(new_id) || (new_id == squad_id))
 		return
@@ -189,10 +197,10 @@
 			qdel(squaddie_context)
 			continue
 		qdel(squaddie_context)
-		var/atom/movable/current_target = brain.get_current_target()
+		var/atom/movable/current_target = get_owner_current_target()
 		if(!squaddie.can_target(current_target))
 			continue
-		var/turf/shared_target_turf = brain.get_shared_combat_target_turf()
+		var/turf/shared_target_turf = get_owner_shared_combat_target_turf()
 		if(!shared_target_turf)
 			continue
 		squaddie.set_target_turf_direct(shared_target_turf)

@@ -60,14 +60,14 @@
 	if(!controller)
 		return FALSE
 
-	var/obj/item/item = brain.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, target)
+	var/obj/item/item = find_owner_usable_treatment_item(item_types, target)
 	if(!item)
 		return FALSE
-	brain.clear_main_hand()
-	if(!brain.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
+	clear_owner_main_hand()
+	if(!equip_owner_treatment_item(item))
 		return FALSE
 
-	sleep(brain.get_action_delay())
+	sleep(get_owner_action_delay())
 	if(!can_continue_health_work())
 		return FALSE
 	if(!treatment_check.Invoke() || QDELETED(item))
@@ -77,9 +77,9 @@
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return TRUE
 
-	var/storage_slot = brain.storage_has_room(item)
+	var/storage_slot = get_owner_storage_slot_for_item(item)
 	if(storage_slot)
-		brain.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
+		store_owner_treatment_item(item, storage_slot)
 	else
 		controller.drop_held_item(item)
 	return TRUE
@@ -91,14 +91,14 @@
 	var/mob/living/carbon/human/self_target = controller.get_self_target()
 	if(!self_target)
 		return FALSE
-	var/obj/item/item = brain.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, self_target)
+	var/obj/item/item = find_owner_usable_treatment_item(item_types, self_target)
 	if(!item)
 		return FALSE
-	brain.clear_main_hand()
-	if(!brain.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item))
+	clear_owner_main_hand()
+	if(!equip_owner_treatment_item(item))
 		return FALSE
 
-	sleep(brain.get_action_delay())
+	sleep(get_owner_action_delay())
 	if(!can_continue_health_work())
 		return FALSE
 	if(!treatment_check.Invoke() || QDELETED(item))
@@ -108,9 +108,9 @@
 	if(!treatment_check.Invoke() || QDELETED(item))
 		return TRUE
 
-	var/storage_slot = brain.storage_has_room(item)
+	var/storage_slot = get_owner_storage_slot_for_item(item)
 	if(storage_slot)
-		brain.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
+		store_owner_treatment_item(item, storage_slot)
 	else
 		controller.drop_held_item(item)
 	return TRUE

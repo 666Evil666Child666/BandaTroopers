@@ -16,6 +16,9 @@
 /datum/human_ai_module/conversation/proc/is_in_conversation()
 	return in_conversation
 
+/datum/human_ai_module/conversation/proc/is_owner_in_combat()
+	return brain.is_in_combat()
+
 /datum/human_ai_module/conversation/proc/can_try_start()
 	if(!COOLDOWN_FINISHED(src, conversation_start_cooldown))
 		return FALSE
@@ -32,7 +35,7 @@
 	if(!context?.can_continue())
 		return FALSE
 
-	if(brain.is_in_combat() || in_conversation || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	if(is_owner_in_combat() || in_conversation || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return FALSE
 
 	return TRUE
@@ -42,7 +45,7 @@
 	if(!context?.can_continue())
 		return FALSE
 
-	if(brain.is_in_combat() || !is_in_conversation() || !controller || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+	if(is_owner_in_combat() || !is_in_conversation() || !controller || controller.is_health_below(HEALTH_THRESHOLD_CRIT))
 		return FALSE
 
 	return TRUE

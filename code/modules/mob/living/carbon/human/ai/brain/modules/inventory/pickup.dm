@@ -34,7 +34,7 @@
 	if(!can_continue_inventory_work())
 		return FALSE
 
-	if(brain.should_suspend_nearby_item_search())
+	if(should_owner_suspend_nearby_item_search())
 		return FALSE
 
 	if(nearby_item_search_interval <= 0)
@@ -51,8 +51,8 @@
 /datum/human_ai_module/inventory/proc/clear_active_grenade_if_stale(obj/item/explosive/grenade/grenade)
 	if(QDELETED(src) || !can_continue_inventory_work() || QDELETED(grenade))
 		return
-	if(brain.get_active_grenade() == grenade && !brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
-		brain.clear_active_grenade()
+	if(get_owner_active_grenade() == grenade && !has_owner_ongoing_action(/datum/ai_action/throw_back_nade))
+		clear_owner_active_grenade()
 
 /datum/human_ai_module/inventory/proc/item_search(list/things_around)
 	var/datum/human_tied_controller/controller = context?.controller
@@ -61,10 +61,10 @@
 
 	// SS220 EDIT - START: grenade threat must come only from the current local scan, not from stale refs.
 	// Preserve active_grenade_found across ticks if it is already the currently held, still-active timed grenade.
-	var/obj/item/explosive/grenade/active_grenade = brain.get_active_grenade()
+	var/obj/item/explosive/grenade/active_grenade = get_owner_active_grenade()
 	if(!active_grenade || QDELETED(active_grenade) || !active_grenade.active || (active_grenade.fuse_type != TIMED_FUSE) || !controller.is_item_equipped_or_held(active_grenade))
-		brain.clear_active_grenade()
-	var/can_handle_live_grenade = brain.can_throw_back_grenade() && !((controller.get_l_hand()?.flags_item & NODROP) && (controller.get_r_hand()?.flags_item & NODROP))
+		clear_owner_active_grenade()
+	var/can_handle_live_grenade = can_owner_throw_back_grenade() && !((controller.get_l_hand()?.flags_item & NODROP) && (controller.get_r_hand()?.flags_item & NODROP))
 	// SS220 EDIT - END
 	for(var/obj/item/thing in things_around)
 		if(!isturf(thing.loc))
@@ -117,7 +117,7 @@
 	if(nade.active && (nade.fuse_type == IMPACT_FUSE))
 		return HUMAN_AI_PICKUP_SCAN_STOP
 	if(nade.active && (nade.fuse_type == TIMED_FUSE) && can_handle_live_grenade) // SS220 EDIT: only enter throw-back mode if we can actually manipulate the grenade
-		brain.set_active_grenade(nade)
+		set_owner_active_grenade(nade)
 		return HUMAN_AI_PICKUP_SCAN_SKIP
 	return HUMAN_AI_PICKUP_SCAN_CONTINUE
 

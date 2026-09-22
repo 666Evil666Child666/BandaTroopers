@@ -82,7 +82,7 @@
 	// wield_primary()
 	if(!wield_primary())
 		return FALSE
-	sleep(max(primary_weapon?.wield_delay, brain.get_action_delay()))
+	sleep(max(primary_weapon?.wield_delay, get_owner_action_delay()))
 	return !QDELETED(src) && can_continue_inventory_work()
 	// SS220 EDIT - END
 

@@ -38,14 +38,14 @@
 		if(controller.get_z() != possible_buddy.z)
 			continue
 
-		if(!brain.is_friendly_target(possible_buddy))
+		if(!is_owner_friendly_target(possible_buddy))
 			continue
 
-		if(!controller.is_in_view_of(possible_buddy, brain.get_view_distance()))
+		if(!controller.is_in_view_of(possible_buddy, get_owner_view_distance()))
 			continue
 
 		var/distance = controller.get_distance_to(possible_buddy)
-		if(distance > brain.get_view_distance())
+		if(distance > get_owner_view_distance())
 			continue
 
 		if(!can_treat_ally(possible_buddy))

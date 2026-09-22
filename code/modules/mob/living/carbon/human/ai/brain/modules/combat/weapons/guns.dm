@@ -28,8 +28,53 @@
 /datum/human_ai_module/guns/resume_module(previous_lifecycle_state)
 	clear_tried_reload()
 
+/datum/human_ai_module/guns/proc/get_owner_primary_weapon()
+	RETURN_TYPE(/obj/item/weapon/gun)
+	return brain.get_primary_weapon()
+
+/datum/human_ai_module/guns/proc/has_owner_primary_weapon()
+	return brain.has_primary_weapon()
+
+/datum/human_ai_module/guns/proc/has_owner_secondary_weapons()
+	return brain.has_secondary_weapons()
+
+/datum/human_ai_module/guns/proc/get_owner_short_action_delay(use_randomized_delay = FALSE)
+	return brain.get_short_action_delay(use_randomized_delay)
+
+/datum/human_ai_module/guns/proc/has_owner_current_target()
+	return brain.has_current_target()
+
+/datum/human_ai_module/guns/proc/get_owner_current_target()
+	return brain.get_current_target()
+
+/datum/human_ai_module/guns/proc/get_owner_current_target_turf()
+	RETURN_TYPE(/turf)
+	return brain.get_current_target_turf()
+
+/datum/human_ai_module/guns/proc/get_owner_recent_projectile_threat_turf()
+	RETURN_TYPE(/turf)
+	return brain.get_recent_projectile_threat_turf()
+
+/datum/human_ai_module/guns/proc/can_owner_fire_offscreen(turf/target_turf, datum/human_ai_firearm_profile/gun_data = null)
+	return brain.can_fire_offscreen(target_turf, gun_data)
+
+/datum/human_ai_module/guns/proc/get_owner_view_distance()
+	return brain.get_view_distance()
+
+/datum/human_ai_module/guns/proc/get_owner_fire_line_safety(atom/target, datum/human_ai_firearm_profile/gun_data = null)
+	return brain.get_fire_line_safety(target, gun_data)
+
+/datum/human_ai_module/guns/proc/has_owner_active_grenade()
+	return brain.has_active_grenade()
+
+/datum/human_ai_module/guns/proc/should_owner_defer_ranged_fire(atom/threat = null)
+	return brain.should_defer_ranged_fire(threat)
+
+/datum/human_ai_module/guns/proc/is_owner_in_combat()
+	return brain.is_in_combat()
+
 /datum/human_ai_module/guns/proc/should_reload()
-	var/obj/item/weapon/gun/primary_weapon = brain.get_primary_weapon()
+	var/obj/item/weapon/gun/primary_weapon = get_owner_primary_weapon()
 	if(!primary_weapon)
 		return FALSE
 
@@ -56,29 +101,29 @@
 	return COOLDOWN_FINISHED(src, fire_overload_cooldown)
 
 /datum/human_ai_module/guns/proc/start_fire_overload_cooldown()
-	var/short_action_delay = brain.get_short_action_delay()
-	COOLDOWN_START(src, fire_overload_cooldown, max(short_action_delay, brain.get_short_action_delay(TRUE)))
+	var/short_action_delay = get_owner_short_action_delay()
+	COOLDOWN_START(src, fire_overload_cooldown, max(short_action_delay, get_owner_short_action_delay(TRUE)))
 
 /datum/human_ai_module/guns/proc/can_use_ranged_weapon()
-	return !has_tried_reload() && (brain.has_primary_weapon() || brain.has_secondary_weapons())
+	return !has_tried_reload() && (has_owner_primary_weapon() || has_owner_secondary_weapons())
 
 /datum/human_ai_module/guns/proc/get_ranged_fire_target_turf(datum/human_ai_firearm_profile/gun_data = null)
 	RETURN_TYPE(/turf)
-	if(brain.has_current_target())
-		return brain.get_current_target_turf()
+	if(has_owner_current_target())
+		return get_owner_current_target_turf()
 
-	var/turf/threat_turf = brain.get_recent_projectile_threat_turf()
-	if(brain.can_fire_offscreen(threat_turf, gun_data))
+	var/turf/threat_turf = get_owner_recent_projectile_threat_turf()
+	if(can_owner_fire_offscreen(threat_turf, gun_data))
 		return threat_turf
 	return null
 
 /datum/human_ai_module/guns/proc/can_reach_ranged_fire_target(datum/human_tied_controller/controller, turf/target_turf, maximum_range = null, datum/human_ai_firearm_profile/gun_data = null)
 	if(!controller || !target_turf)
 		return FALSE
-	if(brain.can_fire_offscreen(target_turf, gun_data))
+	if(can_owner_fire_offscreen(target_turf, gun_data))
 		return TRUE
 	if(isnull(maximum_range))
-		maximum_range = brain.get_view_distance()
+		maximum_range = get_owner_view_distance()
 	return controller.get_distance_to(target_turf) <= maximum_range
 
 /datum/human_ai_module/guns/proc/can_reach_ranged_fire_atom(datum/human_tied_controller/controller, atom/target, maximum_range = null, datum/human_ai_firearm_profile/gun_data = null)
@@ -96,7 +141,7 @@
 	var/list/turf_list = controller.get_line_from_current_turf_to(target)
 	for(var/turf/tile in turf_list)
 		var/tile_dist = controller.get_distance_to(tile)
-		if(tile_dist > brain.get_view_distance())
+		if(tile_dist > get_owner_view_distance())
 			continue
 
 		if(tile.density)
@@ -111,7 +156,7 @@
 			else if((tile_dist > 3) && thing.projectile_coverage >= PROJECTILE_COVERAGE_MEDIUM)
 				return FALSE
 
-	return brain.get_fire_line_safety(target, gun_data) != HUMAN_AI_FIRE_LINE_BLOCKED
+	return get_owner_fire_line_safety(target, gun_data) != HUMAN_AI_FIRE_LINE_BLOCKED
 
 /datum/human_ai_module/guns/proc/get_ranged_fire_aim_target(datum/human_tied_controller/controller, atom/movable/current_target, turf/target_turf, datum/human_ai_firearm_profile/gun_data = null)
 	RETURN_TYPE(/atom)
@@ -197,18 +242,18 @@
 	return miss_turfs
 
 /datum/human_ai_module/guns/proc/should_block_ranged_fire_for_throwable()
-	return brain.has_active_grenade()
+	return has_owner_active_grenade()
 
 /datum/human_ai_module/guns/proc/should_defer_ranged_fire_target(atom/threat = null)
-	return brain.should_defer_ranged_fire(threat)
+	return should_owner_defer_ranged_fire(threat)
 
 /datum/human_ai_module/guns/proc/should_defer_current_ranged_fire(datum/human_ai_firearm_profile/gun_data = null)
-	return should_defer_ranged_fire_target(brain.get_current_target() || get_ranged_fire_target_turf(gun_data))
+	return should_defer_ranged_fire_target(get_owner_current_target() || get_ranged_fire_target_turf(gun_data))
 
 /datum/human_ai_module/guns/proc/can_attempt_ranged_fire(datum/human_tied_controller/controller, obj/item/weapon/gun/primary_weapon, datum/human_ai_firearm_profile/gun_data = null, require_combat = TRUE, block_active_grenade = FALSE, check_view_distance = TRUE, check_reload = TRUE, check_tried_reload = TRUE)
 	if(!brain.has_valid_tied_human())
 		return FALSE
-	if(require_combat && !brain.is_in_combat())
+	if(require_combat && !is_owner_in_combat())
 		return FALSE
 	if(check_tried_reload && has_tried_reload())
 		return FALSE
@@ -222,7 +267,7 @@
 	var/turf/target_turf = get_ranged_fire_target_turf(gun_data)
 	if(!target_turf)
 		return FALSE
-	if(check_view_distance && !can_reach_ranged_fire_target(controller, target_turf, brain.get_view_distance(), gun_data))
+	if(check_view_distance && !can_reach_ranged_fire_target(controller, target_turf, get_owner_view_distance(), gun_data))
 		return FALSE
 	if(should_defer_current_ranged_fire(gun_data))
 		return FALSE

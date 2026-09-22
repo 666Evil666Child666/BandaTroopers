@@ -47,11 +47,25 @@
 /datum/human_ai_module/grenade/proc/get_friendly_throw_check_range()
 	return friendly_throw_check_range
 
+/datum/human_ai_module/grenade/proc/has_owner_ongoing_throw_action_in_progress()
+	return brain.has_ongoing_throw_action_in_progress()
+
+/datum/human_ai_module/grenade/proc/get_owner_grenade_throw_target_turf()
+	RETURN_TYPE(/turf)
+	return brain.get_shared_combat_target_turf() || brain.get_recent_projectile_threat_turf()
+
+/datum/human_ai_module/grenade/proc/find_owner_grenade_for_throw()
+	RETURN_TYPE(/obj/item)
+	return brain.find_grenade_for_throw()
+
+/datum/human_ai_module/grenade/proc/is_owner_in_combat()
+	return brain.is_in_combat()
+
 /datum/human_ai_module/grenade/proc/has_throw_in_progress()
 	if(!brain)
 		return FALSE
 
-	return brain.has_ongoing_throw_action_in_progress()
+	return has_owner_ongoing_throw_action_in_progress()
 
 /datum/human_ai_module/grenade/proc/set_throwback_enabled(enabled)
 	can_throw_back_grenades = enabled
@@ -63,16 +77,16 @@
 
 /datum/human_ai_module/grenade/proc/get_grenade_throw_target_turf()
 	RETURN_TYPE(/turf)
-	return brain.get_shared_combat_target_turf() || brain.get_recent_projectile_threat_turf()
+	return get_owner_grenade_throw_target_turf()
 
 /datum/human_ai_module/grenade/proc/get_grenade_throw_source()
 	RETURN_TYPE(/obj/item)
-	return brain.find_grenade_for_throw()
+	return find_owner_grenade_for_throw()
 
 /datum/human_ai_module/grenade/proc/can_attempt_grenade_throw(require_combat = TRUE, require_throw_source = TRUE)
 	if(!can_throw_grenades())
 		return FALSE
-	if(require_combat && !brain.is_in_combat())
+	if(require_combat && !is_owner_in_combat())
 		return FALSE
 	if(!get_grenade_throw_target_turf())
 		return FALSE

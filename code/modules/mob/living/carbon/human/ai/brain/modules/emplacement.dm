@@ -41,5 +41,14 @@
 /datum/human_ai_module/emplacement/proc/has_stationary_role()
 	return has_sniper_home() || has_machinegunner_home()
 
+/datum/human_ai_module/emplacement/proc/has_owner_tried_reload()
+	return brain.has_tried_reload()
+
+/datum/human_ai_module/emplacement/proc/should_owner_block_stationary_fire_for_cover()
+	return brain.should_block_stationary_fire_for_cover()
+
+/datum/human_ai_module/emplacement/proc/is_owner_healing_someone()
+	return brain.is_healing_someone()
+
 /datum/human_ai_module/emplacement/proc/is_stationary_fire_blocked()
-	return brain.has_tried_reload() || brain.should_block_stationary_fire_for_cover() || brain.is_healing_someone()
+	return has_owner_tried_reload() || should_owner_block_stationary_fire_for_cover() || is_owner_healing_someone()

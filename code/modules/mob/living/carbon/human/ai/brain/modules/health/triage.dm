@@ -6,7 +6,7 @@
 	return has_applicable_treatment_for(self_target) && healing_start_check_controller(controller)
 
 /datum/human_ai_module/health/proc/can_treat_under_current_combat_pressure()
-	return brain && !brain.has_current_target() && !brain.has_offscreen_fire_target()
+	return brain && !has_owner_current_target() && !has_owner_offscreen_fire_target()
 
 /datum/human_ai_module/health/proc/can_start_self_treatment_now(datum/human_tied_controller/controller)
 	return can_treat_under_current_combat_pressure() && can_self_treat(controller)
@@ -20,7 +20,7 @@
 /datum/human_ai_module/health/proc/can_treat_ally(mob/living/carbon/human/target)
 	if(!target || QDELETED(target) || target.stat == DEAD)
 		return FALSE
-	if(!brain.is_friendly_target(target))
+	if(!is_owner_friendly_target(target))
 		return FALSE
 	return healing_start_check(target) && has_applicable_treatment_for(target)
 
@@ -32,7 +32,7 @@
 		return FALSE
 	if(!target || QDELETED(target) || target.stat == DEAD)
 		return FALSE
-	return brain.is_friendly_target(target)
+	return is_owner_friendly_target(target)
 
 /datum/human_ai_module/health/proc/get_ally_treatment_priority(mob/living/carbon/human/target, distance = 0)
 	if(!target || !target.maxHealth)

@@ -69,6 +69,40 @@
 /datum/human_ai_module/health/proc/can_continue_health_work()
 	return brain?.can_continue_runtime_work()
 
+/datum/human_ai_module/health/proc/is_owner_friendly_target(atom/target)
+	return brain.is_friendly_target(target)
+
+/datum/human_ai_module/health/proc/get_owner_view_distance()
+	return brain.get_view_distance()
+
+/datum/human_ai_module/health/proc/has_owner_current_target()
+	return brain.has_current_target()
+
+/datum/human_ai_module/health/proc/has_owner_offscreen_fire_target()
+	return brain.has_offscreen_fire_target()
+
+/datum/human_ai_module/health/proc/is_owner_in_combat()
+	return brain.is_in_combat()
+
+/datum/human_ai_module/health/proc/find_owner_usable_treatment_item(list/item_types, mob/living/carbon/human/target)
+	RETURN_TYPE(/obj/item)
+	return brain.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, target)
+
+/datum/human_ai_module/health/proc/clear_owner_main_hand()
+	return brain.clear_main_hand()
+
+/datum/human_ai_module/health/proc/equip_owner_treatment_item(obj/item/item)
+	return brain.equip_item_from_equipment_map(HUMAN_AI_HEALTHITEMS, item)
+
+/datum/human_ai_module/health/proc/get_owner_action_delay()
+	return brain.get_action_delay()
+
+/datum/human_ai_module/health/proc/get_owner_storage_slot_for_item(obj/item/item)
+	return brain.storage_has_room(item)
+
+/datum/human_ai_module/health/proc/store_owner_treatment_item(obj/item/item, storage_slot)
+	return brain.store_item(item, storage_slot, HUMAN_AI_HEALTHITEMS)
+
 /datum/human_ai_module/health/proc/increment_treatment_stacks()
 	if(!can_continue_health_work())
 		return

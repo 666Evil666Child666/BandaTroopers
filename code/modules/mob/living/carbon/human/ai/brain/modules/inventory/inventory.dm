@@ -74,6 +74,43 @@
 /datum/human_ai_module/inventory/proc/can_continue_inventory_work()
 	return brain?.can_continue_runtime_work()
 
+/datum/human_ai_module/inventory/proc/has_valid_owner()
+	return brain.has_valid_tied_human()
+
+/datum/human_ai_module/inventory/proc/get_owner_previous_faction()
+	return brain.get_previous_faction()
+
+/datum/human_ai_module/inventory/proc/set_owner_previous_faction(new_faction)
+	return brain.set_previous_faction(new_faction)
+
+/datum/human_ai_module/inventory/proc/clear_owner_tried_reload()
+	return brain.clear_tried_reload()
+
+/datum/human_ai_module/inventory/proc/should_owner_suspend_nearby_item_search()
+	return brain.should_suspend_nearby_item_search()
+
+/datum/human_ai_module/inventory/proc/get_owner_active_grenade()
+	RETURN_TYPE(/obj/item/explosive/grenade)
+	return brain.get_active_grenade()
+
+/datum/human_ai_module/inventory/proc/set_owner_active_grenade(obj/item/explosive/grenade/grenade)
+	return brain.set_active_grenade(grenade)
+
+/datum/human_ai_module/inventory/proc/clear_owner_active_grenade()
+	return brain.clear_active_grenade()
+
+/datum/human_ai_module/inventory/proc/has_owner_ongoing_action(path)
+	return brain.has_ongoing_action(path)
+
+/datum/human_ai_module/inventory/proc/can_owner_throw_back_grenade()
+	return brain.can_throw_back_grenade()
+
+/datum/human_ai_module/inventory/proc/notify_owner_inventory_runtime_changed()
+	return brain.notify_inventory_runtime_changed()
+
+/datum/human_ai_module/inventory/proc/get_owner_action_delay()
+	return brain.get_action_delay()
+
 /datum/human_ai_module/inventory/resume_module(previous_lifecycle_state)
 	appraise_inventory()
 	invalidate_nearby_item_search()

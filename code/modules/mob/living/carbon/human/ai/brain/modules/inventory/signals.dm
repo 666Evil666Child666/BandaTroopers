@@ -1,5 +1,5 @@
 /datum/human_ai_module/inventory/proc/register_signals()
-	if(!brain.has_valid_tied_human())
+	if(!has_valid_owner())
 		return
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
@@ -38,13 +38,13 @@
 	remove_from_equipment_maps(source)
 
 /datum/human_ai_module/inventory/proc/clear_deleted_active_grenade_ref(obj/item/source)
-	if(source == brain.get_active_grenade()) // SS220 EDIT: purge deleted grenade threat refs immediately
-		brain.clear_active_grenade()
+	if(source == get_owner_active_grenade()) // SS220 EDIT: purge deleted grenade threat refs immediately
+		clear_owner_active_grenade()
 
 /datum/human_ai_module/inventory/proc/invalidate_inventory_runtime_caches()
 	invalidate_nearby_item_search()
 	if(can_handle_runtime_inventory_signal())
-		brain.notify_inventory_runtime_changed()
+		notify_owner_inventory_runtime_changed()
 
 /datum/human_ai_module/inventory/proc/on_item_equip(datum/source, obj/item/equipment, slot)
 	SIGNAL_HANDLER
@@ -113,10 +113,10 @@
 		set_primary_weapon(picked_up)
 
 /datum/human_ai_module/inventory/proc/handle_picked_up_active_grenade(obj/item/picked_up)
-	if(picked_up != brain.get_active_grenade()) // SS220 EDIT: once someone holds the grenade, stop floor-threat gating - unless throw-back is active
+	if(picked_up != get_owner_active_grenade()) // SS220 EDIT: once someone holds the grenade, stop floor-threat gating - unless throw-back is active
 		return
 
-	if(!brain.has_ongoing_action(/datum/ai_action/throw_back_nade))
+	if(!has_owner_ongoing_action(/datum/ai_action/throw_back_nade))
 		addtimer(CALLBACK(src, PROC_REF(clear_active_grenade_if_stale), picked_up), 1 SECONDS) // SS220 EDIT: delay reset so throw-back action has time to spawn on next scheduler tick
 
 /datum/human_ai_module/inventory/proc/on_item_drop(datum/source, obj/item/dropped)

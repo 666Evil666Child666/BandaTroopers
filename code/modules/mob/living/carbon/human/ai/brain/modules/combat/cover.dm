@@ -33,20 +33,52 @@
 	RETURN_TYPE(/turf)
 	return get_current_cover()
 
+/datum/human_ai_module/cover/proc/get_owner_current_target()
+	RETURN_TYPE(/atom/movable)
+	return brain.get_current_target()
+
+/datum/human_ai_module/cover/proc/get_owner_gun_data()
+	RETURN_TYPE(/datum/human_ai_firearm_profile)
+	return brain.get_gun_data()
+
+/datum/human_ai_module/cover/proc/has_valid_owner()
+	return brain.has_valid_tied_human()
+
+/datum/human_ai_module/cover/proc/can_owner_move_for_action()
+	return brain.can_move_for_action()
+
+/datum/human_ai_module/cover/proc/has_owner_primary_weapon()
+	return brain.has_primary_weapon()
+
+/datum/human_ai_module/cover/proc/notify_owner_cover_scan_started()
+	return brain?.notify_cover_scan_started()
+
+/datum/human_ai_module/cover/proc/has_owner_squad()
+	return brain.has_squad()
+
+/datum/human_ai_module/cover/proc/get_owner_squad_members()
+	return brain.get_squad_members()
+
+/datum/human_ai_module/cover/proc/get_owner_view_distance()
+	return brain.get_view_distance()
+
+/datum/human_ai_module/cover/proc/is_owner_friendly_target(atom/target)
+	return brain.is_friendly_target(target)
+
 /datum/human_ai_module/cover/proc/should_hold_cover_position_against_target(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
 	if(!is_in_cover())
 		return FALSE
-	var/atom/movable/current_target = brain.get_current_target()
+	var/atom/movable/current_target = get_owner_current_target()
 	if(!current_target || !controller)
 		return FALSE
 	return !(controller.get_distance_to(current_target) > gun_data?.minimum_range)
 
 /datum/human_ai_module/cover/proc/can_attempt_cover_move(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
-	if(!brain.has_valid_tied_human() || !controller)
+	if(!has_valid_owner() || !controller)
 		return FALSE
 	if(!has_cover())
 		return FALSE
-	if(!brain.can_move_for_action())
+	if(!can_owner_move_for_action())
 		return FALSE
 	if(should_hold_cover_position_against_target(controller, gun_data))
 		return FALSE
@@ -128,7 +160,7 @@
 	if(!controller)
 		return
 
-	var/atom/movable/current_target = brain.get_current_target()
+	var/atom/movable/current_target = get_owner_current_target()
 	if(isxeno(current_target))
 		try_cover(controller.get_angle_from(current_target), current_target)
 
@@ -140,11 +172,11 @@
 	if(!controller)
 		return
 
-	if(is_in_cover() && (controller.get_distance_to(get_current_cover()) > brain.get_gun_data()?.minimum_range))
+	if(is_in_cover() && (controller.get_distance_to(get_current_cover()) > get_owner_gun_data()?.minimum_range))
 		end_cover()
 
 /datum/human_ai_module/cover/proc/react_to_incoming_fire(angle, atom/firer)
-	if(!can_continue_cover_work() || !brain.has_valid_tied_human())
+	if(!can_continue_cover_work() || !has_valid_owner())
 		return
 
 	if(!current_cover)
@@ -160,11 +192,11 @@
 	if(!COOLDOWN_FINISHED(src, cover_search_cooldown))
 		return
 
-	if(!(cover_without_gun || brain.has_primary_weapon()))
+	if(!(cover_without_gun || has_owner_primary_weapon()))
 		return
 
 	COOLDOWN_START(src, cover_search_cooldown, 10 SECONDS)
-	brain?.notify_cover_scan_started()
+	notify_owner_cover_scan_started()
 
 	var/list/turf_dict = list()
 	var/cover_dir = reverse_direction(angle2dir4ai(angle))
@@ -216,14 +248,14 @@
 	if(!can_continue_cover_work())
 		return
 
-	if(!brain.has_squad())
+	if(!has_owner_squad())
 		return
 
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
 		return
 
-	for(var/datum/human_ai_brain/squaddie as anything in brain.get_squad_members())
+	for(var/datum/human_ai_brain/squaddie as anything in get_owner_squad_members())
 		if(squaddie == brain)
 			continue
 
@@ -232,7 +264,7 @@
 
 		var/datum/human_ai_context/squaddie_context = squaddie.create_context()
 		var/datum/human_tied_controller/squaddie_controller = squaddie_context.controller
-		if(!squaddie_controller || controller.get_distance_to(squaddie_controller.get_current_turf()) > brain.get_view_distance())
+		if(!squaddie_controller || controller.get_distance_to(squaddie_controller.get_current_turf()) > get_owner_view_distance())
 			qdel(squaddie_context)
 			continue
 
@@ -256,7 +288,7 @@
 	var/list/turfs_to_scan = list(scan_turf)
 	var/current_index = 1
 	var/list/related_cover_dirs = get_related_directions(cover_dir)
-	var/atom/movable/current_target = brain.get_current_target()
+	var/atom/movable/current_target = get_owner_current_target()
 
 	while(current_index <= length(turfs_to_scan) && length(turf_dict) < 198)
 		var/turf/current_scan_turf = turfs_to_scan[current_index++]
@@ -283,7 +315,7 @@
 
 		var/obj/item/explosive/mine/mine = locate() in current_scan_turf.contents
 		if(mine)
-			if(!brain.is_friendly_target(mine.iff_signal))
+			if(!is_owner_friendly_target(mine.iff_signal))
 				turf_dict[current_scan_turf] -= 50
 			else
 				turf_dict[current_scan_turf] -= 5 // even if it's our mine, we don't really want to stand on it

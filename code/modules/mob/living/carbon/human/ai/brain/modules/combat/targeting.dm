@@ -32,6 +32,28 @@
 /datum/human_ai_module/targeting/proc/can_continue_targeting_work()
 	return brain?.can_continue_runtime_work()
 
+/datum/human_ai_module/targeting/proc/can_owner_target(atom/movable/target)
+	return brain.can_target(target)
+
+/datum/human_ai_module/targeting/proc/get_owner_targeting_view_distance()
+	return brain.get_targeting_view_distance()
+
+/datum/human_ai_module/targeting/proc/emit_owner_target_changed(atom/movable/old_target, atom/movable/new_target)
+	return brain.emit_target_changed(old_target, new_target)
+
+/datum/human_ai_module/targeting/proc/get_owner_recent_projectile_threat_turf()
+	RETURN_TYPE(/turf)
+	return brain.get_recent_projectile_threat_turf()
+
+/datum/human_ai_module/targeting/proc/has_owner_recent_projectile_threat()
+	return brain.has_recent_projectile_threat()
+
+/datum/human_ai_module/targeting/proc/has_valid_owner()
+	return brain && brain.has_valid_tied_human()
+
+/datum/human_ai_module/targeting/proc/get_owner_visible_target_candidates()
+	return brain.get_visible_target_candidates()
+
 /datum/human_ai_module/targeting/process_module(delta_time)
 	if(!can_continue_targeting_work())
 		return
@@ -63,10 +85,10 @@
 	if(!firer)
 		return
 
-	if(!brain.can_target(firer))
+	if(!can_owner_target(firer))
 		return
 
-	if(controller.get_distance_to(firer) <= brain.get_targeting_view_distance())
+	if(controller.get_distance_to(firer) <= get_owner_targeting_view_distance())
 		set_target(firer)
 
 /datum/human_ai_module/targeting/on_combat_exit_started(should_holster_primary = TRUE)
@@ -121,7 +143,7 @@
 	clear_last_known_target()
 
 	if(brain)
-		brain.emit_target_changed(null, current_target)
+		emit_owner_target_changed(null, current_target)
 
 /datum/human_ai_module/targeting/proc/set_target_turf_direct(turf/new_target_turf)
 	target_turf = new_target_turf
@@ -143,12 +165,12 @@
 	var/turf/current_target_turf = get_target_turf()
 	if(current_target_turf)
 		return current_target_turf
-	return brain.get_recent_projectile_threat_turf()
+	return get_owner_recent_projectile_threat_turf()
 
 /datum/human_ai_module/targeting/proc/has_target_or_threat_turf()
 	if(has_target_turf())
 		return TRUE
-	return brain.has_recent_projectile_threat()
+	return has_owner_recent_projectile_threat()
 
 /datum/human_ai_module/targeting/proc/get_shared_combat_target_turf()
 	RETURN_TYPE(/turf)
@@ -162,7 +184,7 @@
 	var/turf/shared_target_turf = get_shared_combat_target_turf()
 	if(shared_target_turf)
 		return shared_target_turf
-	return brain.get_recent_projectile_threat_turf()
+	return get_owner_recent_projectile_threat_turf()
 
 /datum/human_ai_module/targeting/proc/get_current_target_turf()
 	RETURN_TYPE(/turf)
@@ -232,7 +254,7 @@
 		clear_last_known_target()
 
 	if(brain)
-		brain.emit_target_changed(old_target, null)
+		emit_owner_target_changed(old_target, null)
 
 /datum/human_ai_module/targeting/proc/on_target_delete(datum/source, force)
 	SIGNAL_HANDLER
@@ -256,7 +278,7 @@
 	update_target_pos()
 
 /datum/human_ai_module/targeting/proc/update_target_pos()
-	if(!can_continue_targeting_work() || !brain.has_valid_tied_human())
+	if(!can_continue_targeting_work() || !has_valid_owner())
 		target_turf = null
 		return
 	var/datum/human_tied_controller/controller = context?.controller
@@ -265,7 +287,7 @@
 		return
 
 	if(current_target)
-		if(controller.is_in_view_of(current_target, brain.get_targeting_view_distance()))
+		if(controller.is_in_view_of(current_target, get_owner_targeting_view_distance()))
 			target_turf = get_turf(current_target)
 		else
 			lose_target()
@@ -277,7 +299,7 @@
 	if(!controller)
 		return null
 
-	var/list/viable_targets = brain.get_visible_target_candidates()
+	var/list/viable_targets = get_owner_visible_target_candidates()
 	var/atom/movable/closest_target
 	var/smallest_distance = INFINITY
 
@@ -309,9 +331,6 @@
 			final_targets += target
 
 	return length(final_targets) ? pick(final_targets) : closest_target
-
-/datum/human_ai_module/targeting/proc/has_valid_owner()
-	return brain && brain.has_valid_tied_human()
 
 /datum/human_ai_module/targeting/proc/is_valid_target_ref(atom/movable/target)
 	return target && !QDELETED(target)

@@ -194,7 +194,7 @@
 
 /datum/human_ai_module/health/proc/get_treatment_item_types(mob/living/carbon/human/target, treatment_stage)
 	var/urgency = get_treatment_urgency(target)
-	var/in_combat = brain.is_in_combat()
+	var/in_combat = is_owner_in_combat()
 
 	switch(treatment_stage)
 		if(HUMAN_AI_TREATMENT_STAGE_BRUTE)
@@ -288,7 +288,7 @@
 		if(!has_treatment_problem(target, stage))
 			continue
 		var/list/item_types = get_treatment_item_types(target, stage)
-		if(item_types && brain.find_usable_equipment_by_type_list(item_types, HUMAN_AI_HEALTHITEMS, target))
+		if(item_types && find_owner_usable_treatment_item(item_types, target))
 			return TRUE
 
 	return FALSE
