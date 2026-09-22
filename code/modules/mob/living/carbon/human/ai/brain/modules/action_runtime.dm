@@ -89,6 +89,16 @@
 			allowed_actions -= ongoing_action.type
 	return allowed_actions
 
+/datum/human_ai_module/action_runtime/proc/create_owner_context()
+	RETURN_TYPE(/datum/human_ai_context)
+	return brain.create_context()
+
+/datum/human_ai_module/action_runtime/proc/has_owner_throw_in_progress()
+	return brain.has_throw_in_progress()
+
+/datum/human_ai_module/action_runtime/proc/create_owner_action(action_type)
+	return new action_type(brain)
+
 /datum/human_ai_module/action_runtime/proc/start_selected_actions(datum/human_ai_context/runtime_context, list/allowed_actions, grenade_throw_in_progress = FALSE)
 	// Create assoc list of selected AI actions and their weight
 	var/list/possible_actions = list()
@@ -119,13 +129,13 @@
 		if(!possible_action)
 			continue
 
-		ongoing_actions += new action_type(brain)
+		ongoing_actions += create_owner_action(action_type)
 #if defined(TESTING) && defined(HUMAN_AI_TESTING)
 		message_admins("action of type [action_type] was added to [runtime_context.controller.get_real_name()]")
 #endif
 
 /datum/human_ai_module/action_runtime/proc/process_actions(delta_time)
-	var/datum/human_ai_context/runtime_context = brain.create_context()
+	var/datum/human_ai_context/runtime_context = create_owner_context()
 	if(!runtime_context.can_continue())
 		qdel(runtime_context)
 		return FALSE
@@ -137,7 +147,7 @@
 		return FALSE
 
 	var/list/allowed_actions = get_allowed_action_types()
-	var/grenade_throw_in_progress = brain.has_throw_in_progress()
+	var/grenade_throw_in_progress = has_owner_throw_in_progress()
 	start_selected_actions(runtime_context, allowed_actions, grenade_throw_in_progress)
 
 	var/list/actions_to_process = ongoing_actions.Copy()

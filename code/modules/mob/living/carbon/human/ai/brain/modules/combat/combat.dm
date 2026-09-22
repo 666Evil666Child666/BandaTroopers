@@ -30,10 +30,31 @@
 /datum/human_ai_module/combat/proc/can_continue_combat_work()
 	return brain?.can_continue_runtime_work()
 
+/datum/human_ai_module/combat/proc/has_owner_current_target()
+	return brain.has_current_target()
+
+/datum/human_ai_module/combat/proc/emit_owner_combat_entered(was_in_combat)
+	return brain.emit_combat_entered(was_in_combat)
+
+/datum/human_ai_module/combat/proc/has_valid_owner()
+	return brain.has_valid_tied_human()
+
+/datum/human_ai_module/combat/proc/emit_owner_combat_exit_force_cleared()
+	return brain.emit_combat_exit_force_cleared()
+
+/datum/human_ai_module/combat/proc/emit_owner_combat_exit_started()
+	return brain.emit_combat_exit_started()
+
+/datum/human_ai_module/combat/proc/emit_owner_combat_exit_finished()
+	return brain.emit_combat_exit_finished()
+
+/datum/human_ai_module/combat/proc/schedule_owner_combat_exit()
+	addtimer(CALLBACK(brain, TYPE_PROC_REF(/datum/human_ai_brain, exit_combat)), rand(combat_decay_time_min, combat_decay_time_max), TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
+
 /datum/human_ai_module/combat/process_module(delta_time)
 	if(!can_continue_combat_work())
 		return
-	if(brain.has_current_target())
+	if(has_owner_current_target())
 		enter_combat()
 
 /datum/human_ai_module/combat/on_ai_event(datum/human_ai_event/event)
@@ -53,14 +74,14 @@
 		return
 
 	var/was_in_combat = in_combat
-	brain.emit_combat_entered(was_in_combat)
+	emit_owner_combat_entered(was_in_combat)
 	in_combat = TRUE
-	addtimer(CALLBACK(brain, TYPE_PROC_REF(/datum/human_ai_brain, exit_combat)), rand(combat_decay_time_min, combat_decay_time_max), TIMER_UNIQUE | TIMER_NO_HASH_WAIT | TIMER_OVERRIDE)
+	schedule_owner_combat_exit()
 	SShuman_ai.combat_ever_started = TRUE
 
 /datum/human_ai_module/combat/proc/exit_combat()
-	if(!brain.has_valid_tied_human())
-		brain.emit_combat_exit_force_cleared()
+	if(!has_valid_owner())
+		emit_owner_combat_exit_force_cleared()
 		in_combat = FALSE
 		return
 
@@ -68,8 +89,8 @@
 		return
 
 	if(in_combat)
-		brain.emit_combat_exit_started()
+		emit_owner_combat_exit_started()
 
-	brain.emit_combat_exit_finished()
+	emit_owner_combat_exit_finished()
 
 	in_combat = FALSE

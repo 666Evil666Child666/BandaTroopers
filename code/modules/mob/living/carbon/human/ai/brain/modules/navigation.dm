@@ -55,6 +55,16 @@
 	no_path_found = FALSE
 	no_path_found_amount = 0
 
+/datum/human_ai_module/navigation/proc/has_owner_navigation_path_queued_hook()
+	return hascall(brain, "modular_on_navigation_path_queued")
+
+/datum/human_ai_module/navigation/proc/notify_owner_navigation_path_queued(turf/destination, max_range)
+	return call(brain, "modular_on_navigation_path_queued")(destination, max_range)
+
+/datum/human_ai_module/navigation/proc/get_owner_current_target()
+	RETURN_TYPE(/atom/movable)
+	return brain.get_current_target()
+
 /datum/human_ai_module/navigation/proc/apply_navigation_profile(short_step_range = 0, path_retarget_slack = 0)
 	if(short_step_range > 0)
 		short_step_pathing_range = max(short_step_pathing_range, short_step_range)
@@ -156,9 +166,9 @@
 		return FALSE
 
 	// SS220 EDIT: modular brains may observe or meter path requests without forking shared navigation flow
-	if(hascall(brain, "modular_on_navigation_path_queued"))
-		call(brain, "modular_on_navigation_path_queued")(destination, max_range)
-	controller.calculate_path_to(destination, max_range, CALLBACK(src, PROC_REF(set_path)), list(brain.get_current_target()))
+	if(has_owner_navigation_path_queued_hook())
+		notify_owner_navigation_path_queued(destination, max_range)
+	controller.calculate_path_to(destination, max_range, CALLBACK(src, PROC_REF(set_path)), list(get_owner_current_target()))
 	current_path_target = destination
 	next_path_generation = world.time + path_update_period
 	return TRUE
