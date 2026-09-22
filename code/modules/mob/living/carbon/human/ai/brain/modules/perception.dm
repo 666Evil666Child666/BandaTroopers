@@ -47,7 +47,7 @@
 	suspend()
 
 /datum/human_ai_module/perception/proc/register_signals()
-	if(!brain?.has_valid_tied_human())
+	if(!has_valid_owner())
 		return
 	var/datum/human_tied_controller/controller = context?.controller
 	if(!controller)
@@ -61,7 +61,7 @@
 		controller.unregister_signal_for(src, COMSIG_HUMAN_BULLET_ACT)
 
 /datum/human_ai_module/perception/proc/setup_detection_radius()
-	if(!brain?.has_valid_tied_human())
+	if(!has_valid_owner())
 		clear_detection_radius()
 		return
 
@@ -110,7 +110,7 @@
 		return
 
 	remember_projectile_threat(bullet)
-	brain.emit_projectile_threat(bullet, FALSE, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
+	emit_owner_projectile_threat(bullet, FALSE)
 
 /datum/human_ai_module/perception/proc/on_shot(datum/source, damage_result, ammo_flags, obj/projectile/bullet)
 	SIGNAL_HANDLER
@@ -122,10 +122,13 @@
 		return
 
 	remember_projectile_threat(bullet)
-	brain.emit_projectile_threat(bullet, TRUE, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
+	emit_owner_projectile_threat(bullet, TRUE)
 
 /datum/human_ai_module/perception/proc/can_process_detection()
 	return brain?.can_continue_runtime_work()
+
+/datum/human_ai_module/perception/proc/emit_owner_projectile_threat(obj/projectile/bullet, from_direct_hit = FALSE)
+	return brain.emit_projectile_threat(bullet, from_direct_hit, get_recent_threat_source(), get_recent_threat_turf(), get_recent_threat_angle())
 
 /datum/human_ai_module/perception/proc/is_owner_friendly_target(atom/target)
 	return brain.is_friendly_target(target)

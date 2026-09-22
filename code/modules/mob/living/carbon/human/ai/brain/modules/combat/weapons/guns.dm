@@ -73,6 +73,12 @@
 /datum/human_ai_module/guns/proc/is_owner_in_combat()
 	return brain.is_in_combat()
 
+/datum/human_ai_module/guns/proc/can_continue_guns_work()
+	return brain.can_continue_runtime_work()
+
+/datum/human_ai_module/guns/proc/has_valid_owner()
+	return brain.has_valid_tied_human()
+
 /datum/human_ai_module/guns/proc/should_reload()
 	var/obj/item/weapon/gun/primary_weapon = get_owner_primary_weapon()
 	if(!primary_weapon)
@@ -132,7 +138,7 @@
 	return can_reach_ranged_fire_target(controller, get_turf(target), maximum_range, gun_data)
 
 /datum/human_ai_module/guns/proc/can_use_ranged_fire_line(datum/human_tied_controller/controller, atom/target, datum/human_ai_firearm_profile/gun_data = null)
-	if(!brain.can_continue_runtime_work() || !controller || !target)
+	if(!can_continue_guns_work() || !controller || !target)
 		return FALSE
 
 	if(isliving(target) && controller.get_distance_to(target) <= 1)
@@ -251,7 +257,7 @@
 	return should_defer_ranged_fire_target(get_owner_current_target() || get_ranged_fire_target_turf(gun_data))
 
 /datum/human_ai_module/guns/proc/can_attempt_ranged_fire(datum/human_tied_controller/controller, obj/item/weapon/gun/primary_weapon, datum/human_ai_firearm_profile/gun_data = null, require_combat = TRUE, block_active_grenade = FALSE, check_view_distance = TRUE, check_reload = TRUE, check_tried_reload = TRUE)
-	if(!brain.has_valid_tied_human())
+	if(!has_valid_owner())
 		return FALSE
 	if(require_combat && !is_owner_in_combat())
 		return FALSE
