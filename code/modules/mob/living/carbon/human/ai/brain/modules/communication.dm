@@ -1,5 +1,6 @@
 /datum/human_ai_module/communication
 	module_id = "communication"
+	required_module_types = list(/datum/human_ai_module/inventory)
 	/// Lines potentially said when an AI enters combat
 	var/list/enter_combat_lines = list(
 		"CONTACT!",

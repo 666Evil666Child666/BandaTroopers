@@ -7,8 +7,7 @@
 /datum/ai_action/treat_ally/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/health/health = context?.get_module(/datum/human_ai_module/health)
-	if(!brain || !controller || !health)
+	if(!brain || !controller)
 		return 0
 
 	if(controller.is_zombie())
@@ -20,23 +19,22 @@
 	if(brain.has_pickup_queue())
 		return 0
 
-	if(!health.get_ally_treatment_candidate())
+	if(!brain.get_ally_treatment_candidate())
 		return 0
 
 	return 5
 
 /datum/ai_action/treat_ally/Added()
-	var/datum/human_ai_module/health/health = context?.get_module(/datum/human_ai_module/health)
-	if(!health)
+	var/datum/human_ai_brain/brain = context?.brain
+	if(!brain)
 		return
 
-	ally_to_treat = health.get_ally_treatment_candidate()
+	ally_to_treat = brain.get_ally_treatment_candidate()
 	if(ally_to_treat)
-		health.set_injured_ally(ally_to_treat)
+		brain.set_injured_ally(ally_to_treat)
 
 /datum/ai_action/treat_ally/Destroy(force, ...)
-	var/datum/human_ai_module/health/health = context?.get_module(/datum/human_ai_module/health)
-	health?.lose_injured_ally()
+	brain?.lose_injured_ally()
 	brain?.cancel_treatment()
 	ally_to_treat = null
 	return ..()
@@ -48,17 +46,16 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/health/health = context?.get_module(/datum/human_ai_module/health)
-	if(!brain || !controller || !health)
+	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!health.can_continue_ally_treatment_now(ally_to_treat))
+	if(!brain.can_continue_ally_treatment_now(ally_to_treat))
 		return ONGOING_ACTION_COMPLETED
 
 	if(brain.is_healing_someone())
 		return ONGOING_ACTION_UNFINISHED
 
-	if(!health.can_start_ally_treatment_now(ally_to_treat))
+	if(!brain.can_start_ally_treatment_now(ally_to_treat))
 		return ONGOING_ACTION_COMPLETED
 
 	if(controller.get_distance_to(ally_to_treat) > 1)
@@ -67,7 +64,7 @@
 		if(controller.get_distance_to(ally_to_treat) > 1)
 			return ONGOING_ACTION_UNFINISHED
 
-	if(!health.start_healing(ally_to_treat) && !brain.is_healing_someone())
+	if(!brain.start_healing(ally_to_treat) && !brain.is_healing_someone())
 		return ONGOING_ACTION_COMPLETED
 
 	return ONGOING_ACTION_UNFINISHED

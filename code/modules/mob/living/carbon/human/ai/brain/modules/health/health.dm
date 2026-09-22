@@ -12,7 +12,7 @@
 
 /datum/human_ai_module/health
 	module_id = "health"
-	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/profile)
+	required_module_types = list(/datum/human_ai_module/faction, /datum/human_ai_module/profile, /datum/human_ai_module/targeting, /datum/human_ai_module/inventory)
 
 	/// At what percentage of max HP to start searching for medical treatment
 	var/healing_start_threshold = 0.7

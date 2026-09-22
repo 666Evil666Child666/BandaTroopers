@@ -46,9 +46,8 @@
 	return register_module(module)
 
 /datum/human_ai_module_config/proc/get_module_factory_type(module_type)
-	if(!(module_type in get_supported_module_types()))
-		return null
-	return module_type
+	var/list/module_factory_types = get_module_factory_types()
+	return module_factory_types[module_type]
 
 // ==================== Lookup ====================
 // Reads the registry source of truth for a known module type.

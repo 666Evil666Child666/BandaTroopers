@@ -2,28 +2,48 @@
 
 // ==================== Supported modules ====================
 // Full core Human AI module set known to the config factory.
+/datum/human_ai_module_config/proc/get_module_factory_types()
+	var/list/module_factory_types = list()
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/faction)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/targeting)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/cover)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/grenade)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/health)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/communication)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/guns)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/navigation)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/squad)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/action_runtime)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/combat)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/conversation)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/orders)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/profile)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/emplacement)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/admin)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/perception)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/inventory)
+	register_module_factory_type(module_factory_types, /datum/human_ai_module/melee)
+	return module_factory_types
+
+/datum/human_ai_module_config/proc/register_module_factory_type(list/module_factory_types, module_type, module_factory_type = null)
+	if(isnull(module_factory_type))
+		module_factory_type = module_type
+
+	if(!ispath(module_type, /datum/human_ai_module))
+		report_action_policy_issue("invalid module type [module_type]")
+		return
+
+	if(!ispath(module_factory_type, /datum/human_ai_module))
+		report_action_policy_issue("invalid module factory type [module_factory_type] for [module_type]")
+		return
+
+	module_factory_types[module_type] = module_factory_type
+
 /datum/human_ai_module_config/proc/get_supported_module_types()
-	return list(
-		/datum/human_ai_module/faction,
-		/datum/human_ai_module/targeting,
-		/datum/human_ai_module/cover,
-		/datum/human_ai_module/grenade,
-		/datum/human_ai_module/health,
-		/datum/human_ai_module/communication,
-		/datum/human_ai_module/guns,
-		/datum/human_ai_module/navigation,
-		/datum/human_ai_module/squad,
-		/datum/human_ai_module/action_runtime,
-		/datum/human_ai_module/combat,
-		/datum/human_ai_module/conversation,
-		/datum/human_ai_module/orders,
-		/datum/human_ai_module/profile,
-		/datum/human_ai_module/emplacement,
-		/datum/human_ai_module/admin,
-		/datum/human_ai_module/perception,
-		/datum/human_ai_module/inventory,
-		/datum/human_ai_module/melee,
-	)
+	var/list/supported_module_types = list()
+	for(var/module_type as anything in get_module_factory_types())
+		supported_module_types += module_type
+	return supported_module_types
 
 /datum/human_ai_module_config/proc/get_core_module_types()
 	return list(

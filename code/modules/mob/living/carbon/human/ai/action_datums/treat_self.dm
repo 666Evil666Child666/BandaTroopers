@@ -6,8 +6,7 @@
 /datum/ai_action/treat_self/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/health/health = context?.get_module(/datum/human_ai_module/health)
-	if(!brain || !controller || !health)
+	if(!brain || !controller)
 		return 0
 
 	if(controller.is_zombie())
@@ -22,7 +21,7 @@
 	if(!brain.can_retry_self_treatment())
 		return 0
 
-	if(!health.can_start_self_treatment_now(controller))
+	if(!brain.can_start_self_treatment_now(controller))
 		return 0
 
 	return 4
@@ -38,11 +37,10 @@
 
 	var/datum/human_ai_brain/brain = context?.brain
 	var/datum/human_tied_controller/controller = context?.controller
-	var/datum/human_ai_module/health/health = context?.get_module(/datum/human_ai_module/health)
-	if(!brain || !controller || !health)
+	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!health.can_continue_self_treatment_now(controller))
+	if(!brain.can_continue_self_treatment_now(controller))
 		return ONGOING_ACTION_COMPLETED
 
 	if(controller.is_on_fire())
@@ -51,8 +49,8 @@
 	if(brain.is_healing_someone())
 		return ONGOING_ACTION_UNFINISHED
 
-	if(health.can_start_self_treatment_now(controller))
-		if(!health.start_healing_controller(controller))
+	if(brain.can_start_self_treatment_now(controller))
+		if(!brain.start_healing_controller(controller))
 			brain.increment_treatment_stacks()
 		return ONGOING_ACTION_UNFINISHED
 
