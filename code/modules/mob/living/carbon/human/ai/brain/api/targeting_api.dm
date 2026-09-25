@@ -74,6 +74,12 @@
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
 	return targeting_module?.get_chase_target_turf()
 
+/datum/human_ai_brain/proc/perform_chase_target(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	if(!targeting_module)
+		return ONGOING_ACTION_COMPLETED
+	return targeting_module.perform_chase_target(controller)
+
 /datum/human_ai_brain/proc/get_current_target_turf()
 	RETURN_TYPE(/turf)
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
@@ -83,6 +89,16 @@
 	RETURN_TYPE(/turf)
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
 	return targeting_module?.get_last_known_target_turf()
+
+/datum/human_ai_brain/proc/get_lost_target_investigation_max_distance()
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	return targeting_module?.get_lost_target_investigation_max_distance() || 0
+
+/datum/human_ai_brain/proc/perform_lost_target_investigation(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	if(!targeting_module)
+		return ONGOING_ACTION_COMPLETED
+	return targeting_module.perform_lost_target_investigation(controller)
 
 /datum/human_ai_brain/proc/has_recent_lost_target()
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
@@ -108,6 +124,10 @@
 /datum/human_ai_brain/proc/clear_last_known_target()
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
 	targeting_module?.clear_last_known_target()
+
+/datum/human_ai_brain/proc/clear_lost_target_investigation()
+	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()
+	targeting_module?.clear_lost_target_investigation()
 
 /datum/human_ai_brain/proc/set_target_turf_direct(turf/new_target_turf)
 	var/datum/human_ai_module/targeting/targeting_module = get_targeting_module()

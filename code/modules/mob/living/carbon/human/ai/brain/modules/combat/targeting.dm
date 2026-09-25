@@ -1,5 +1,3 @@
-#define EXTRA_CHECK_DISTANCE_MULTIPLIER 0.20
-
 /datum/human_ai_module/targeting
 	module_id = "targeting"
 	required_module_types = list(/datum/human_ai_module/perception, /datum/human_ai_module/profile)
@@ -16,6 +14,28 @@
 	var/last_known_target_memory_duration = 10 SECONDS
 	/// If TRUE, we care about the target being in view after shooting at them. If not, then we only do a line check instead
 	var/requires_vision = TRUE
+	/// Bonus that keeps the current target stable unless another candidate is clearly better.
+	var/current_target_stickiness_score = 18
+	/// Minimum score delta required to switch away from a valid current target.
+	var/retarget_score_margin = 12
+	/// Baseline score before range and opportunity modifiers are applied.
+	var/target_score_base = 100
+	/// Score lost for each tile of distance to the target.
+	var/target_score_distance_penalty = 6
+	/// Bonus for an adjacent target that is easy to hit and immediately dangerous.
+	var/target_score_adjacent_bonus = 36
+	/// Bonus for a nearby target that should usually beat a distant target.
+	var/target_score_near_bonus = 16
+	/// Bonus for a target with a clear direct fire line.
+	var/target_score_clear_line_bonus = 12
+	/// Bonus for a conscious living target over downed/disabled targets.
+	var/target_score_active_living_bonus = 10
+	/// Penalty for downed targets when shoot-to-kill still allows selecting them.
+	var/target_score_incapacitated_penalty = 24
+	var/turf/investigation_center
+	var/list/investigation_points
+	var/current_investigation_point = 1
+	var/max_investigation_distance = 20
 
 /datum/human_ai_module/targeting/Destroy(force, ...)
 	lose_target(FALSE)
@@ -51,14 +71,32 @@
 /datum/human_ai_module/targeting/proc/has_valid_owner()
 	return brain && brain.has_valid_tied_human()
 
+/datum/human_ai_module/targeting/proc/can_owner_move_for_action()
+	return brain.can_move_for_action()
+
+/datum/human_ai_module/targeting/proc/is_owner_in_cover()
+	return brain.is_in_cover()
+
+/datum/human_ai_module/targeting/proc/move_owner_to_turf(turf/destination)
+	return brain.move_to_turf(destination)
+
 /datum/human_ai_module/targeting/proc/get_owner_visible_target_candidates()
 	return brain.get_visible_target_candidates()
+
+/datum/human_ai_module/targeting/proc/get_owner_fire_line_safety(atom/target)
+	return brain.get_fire_line_safety(target)
 
 /datum/human_ai_module/targeting/process_module(delta_time)
 	if(!can_continue_targeting_work())
 		return
+
+	var/atom/movable/best_target = get_target()
 	if(!has_current_target())
-		set_target(get_target())
+		set_target(best_target)
+		return
+
+	if(should_retarget(best_target))
+		set_target(best_target)
 
 /datum/human_ai_module/targeting/on_ai_event(datum/human_ai_event/event)
 	switch(event.event_type)
@@ -186,6 +224,36 @@
 		return shared_target_turf
 	return get_owner_recent_projectile_threat_turf()
 
+/datum/human_ai_module/targeting/proc/perform_chase_target(datum/human_tied_controller/controller)
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
+
+	if(has_recent_lost_target())
+		return ONGOING_ACTION_COMPLETED
+
+	if(is_owner_in_cover())
+		return ONGOING_ACTION_COMPLETED
+
+	if(!can_owner_move_for_action())
+		return ONGOING_ACTION_COMPLETED
+
+	var/turf/chase_target_turf = get_chase_target_turf()
+	if(QDELETED(chase_target_turf) || has_current_target())
+		return ONGOING_ACTION_COMPLETED
+
+	if(controller.get_distance_from(chase_target_turf) > 0)
+		if(!move_owner_to_turf(chase_target_turf))
+			return ONGOING_ACTION_COMPLETED
+
+		if(controller.get_distance_from(chase_target_turf) > 0)
+			return ONGOING_ACTION_COMPLETED
+
+	var/direction = turn(controller.get_current_dir(), pick(90,-90))
+	controller.face_dir(direction)
+
+	clear_target_turf()
+	return ONGOING_ACTION_COMPLETED
+
 /datum/human_ai_module/targeting/proc/get_current_target_turf()
 	RETURN_TYPE(/turf)
 	return target_turf
@@ -195,6 +263,9 @@
 	if(!has_recent_lost_target())
 		return null
 	return last_known_target_turf
+
+/datum/human_ai_module/targeting/proc/get_lost_target_investigation_max_distance()
+	return max_investigation_distance
 
 /datum/human_ai_module/targeting/proc/has_recent_lost_target()
 	if(!last_known_target_turf)
@@ -219,6 +290,71 @@
 /datum/human_ai_module/targeting/proc/clear_last_known_target()
 	last_known_target_turf = null
 	last_known_target_time = 0
+
+/datum/human_ai_module/targeting/proc/clear_lost_target_investigation()
+	investigation_center = null
+	investigation_points = null
+	current_investigation_point = 1
+
+/datum/human_ai_module/targeting/proc/build_lost_target_investigation_points(turf/center)
+	investigation_center = center
+	current_investigation_point = 1
+	investigation_points = list(center)
+
+	for(var/direction in GLOB.cardinals)
+		var/turf/nearby_turf = get_step(center, direction)
+		if(!nearby_turf || nearby_turf.density || (nearby_turf in investigation_points))
+			continue
+
+		investigation_points += nearby_turf
+
+/datum/human_ai_module/targeting/proc/face_lost_target_investigation_center(datum/human_tied_controller/controller)
+	if(!controller || !investigation_center)
+		return FALSE
+
+	var/direction = controller.get_direction_to(investigation_center)
+	if(!direction)
+		return FALSE
+
+	return controller.face_dir(direction)
+
+/datum/human_ai_module/targeting/proc/perform_lost_target_investigation(datum/human_tied_controller/controller)
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
+
+	if(has_current_target())
+		return ONGOING_ACTION_COMPLETED
+
+	if(!can_owner_move_for_action())
+		return ONGOING_ACTION_COMPLETED
+
+	var/turf/last_known_turf = get_last_known_target_turf()
+	if(QDELETED(last_known_turf) || !has_recent_lost_target())
+		return ONGOING_ACTION_COMPLETED
+
+	if(investigation_center != last_known_turf)
+		build_lost_target_investigation_points(last_known_turf)
+
+	while(current_investigation_point <= length(investigation_points))
+		var/turf/target_turf = investigation_points[current_investigation_point]
+		if(QDELETED(target_turf))
+			current_investigation_point++
+			continue
+
+		if(controller.get_distance_from(target_turf) > 0)
+			if(!move_owner_to_turf(target_turf))
+				current_investigation_point++
+				continue
+
+			if(controller.get_distance_from(target_turf) > 0)
+				return ONGOING_ACTION_UNFINISHED
+
+		face_lost_target_investigation_center(controller)
+		current_investigation_point++
+		return ONGOING_ACTION_UNFINISHED
+
+	clear_last_known_target()
+	return ONGOING_ACTION_COMPLETED
 
 /datum/human_ai_module/targeting/proc/get_current_target()
 	RETURN_TYPE(/atom/movable)
@@ -300,39 +436,70 @@
 		return null
 
 	var/list/viable_targets = get_owner_visible_target_candidates()
-	var/atom/movable/closest_target
-	var/smallest_distance = INFINITY
+	return get_best_scored_target(viable_targets, controller)
 
-	for(var/atom/movable/potential_target as anything in viable_targets)
-		var/distance = controller.get_distance_to(potential_target)
-
-		if(smallest_distance <= distance)
-			continue
-
-		closest_target = potential_target
-		smallest_distance = distance
-
-	return pick_target_near_closest(viable_targets, closest_target, smallest_distance)
-
-/datum/human_ai_module/targeting/proc/pick_target_near_closest(list/viable_targets, atom/movable/closest_target, smallest_distance)
-	if(!closest_target || !length(viable_targets))
+/datum/human_ai_module/targeting/proc/get_best_scored_target(list/viable_targets, datum/human_tied_controller/controller)
+	RETURN_TYPE(/atom/movable)
+	if(!length(viable_targets) || !controller)
 		return null
 
-	var/extra_check_distance = round(smallest_distance * EXTRA_CHECK_DISTANCE_MULTIPLIER)
-	if(extra_check_distance < 1)
-		return closest_target
-
-	var/list/final_targets = list()
-	for(var/atom/movable/target as anything in viable_targets)
-		if(target == closest_target)
+	var/atom/movable/best_target
+	var/best_score = -INFINITY
+	for(var/atom/movable/potential_target as anything in viable_targets)
+		var/target_score = get_target_score(potential_target, controller)
+		if(target_score <= best_score)
 			continue
 
-		if(get_dist(target, closest_target) <= extra_check_distance)
-			final_targets += target
+		best_target = potential_target
+		best_score = target_score
 
-	return length(final_targets) ? pick(final_targets) : closest_target
+	return best_target
+
+/datum/human_ai_module/targeting/proc/should_retarget(atom/movable/best_target)
+	if(!best_target || best_target == current_target)
+		return FALSE
+	if(!current_target)
+		return TRUE
+	if(!can_owner_target(current_target))
+		return TRUE
+
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return FALSE
+
+	var/current_score = get_target_score(current_target, controller)
+	var/best_score = get_target_score(best_target, controller)
+	return best_score >= (current_score + retarget_score_margin)
+
+/datum/human_ai_module/targeting/proc/get_target_score(atom/movable/potential_target, datum/human_tied_controller/controller)
+	if(!is_valid_target_ref(potential_target) || !controller)
+		return -INFINITY
+
+	var/distance = controller.get_distance_to(potential_target)
+	var/score = target_score_base - (distance * target_score_distance_penalty)
+
+	if(potential_target == current_target)
+		score += current_target_stickiness_score
+
+	if(distance <= 1)
+		score += target_score_adjacent_bonus
+	else if(distance <= 3)
+		score += target_score_near_bonus
+
+	switch(get_owner_fire_line_safety(potential_target))
+		if(HUMAN_AI_FIRE_LINE_CLEAR)
+			score += target_score_clear_line_bonus
+		if(HUMAN_AI_FIRE_LINE_BLOCKED)
+			score -= target_score_clear_line_bonus
+
+	if(istype(potential_target, /mob/living))
+		var/mob/living/living_target = potential_target
+		if(living_target.stat == UNCONSCIOUS || (locate(/datum/effects/crit) in living_target.effects_list))
+			score -= target_score_incapacitated_penalty
+		else
+			score += target_score_active_living_bonus
+
+	return score
 
 /datum/human_ai_module/targeting/proc/is_valid_target_ref(atom/movable/target)
 	return target && !QDELETED(target)
-
-#undef EXTRA_CHECK_DISTANCE_MULTIPLIER

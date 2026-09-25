@@ -42,6 +42,42 @@
 	var/datum/human_ai_module/guns/guns_module = get_guns_module()
 	guns_module?.start_fire_overload_cooldown()
 
+/datum/human_ai_brain/proc/is_currently_reloading()
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	return guns_module?.is_currently_reloading()
+
+/datum/human_ai_brain/proc/stop_reload(clear_active_action = FALSE)
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	guns_module?.stop_reload(clear_active_action)
+
+/datum/human_ai_brain/proc/perform_reload(datum/human_tied_controller/controller, datum/ai_action/reload_action)
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	if(!guns_module)
+		return ONGOING_ACTION_COMPLETED
+	return guns_module.perform_reload(controller, reload_action)
+
+/datum/human_ai_brain/proc/is_currently_firing()
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	return guns_module?.is_currently_firing()
+
+/datum/human_ai_brain/proc/stop_ranged_fire(clear_active_action = FALSE)
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	guns_module?.stop_ranged_fire(clear_active_action)
+
+/datum/human_ai_brain/proc/register_ranged_fire_callback(datum/human_tied_controller/controller, datum/ai_action/fire_action)
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	return guns_module?.register_ranged_fire_callback(controller, fire_action)
+
+/datum/human_ai_brain/proc/get_ranged_fire_weight(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	return guns_module?.get_ranged_fire_weight(controller) || 0
+
+/datum/human_ai_brain/proc/perform_ranged_fire(datum/human_tied_controller/controller, datum/ai_action/fire_action)
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	if(!guns_module)
+		return ONGOING_ACTION_COMPLETED
+	return guns_module.perform_ranged_fire(controller, fire_action)
+
 /datum/human_ai_brain/proc/clear_tried_reload()
 	var/datum/human_ai_module/guns/guns_module = get_guns_module()
 	guns_module?.clear_tried_reload()
@@ -69,11 +105,11 @@
 		return FALSE
 	return guns_module.can_reach_ranged_fire_atom(controller, target, maximum_range, gun_data)
 
-/datum/human_ai_brain/proc/can_use_ranged_fire_line(datum/human_tied_controller/controller, atom/target, datum/human_ai_firearm_profile/gun_data = null)
+/datum/human_ai_brain/proc/can_use_ranged_fire_line(datum/human_tied_controller/controller, atom/target, datum/human_ai_firearm_profile/gun_data = null, listen = FALSE)
 	var/datum/human_ai_module/guns/guns_module = get_guns_module()
 	if(!guns_module)
 		return FALSE
-	return guns_module.can_use_ranged_fire_line(controller, target, gun_data)
+	return guns_module.can_use_ranged_fire_line(controller, target, gun_data, listen)
 
 /datum/human_ai_brain/proc/get_ranged_fire_aim_target(datum/human_tied_controller/controller, atom/movable/current_target, turf/target_turf, datum/human_ai_firearm_profile/gun_data = null)
 	RETURN_TYPE(/atom)
@@ -105,6 +141,12 @@
 	if(!guns_module)
 		return FALSE
 	return guns_module.should_defer_current_ranged_fire(gun_data)
+
+/datum/human_ai_brain/proc/perform_keep_distance(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/guns/guns_module = get_guns_module()
+	if(!guns_module)
+		return ONGOING_ACTION_COMPLETED
+	return guns_module.perform_keep_distance(controller)
 
 /datum/human_ai_brain/proc/can_attempt_ranged_fire(datum/human_tied_controller/controller, obj/item/weapon/gun/primary_weapon, datum/human_ai_firearm_profile/gun_data = null, require_combat = TRUE, block_active_grenade = FALSE, check_view_distance = TRUE, check_reload = TRUE, check_tried_reload = TRUE)
 	var/datum/human_ai_module/guns/guns_module = get_guns_module()

@@ -7,15 +7,13 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/reset_action(datum/ai_action/throw_back_nade/action)
 	if(!action || QDELETED(action))
 		return
-	action.throw_ready_time = 0
-	action.mid_throw = FALSE
-	action.throw_finished = TRUE
+	action.brain?.finish_throwback_action()
 
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/clear_threat(datum/human_ai_throwable_context/context, datum/ai_action/throw_back_nade/action)
 	if(context?.AI)
 		context.AI.clear_active_grenade()
 	if(action)
-		action.throw_ready_time = 0
+		action.brain?.set_throwback_ready_time(0)
 
 /datum/human_ai_throwable_handler/throw_back_grenade/proc/is_throw_back_grenade_valid(datum/human_ai_throwable_context/context)
 	if(!context?.can_continue())
@@ -151,14 +149,14 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 
 		var/remaining_fuse_ticks = context.grenade.get_remaining_timed_fuse_ticks()
 		if(isnull(remaining_fuse_ticks) || (remaining_fuse_ticks <= 0))
-			action.throw_ready_time = world.time
+			context.AI.set_throwback_ready_time(world.time)
 		else
 			var/safe_window = max(1, remaining_fuse_ticks - 2)
-			action.throw_ready_time = world.time + rand(1, safe_window)
-		log_game("AI GRENADE: throw-back holding grenade - grenade=[context.grenade], remaining_fuse=[remaining_fuse_ticks], throw_ready=[action.throw_ready_time], mob=[context.controller.get_key_name()]")
+			context.AI.set_throwback_ready_time(world.time + rand(1, safe_window))
+		log_game("AI GRENADE: throw-back holding grenade - grenade=[context.grenade], remaining_fuse=[remaining_fuse_ticks], throw_ready=[context.AI.get_throwback_ready_time()], mob=[context.controller.get_key_name()]")
 		return ONGOING_ACTION_UNFINISHED
 
-	if(world.time < action.throw_ready_time)
+	if(world.time < context.AI.get_throwback_ready_time())
 		return ONGOING_ACTION_UNFINISHED
 
 	var/turf/place_to_throw = resolve_throw_back_target(context)
@@ -184,8 +182,7 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_back_handler, /datum/human_ai_throwable
 	log_game("AI GRENADE: throw-back proceeding to async throw - grenade=[context.grenade], target=[place_to_throw], mob=[context.controller.get_key_name()]")
 	context.AI.clear_active_grenade()
 	context.unqueue_pickup(context.grenade)
-	action.throw_ready_time = 0
-	action.mid_throw = TRUE
+	context.AI.set_throwback_mid_action()
 	INVOKE_ASYNC(src, PROC_REF(async_throw_grenade), action, context.controller.get_identity_ref(), context.grenade, place_to_throw)
 	return ONGOING_ACTION_UNFINISHED
 

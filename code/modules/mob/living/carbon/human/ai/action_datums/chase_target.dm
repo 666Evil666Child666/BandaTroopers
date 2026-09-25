@@ -44,24 +44,4 @@
 	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	if(brain.has_recent_lost_target())
-		return ONGOING_ACTION_COMPLETED
-
-	var/turf/target_turf = brain.get_chase_target_turf()
-	if(QDELETED(target_turf) || brain.has_current_target())
-		return ONGOING_ACTION_COMPLETED
-
-	if(controller.get_distance_from(target_turf) > 0)
-		if(!brain.move_to_turf(target_turf))
-			return ONGOING_ACTION_COMPLETED
-
-		if(controller.get_distance_from(target_turf) > 0)
-			return ONGOING_ACTION_COMPLETED
-
-	// Turn around as we're seeking for the lost target
-	var/direction = turn(controller.get_current_dir(), pick(90,-90))
-	controller.face_dir(direction)
-
-	// Scouted, found nothing, discard
-	brain.clear_target_turf()
-	return ONGOING_ACTION_COMPLETED
+	return brain.perform_chase_target(controller)

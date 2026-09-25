@@ -1,6 +1,9 @@
 #define HUMAN_AI_PICKUP_SCAN_CONTINUE 0
 #define HUMAN_AI_PICKUP_SCAN_SKIP 1
 #define HUMAN_AI_PICKUP_SCAN_STOP 2
+#define HUMAN_AI_PICKUP_APPROACH_IN_RANGE 1
+#define HUMAN_AI_PICKUP_APPROACH_MOVING 2
+#define HUMAN_AI_PICKUP_APPROACH_FAILED 3
 
 /datum/human_ai_module/inventory/proc/has_pickup_queue()
 	return length(to_pickup)
@@ -10,6 +13,151 @@
 	if(!length(to_pickup))
 		return null
 	return to_pickup[1]
+
+/datum/human_ai_module/inventory/proc/get_item_pickup_weight(datum/human_tied_controller/controller)
+	if(!controller)
+		return 0
+
+	if(is_looting_disabled())
+		return 0
+
+	if(!has_pickup_queue())
+		return 0
+
+	if(controller.has_trait_from(TRAIT_UNDENSE, LYING_DOWN_TRAIT))
+		return 0
+
+	if(controller.is_health_below(HEALTH_THRESHOLD_CRIT))
+		return 0
+
+	if(controller.get_l_hand()?.flags_item & NODROP)
+		return 0
+
+	if(controller.get_r_hand()?.flags_item & NODROP)
+		return 0
+
+	if(!has_primary_weapon())
+		return 16
+
+	return 11
+
+/datum/human_ai_module/inventory/proc/start_item_pickup_action()
+	active_pickup_target = get_next_pickup()
+	// If we already have a primary weapon, discard stale queued gun pickups.
+	if(isgun(active_pickup_target) && has_primary_weapon())
+		cleanup_pickup_target()
+		active_pickup_target = null
+		return FALSE
+	return !!active_pickup_target
+
+/datum/human_ai_module/inventory/proc/stop_item_pickup_action()
+	active_pickup_target = null
+
+/datum/human_ai_module/inventory/proc/perform_item_pickup(datum/human_tied_controller/controller)
+	if(!controller)
+		return ONGOING_ACTION_COMPLETED
+
+	if(is_pickup_target_invalid())
+		cleanup_pickup_target()
+		return ONGOING_ACTION_COMPLETED
+
+	var/obj/item/weapon/gun/primary_weapon = get_primary_weapon()
+	if(primary_weapon && isgun(active_pickup_target))
+		cleanup_pickup_target()
+		return ONGOING_ACTION_COMPLETED
+
+	var/approach_result = approach_pickup_target(controller)
+	if(approach_result == HUMAN_AI_PICKUP_APPROACH_FAILED)
+		return ONGOING_ACTION_COMPLETED
+	if(approach_result == HUMAN_AI_PICKUP_APPROACH_MOVING)
+		return ONGOING_ACTION_UNFINISHED
+
+	prepare_hands_for_pickup(controller, primary_weapon)
+
+	if(try_pickup_primary_weapon(controller))
+		return ONGOING_ACTION_COMPLETED
+
+	if(try_equip_pickup_storage(controller))
+		return ONGOING_ACTION_COMPLETED
+
+	var/storage_spot = storage_has_room(active_pickup_target)
+	var/mob/living/carbon/human/self_target = controller.get_self_target()
+	if(!storage_spot || !self_target || !controller.can_use_item(active_pickup_target, self_target))
+		cleanup_pickup_target()
+		return ONGOING_ACTION_COMPLETED
+
+	try_store_pickup_item(controller, storage_spot)
+
+	return ONGOING_ACTION_COMPLETED
+
+/datum/human_ai_module/inventory/proc/is_pickup_target_invalid()
+	return !active_pickup_target || QDELETED(active_pickup_target) || !isturf(active_pickup_target.loc)
+
+/datum/human_ai_module/inventory/proc/cleanup_pickup_target()
+	UnregisterSignal(active_pickup_target, COMSIG_PARENT_QDELETING)
+	unqueue_pickup(active_pickup_target)
+
+/datum/human_ai_module/inventory/proc/approach_pickup_target(datum/human_tied_controller/controller)
+	if(controller.get_distance_to(active_pickup_target) <= 1)
+		return HUMAN_AI_PICKUP_APPROACH_IN_RANGE
+
+	if(!brain.move_to_atom(active_pickup_target))
+		cleanup_pickup_target()
+		return HUMAN_AI_PICKUP_APPROACH_FAILED
+
+	if(controller.get_distance_to(active_pickup_target) > 1)
+		return HUMAN_AI_PICKUP_APPROACH_MOVING
+
+	return HUMAN_AI_PICKUP_APPROACH_IN_RANGE
+
+/datum/human_ai_module/inventory/proc/prepare_hands_for_pickup(datum/human_tied_controller/controller, obj/item/weapon/gun/primary_weapon)
+	if(primary_weapon)
+		controller.unwield_weapon(primary_weapon)
+
+	if(controller.get_held_item())
+		controller.swap_hand()
+
+/datum/human_ai_module/inventory/proc/try_pickup_primary_weapon(datum/human_tied_controller/controller)
+	if(!isgun(active_pickup_target))
+		return FALSE
+
+	controller.put_in_hands(active_pickup_target, TRUE)
+	var/obj/item/weapon/gun/primary = active_pickup_target
+	// Make the newly picked gun immediately usable by later fire actions.
+	primary.wield_time = world.time
+	primary.pull_time = world.time
+	primary.guaranteed_delay_time = world.time
+	return TRUE
+
+/datum/human_ai_module/inventory/proc/try_equip_pickup_storage(datum/human_tied_controller/controller)
+	if(try_equip_pickup_storage_to_slot(controller, /obj/item/storage/belt, HUMAN_AI_STORAGE_BELT, WEAR_WAIST))
+		return TRUE
+
+	if(try_equip_pickup_storage_to_slot(controller, /obj/item/storage/backpack, HUMAN_AI_STORAGE_BACKPACK, WEAR_BACK))
+		return TRUE
+
+	if(try_equip_pickup_storage_to_slot(controller, /obj/item/storage/pouch, HUMAN_AI_STORAGE_LEFT_POCKET, WEAR_L_STORE))
+		return TRUE
+
+	return try_equip_pickup_storage_to_slot(controller, /obj/item/storage/pouch, HUMAN_AI_STORAGE_RIGHT_POCKET, WEAR_R_STORE)
+
+/datum/human_ai_module/inventory/proc/try_equip_pickup_storage_to_slot(datum/human_tied_controller/controller, storage_type, container_id, wear_slot)
+	if(!istype(active_pickup_target, storage_type) || has_container_ref(container_id))
+		return FALSE
+
+	controller.put_in_hands(active_pickup_target, TRUE)
+	INVOKE_ASYNC(controller, TYPE_PROC_REF(/datum/human_tied_controller, equip_to_slot), active_pickup_target, wear_slot)
+	return TRUE
+
+/datum/human_ai_module/inventory/proc/try_store_pickup_item(datum/human_tied_controller/controller, storage_spot)
+	var/list/equipment_types = get_pickup_storage_equipment_types(active_pickup_target)
+	if(!length(equipment_types))
+		return FALSE
+
+	controller.put_in_hands(active_pickup_target, TRUE)
+	if(store_item_as_types(active_pickup_target, storage_spot, equipment_types) && (HUMAN_AI_AMMUNITION in equipment_types))
+		clear_owner_tried_reload() // not appraising inventory there, let's say we can reload now
+	return TRUE
 
 /datum/human_ai_module/inventory/proc/queue_pickup(obj/item/item)
 	if(!item || is_pickup_queued(item))
@@ -196,3 +344,6 @@
 #undef HUMAN_AI_PICKUP_SCAN_CONTINUE
 #undef HUMAN_AI_PICKUP_SCAN_SKIP
 #undef HUMAN_AI_PICKUP_SCAN_STOP
+#undef HUMAN_AI_PICKUP_APPROACH_IN_RANGE
+#undef HUMAN_AI_PICKUP_APPROACH_MOVING
+#undef HUMAN_AI_PICKUP_APPROACH_FAILED

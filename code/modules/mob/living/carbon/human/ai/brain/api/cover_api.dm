@@ -45,6 +45,18 @@
 	var/datum/human_ai_module/cover/cover_module = get_cover_module()
 	return cover_module?.get_cover_destination()
 
+/datum/human_ai_brain/proc/perform_cover_move(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/cover/cover_module = get_cover_module()
+	if(!cover_module)
+		return ONGOING_ACTION_COMPLETED
+	return cover_module.perform_cover_move(controller)
+
+/datum/human_ai_brain/proc/perform_burning_resist(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/cover/cover_module = get_cover_module()
+	if(!cover_module)
+		return ONGOING_ACTION_COMPLETED
+	return cover_module.perform_burning_resist(controller)
+
 /datum/human_ai_brain/proc/should_hold_cover_position_against_target(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
 	var/datum/human_ai_module/cover/cover_module = get_cover_module()
 	if(!cover_module)

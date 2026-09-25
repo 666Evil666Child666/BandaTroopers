@@ -61,15 +61,14 @@ GLOBAL_DATUM_INIT(human_ai_grenade_throw_handler, /datum/human_ai_throwable_hand
 		return FALSE
 
 	log_game("AI GRENADE: throw action proceeding to async prime - grenade=[context.grenade], target=[context.target_turf], mob=[context.controller.get_key_name()]")
-	action.mid_throw = TRUE
+	action.brain?.set_grenade_throw_mid_action()
 	INVOKE_ASYNC(src, PROC_REF(async_prime_and_throw), action, context.controller.get_identity_ref(), context.grenade, context.target_turf, context.throw_range_override)
 	return TRUE
 
 /datum/human_ai_throwable_handler/grenade/proc/finish_async_throw(datum/ai_action/throw_grenade/action)
 	if(!action || QDELETED(action))
 		return
-	action.mid_throw = FALSE
-	action.throw_finished = TRUE
+	action.brain?.finish_grenade_throw_action()
 
 /datum/human_ai_throwable_handler/grenade/proc/build_async_context(datum/ai_action/throw_grenade/action, obj/item/explosive/grenade/grenade, turf/target_turf, throw_range_override)
 	RETURN_TYPE(/datum/human_ai_throwable_context)

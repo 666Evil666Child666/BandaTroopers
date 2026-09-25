@@ -42,6 +42,24 @@
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
 	return squad_module?.get_squad_members() || list()
 
+/datum/human_ai_brain/proc/get_squad_follow_distance()
+	var/datum/human_ai_module/squad/squad_module = get_squad_module()
+	if(!squad_module)
+		return 1
+	return squad_module.get_follow_distance()
+
+/datum/human_ai_brain/proc/perform_follow_leader(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/squad/squad_module = get_squad_module()
+	if(!squad_module)
+		return ONGOING_ACTION_COMPLETED
+	return squad_module.perform_follow_leader(controller)
+
+/datum/human_ai_brain/proc/perform_patrol_waypoint(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/squad/squad_module = get_squad_module()
+	if(!squad_module)
+		return ONGOING_ACTION_COMPLETED
+	return squad_module.perform_patrol_waypoint(controller)
+
 /datum/human_ai_brain/proc/get_current_order()
 	var/datum/human_ai_module/squad/squad_module = get_squad_module()
 	return squad_module?.get_current_order()

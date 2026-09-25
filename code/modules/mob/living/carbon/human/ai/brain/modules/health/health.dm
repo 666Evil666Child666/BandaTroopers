@@ -29,6 +29,8 @@
 
 	/// Reference for found injured ally
 	var/mob/living/carbon/human/found_injured_ally
+	/// Current ally selected by the treat ally action.
+	var/mob/living/carbon/human/active_ally_treatment_target
 
 	/// Cooldown on using pills to avoid OD. This isn't the best solution as it prevents the AI from using more than 1 pill of any kind every 20s, but it'll work for now
 	COOLDOWN_DECLARE(pill_use_cooldown)
@@ -52,10 +54,12 @@
 
 /datum/human_ai_module/health/reset_module()
 	cancel_treatment() // SS220 EDIT: reset invalidates suspended treatment before clearing actions
+	active_ally_treatment_target = null
 	lose_injured_ally()
 	recent_patient_treatments = list()
 
 /datum/human_ai_module/health/suspend_module(clear_inventory = FALSE)
+	active_ally_treatment_target = null
 	lose_injured_ally()
 	cancel_treatment() // SS220 EDIT: resumed AI must not inherit an old treatment continuation
 	recent_patient_treatments = list()

@@ -110,6 +110,9 @@
 	/// Semi-permanent "order" datum. Does not expire
 	var/datum/ai_order/current_order
 
+/datum/human_ai_module/squad/proc/can_continue_squad_work()
+	return brain?.can_continue_runtime_work()
+
 /datum/human_ai_module/squad/proc/is_leader()
 	return is_squad_leader
 
@@ -144,6 +147,18 @@
 	var/datum/human_ai_squad/squad_datum = get_squad_datum()
 	return squad_datum?.ai_in_squad || list()
 
+/datum/human_ai_module/squad/proc/get_follow_distance()
+	return 1 + length(get_squad_members()) / 2
+
+/datum/human_ai_module/squad/proc/is_owner_in_combat()
+	return brain.is_in_combat()
+
+/datum/human_ai_module/squad/proc/has_owner_pickup_queue()
+	return brain.has_pickup_queue()
+
+/datum/human_ai_module/squad/proc/move_owner_to_turf(turf/destination)
+	return brain.move_to_turf(destination)
+
 /datum/human_ai_module/squad/proc/get_owner_current_target()
 	RETURN_TYPE(/atom/movable)
 	return brain.get_current_target()
@@ -173,6 +188,65 @@
 	if(current_order)
 		current_order.brains -= brain
 	current_order = null
+
+/datum/human_ai_module/squad/proc/remove_order_from_owner_or_squad()
+	var/datum/human_ai_squad/squad_datum = get_squad_datum()
+	if(squad_datum)
+		squad_datum.remove_current_order()
+	else
+		remove_current_order()
+
+/datum/human_ai_module/squad/proc/perform_follow_leader(datum/human_tied_controller/controller)
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
+
+	if(is_owner_in_combat() || has_owner_pickup_queue())
+		return ONGOING_ACTION_COMPLETED
+
+	var/datum/human_ai_context/squad_leader_context = get_squad_leader()?.create_context()
+	var/datum/human_tied_controller/squad_leader_controller = squad_leader_context?.controller
+	if(!squad_leader_controller)
+		qdel(squad_leader_context)
+		return ONGOING_ACTION_COMPLETED
+
+	var/follow_distance = get_follow_distance()
+	if(controller.get_distance_to_controller(squad_leader_controller) > follow_distance)
+		if(!move_owner_to_turf(squad_leader_controller.get_current_turf()))
+			qdel(squad_leader_context)
+			return ONGOING_ACTION_COMPLETED
+
+		if(controller.get_distance_to_controller(squad_leader_controller) > follow_distance)
+			qdel(squad_leader_context)
+			return ONGOING_ACTION_UNFINISHED
+
+	qdel(squad_leader_context)
+	return ONGOING_ACTION_COMPLETED
+
+/datum/human_ai_module/squad/proc/perform_patrol_waypoint(datum/human_tied_controller/controller)
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
+
+	var/datum/ai_order/patrol/patrol_order = get_current_order()
+	if(patrol_order.waiting || QDELETED(patrol_order) || !istype(patrol_order) || has_owner_pickup_queue() || is_owner_in_combat())
+		return ONGOING_ACTION_COMPLETED
+
+	var/turf/current_waypoint = patrol_order.current_waypoint
+	if(QDELETED(current_waypoint))
+		remove_order_from_owner_or_squad()
+		return ONGOING_ACTION_COMPLETED
+
+	if(controller.get_distance_from(current_waypoint) > 1)
+		if(!move_owner_to_turf(current_waypoint))
+			return ONGOING_ACTION_COMPLETED
+
+		if(controller.get_distance_from(current_waypoint) > 1)
+			return ONGOING_ACTION_UNFINISHED
+
+	if(is_leader())
+		patrol_order.waiting = TRUE
+		addtimer(CALLBACK(patrol_order, TYPE_PROC_REF(/datum/ai_order/patrol, set_next_waypoint)), patrol_order.time_at_waypoint)
+
+	return ONGOING_ACTION_COMPLETED
 
 /datum/human_ai_module/squad/on_ai_event(datum/human_ai_event/event)
 	if(event.event_type == HUMAN_AI_EVENT_COMBAT_ENTERED)

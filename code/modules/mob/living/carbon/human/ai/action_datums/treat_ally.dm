@@ -2,7 +2,6 @@
 	name = "Treat Ally"
 	action_flags = ACTION_USING_HANDS | ACTION_USING_LEGS
 	required_ai_modules = list(/datum/human_ai_module/health, /datum/human_ai_module/inventory, /datum/human_ai_module/navigation)
-	var/mob/living/carbon/human/ally_to_treat
 
 /datum/ai_action/treat_ally/get_context_weight(datum/human_ai_context/context)
 	var/datum/human_ai_brain/brain = context?.brain
@@ -10,33 +9,14 @@
 	if(!brain || !controller)
 		return 0
 
-	if(controller.is_zombie())
-		return 0
-
-	if(brain.is_healing_someone())
-		return 0
-
-	if(brain.has_pickup_queue())
-		return 0
-
-	if(!brain.get_ally_treatment_candidate())
-		return 0
-
-	return 5
+	return brain.get_ally_treatment_weight(controller)
 
 /datum/ai_action/treat_ally/Added()
 	var/datum/human_ai_brain/brain = context?.brain
-	if(!brain)
-		return
-
-	ally_to_treat = brain.get_ally_treatment_candidate()
-	if(ally_to_treat)
-		brain.set_injured_ally(ally_to_treat)
+	brain?.start_ally_treatment_action()
 
 /datum/ai_action/treat_ally/Destroy(force, ...)
-	brain?.lose_injured_ally()
-	brain?.cancel_treatment()
-	ally_to_treat = null
+	brain?.stop_ally_treatment_action()
 	return ..()
 
 /datum/ai_action/treat_ally/trigger_action()
@@ -49,22 +29,4 @@
 	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!brain.can_continue_ally_treatment_now(ally_to_treat))
-		return ONGOING_ACTION_COMPLETED
-
-	if(brain.is_healing_someone())
-		return ONGOING_ACTION_UNFINISHED
-
-	if(!brain.can_start_ally_treatment_now(ally_to_treat))
-		return ONGOING_ACTION_COMPLETED
-
-	if(controller.get_distance_to(ally_to_treat) > 1)
-		if(!brain.move_to_atom(ally_to_treat))
-			return ONGOING_ACTION_COMPLETED
-		if(controller.get_distance_to(ally_to_treat) > 1)
-			return ONGOING_ACTION_UNFINISHED
-
-	if(!brain.start_healing(ally_to_treat) && !brain.is_healing_someone())
-		return ONGOING_ACTION_COMPLETED
-
-	return ONGOING_ACTION_UNFINISHED
+	return brain.perform_ally_treatment(controller)

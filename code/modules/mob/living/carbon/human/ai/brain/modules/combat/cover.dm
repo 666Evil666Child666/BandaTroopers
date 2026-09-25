@@ -33,6 +33,47 @@
 	RETURN_TYPE(/turf)
 	return get_current_cover()
 
+/datum/human_ai_module/cover/proc/perform_cover_move(datum/human_tied_controller/controller)
+	if(!controller)
+		return ONGOING_ACTION_COMPLETED
+
+	var/turf/cover_destination = get_cover_destination()
+	if(!cover_destination)
+		return ONGOING_ACTION_COMPLETED
+
+#if defined(TESTING) || defined(HUMAN_AI_TESTING)
+	cover_destination.color = "#b80505"
+	cover_destination.maptext = "[controller.get_real_name()] | [controller.get_distance_from(cover_destination)]"
+#endif
+
+	if(controller.get_distance_from(cover_destination) > 0)
+		if(!brain.move_to_turf(cover_destination))
+			end_cover()
+			return ONGOING_ACTION_COMPLETED
+
+		if(!brain.can_continue_runtime_work())
+			return ONGOING_ACTION_COMPLETED
+
+		if(controller.get_distance_from(cover_destination) > 0)
+			return ONGOING_ACTION_UNFINISHED
+
+	enter_cover()
+	return ONGOING_ACTION_COMPLETED
+
+/datum/human_ai_module/cover/proc/perform_burning_resist(datum/human_tied_controller/controller)
+	if(!brain || !controller)
+		return ONGOING_ACTION_COMPLETED
+
+	if(!controller.is_on_fire())
+		return ONGOING_ACTION_COMPLETED
+
+	if(locate(/obj/flamer_fire) in controller.get_current_turf())
+		try_cover()
+		return ONGOING_ACTION_COMPLETED
+
+	controller.resist()
+	return ONGOING_ACTION_UNFINISHED
+
 /datum/human_ai_module/cover/proc/get_owner_current_target()
 	RETURN_TYPE(/atom/movable)
 	return brain.get_current_target()
@@ -65,6 +106,25 @@
 /datum/human_ai_module/cover/proc/is_owner_friendly_target(atom/target)
 	return brain.is_friendly_target(target)
 
+/datum/human_ai_module/cover/proc/can_owner_use_ranged_fire_line(datum/human_tied_controller/controller, atom/target, datum/human_ai_firearm_profile/gun_data = null)
+	return brain.can_use_ranged_fire_line(controller, target, gun_data)
+
+/datum/human_ai_module/cover/proc/can_use_cover_as_firing_position(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
+	if(!is_in_cover())
+		return FALSE
+	var/atom/movable/current_target = get_owner_current_target()
+	if(!current_target || !controller)
+		return FALSE
+	return can_owner_use_ranged_fire_line(controller, current_target, gun_data)
+
+/datum/human_ai_module/cover/proc/validate_cover_position(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
+	if(!is_in_cover())
+		return TRUE
+	if(can_use_cover_as_firing_position(controller, gun_data))
+		return TRUE
+	end_cover()
+	return FALSE
+
 /datum/human_ai_module/cover/proc/should_hold_cover_position_against_target(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
 	if(!is_in_cover())
 		return FALSE
@@ -88,10 +148,14 @@
 	return has_pending_cover()
 
 /datum/human_ai_module/cover/proc/should_block_stationary_fire_for_cover()
+	if(!get_owner_current_target())
+		return FALSE
 	return has_cover()
 
 /datum/human_ai_module/cover/proc/enter_cover()
 	in_cover = TRUE
+	var/datum/human_tied_controller/controller = context?.controller
+	validate_cover_position(controller, get_owner_gun_data())
 
 /datum/human_ai_module/cover/proc/end_cover()
 #if defined(TESTING) || defined(HUMAN_AI_TESTING)
@@ -174,6 +238,9 @@
 
 	if(is_in_cover() && (controller.get_distance_to(get_current_cover()) > get_owner_gun_data()?.minimum_range))
 		end_cover()
+		return
+
+	validate_cover_position(controller, get_owner_gun_data())
 
 /datum/human_ai_module/cover/proc/react_to_incoming_fire(angle, atom/firer)
 	if(!can_continue_cover_work() || !has_valid_owner())

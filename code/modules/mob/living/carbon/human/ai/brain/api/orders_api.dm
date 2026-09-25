@@ -18,6 +18,12 @@
 	var/datum/human_ai_module/orders/orders_module = get_orders_module()
 	orders_module?.set_quick_approach(new_turf)
 
+/datum/human_ai_brain/proc/perform_quick_approach(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/orders/orders_module = get_orders_module()
+	if(!orders_module)
+		return ONGOING_ACTION_COMPLETED
+	return orders_module.perform_quick_approach(controller)
+
 /datum/human_ai_brain/proc/set_hold_position(new_value)
 	var/datum/human_ai_module/orders/orders_module = get_orders_module()
 	orders_module?.set_hold_position(new_value)

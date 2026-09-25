@@ -65,20 +65,7 @@
 		action_blacklist = null
 
 /datum/human_ai_module/action_runtime/proc/has_ongoing_throw_action_in_progress()
-	for(var/datum/ai_action/ongoing_action as anything in ongoing_actions.Copy())
-		if(!(ongoing_action in ongoing_actions))
-			continue
-		if(istype(ongoing_action, /datum/ai_action/throw_grenade))
-			var/datum/ai_action/throw_grenade/throw_grenade_action = ongoing_action
-			if(throw_grenade_action.mid_throw)
-				return TRUE
-
-		if(istype(ongoing_action, /datum/ai_action/throw_back_nade))
-			var/datum/ai_action/throw_back_nade/throw_back_action = ongoing_action
-			if(throw_back_action.mid_throw)
-				return TRUE
-
-	return FALSE
+	return brain.has_throw_in_progress()
 
 /datum/human_ai_module/action_runtime/proc/get_allowed_action_types()
 	var/list/allowed_actions = action_whitelist?.Copy() || list() // SS220 EDIT: runtime selection must not mutate preset whitelists

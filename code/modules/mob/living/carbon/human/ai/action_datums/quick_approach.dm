@@ -14,7 +14,7 @@
 	return INFINITY
 
 /datum/ai_action/quick_approach/Destroy(force, ...)
-	brain.clear_quick_approach()
+	brain?.clear_quick_approach()
 	return ..()
 
 /datum/ai_action/quick_approach/trigger_action()
@@ -27,15 +27,4 @@
 	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/approach_turf = brain.get_quick_approach_turf()
-	if(QDELETED(approach_turf))
-		return ONGOING_ACTION_COMPLETED
-
-	if(controller.get_distance_from(approach_turf) > 0)
-		if(!brain.move_to_turf(approach_turf))
-			return ONGOING_ACTION_UNFINISHED
-
-		if(controller.get_distance_from(approach_turf) > 0)
-			return ONGOING_ACTION_UNFINISHED
-
-	return ONGOING_ACTION_COMPLETED
+	return brain.perform_quick_approach(controller)

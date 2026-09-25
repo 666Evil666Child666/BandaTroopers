@@ -20,12 +20,4 @@
 	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	if(!controller.is_on_fire())
-		return ONGOING_ACTION_COMPLETED
-
-	if(locate(/obj/flamer_fire) in controller.get_current_turf())
-		brain.try_cover()
-		return ONGOING_ACTION_COMPLETED
-
-	controller.resist()
-	return ONGOING_ACTION_UNFINISHED
+	return brain.perform_burning_resist(controller)

@@ -24,25 +24,4 @@
 	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	var/turf/current_cover = brain.get_cover_destination()
-	if(!current_cover)
-		return ONGOING_ACTION_COMPLETED
-
-#if defined(TESTING) || defined(HUMAN_AI_TESTING)
-	current_cover.color = "#b80505"
-	current_cover.maptext = "[controller.get_real_name()] | [controller.get_distance_from(current_cover)]"
-#endif
-
-	if(controller.get_distance_from(current_cover) > 0)
-		if(!brain.move_to_turf(current_cover))
-			brain.end_cover()
-			return ONGOING_ACTION_COMPLETED
-
-		if(!brain.can_continue_runtime_work())
-			return ONGOING_ACTION_COMPLETED
-
-		if(controller.get_distance_from(current_cover) > 0)
-			return ONGOING_ACTION_UNFINISHED
-
-	brain.enter_cover()
-	return ONGOING_ACTION_COMPLETED
+	return brain.perform_cover_move(controller)

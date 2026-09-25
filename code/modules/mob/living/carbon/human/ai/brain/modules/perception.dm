@@ -422,7 +422,6 @@
 	if(!has_clear_target_line(turf_list, target, controller))
 		return HUMAN_AI_FIRE_LINE_BLOCKED
 
-	turf_list.Cut(1, 2)
 	var/fire_line_safety = get_friendly_fire_line_safety(turf_list, target_turf)
 	if((fire_line_safety == HUMAN_AI_FIRE_LINE_CAUTION) && gun_data?.block_cautious_fire_line)
 		return HUMAN_AI_FIRE_LINE_BLOCKED

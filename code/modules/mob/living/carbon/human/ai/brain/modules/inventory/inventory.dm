@@ -6,6 +6,8 @@
 	var/list/equipped_items_original_loc = list()
 	/// A list of items that the AI is trying to pick up
 	var/list/obj/item/to_pickup = list()
+	/// Current item selected by the item pickup action.
+	var/obj/item/active_pickup_target
 	/// The firearm the AI is using as its primary weapon
 	var/obj/item/weapon/gun/primary_weapon
 	/// Any other firearms the AI has that it considers "secondary"
@@ -59,6 +61,7 @@
 	drawn_melee_weapon = null
 	primary_weapon = null
 	gun_data = null
+	active_pickup_target = null
 	clear_pickup_queue()
 	invalidate_nearby_item_search()
 

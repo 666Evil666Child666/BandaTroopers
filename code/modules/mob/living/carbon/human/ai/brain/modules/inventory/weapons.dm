@@ -44,6 +44,29 @@
 
 	return best_secondary
 
+/datum/human_ai_module/inventory/proc/select_primary_weapon(datum/human_tied_controller/controller)
+	RETURN_TYPE(/obj/item/weapon/gun)
+	if(!can_continue_inventory_work() || !controller)
+		return null
+
+	var/obj/item/weapon/gun/best_secondary = get_next_secondary_weapon()
+	if(!best_secondary)
+		return null
+
+	if(primary_weapon && controller.is_holding(primary_weapon))
+		var/possible_storage_loc = storage_has_room(primary_weapon)
+		if((primary_weapon.flags_equip_slot & SLOT_BACK) && !controller.get_back())
+			controller.equip_to_slot(primary_weapon, WEAR_BACK, TRUE)
+		else if(!controller.get_s_store() && controller.get_wear_suit() && ((primary_weapon.flags_equip_slot & SLOT_SUIT_STORE) || is_type_in_list(primary_weapon, controller.get_wear_suit().allowed)))
+			controller.equip_to_slot(primary_weapon, WEAR_J_STORE, TRUE)
+		else if(possible_storage_loc)
+			store_item(primary_weapon, possible_storage_loc)
+
+	add_secondary_weapon(primary_weapon)
+	set_primary_weapon(best_secondary)
+	brain.clear_tried_reload()
+	return best_secondary
+
 /// Unholsters the AI's primary weapon, dropping anything that might obstruct it.
 /datum/human_ai_module/inventory/proc/unholster_primary()
 	var/datum/human_tied_controller/controller = context?.controller

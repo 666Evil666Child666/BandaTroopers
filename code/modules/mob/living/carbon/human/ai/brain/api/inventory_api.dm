@@ -48,6 +48,11 @@
 	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
 	inventory_module?.add_secondary_weapon(secondary)
 
+/datum/human_ai_brain/proc/select_primary_weapon(datum/human_tied_controller/controller)
+	RETURN_TYPE(/obj/item/weapon/gun)
+	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
+	return inventory_module?.select_primary_weapon(controller)
+
 // ==================== Weapon Handling ====================
 // Hand preparation and simple weapon draw/holster helpers.
 /datum/human_ai_brain/proc/unholster_primary()
@@ -100,6 +105,24 @@
 /datum/human_ai_brain/proc/get_pickup_storage_equipment_types(obj/item/item)
 	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
 	return inventory_module?.get_pickup_storage_equipment_types(item) || list()
+
+/datum/human_ai_brain/proc/get_item_pickup_weight(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
+	return inventory_module?.get_item_pickup_weight(controller) || 0
+
+/datum/human_ai_brain/proc/start_item_pickup_action()
+	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
+	return inventory_module?.start_item_pickup_action()
+
+/datum/human_ai_brain/proc/stop_item_pickup_action()
+	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
+	inventory_module?.stop_item_pickup_action()
+
+/datum/human_ai_brain/proc/perform_item_pickup(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
+	if(!inventory_module)
+		return ONGOING_ACTION_COMPLETED
+	return inventory_module.perform_item_pickup(controller)
 
 // ==================== Equipment Access ====================
 // Public lookup/equip/store helpers for item categories.

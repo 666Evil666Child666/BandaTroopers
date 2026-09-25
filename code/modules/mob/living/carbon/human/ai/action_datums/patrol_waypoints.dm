@@ -38,28 +38,4 @@
 	if(!brain || !controller)
 		return ONGOING_ACTION_COMPLETED
 
-	var/datum/ai_order/patrol/current_order = brain.get_current_order()
-	if(current_order.waiting || QDELETED(current_order) || !istype(current_order) || brain.has_pickup_queue() || brain.is_in_combat())
-		return ONGOING_ACTION_COMPLETED
-
-	var/turf/current_waypoint = current_order.current_waypoint
-	if(QDELETED(current_waypoint))
-		var/datum/human_ai_squad/squad = brain.get_squad_datum()
-		if(squad)
-			squad.remove_current_order() // Our brain is included
-		else
-			brain.remove_current_order()
-		return ONGOING_ACTION_COMPLETED
-
-	if(controller.get_distance_from(current_waypoint) > 1)
-		if(!brain.move_to_turf(current_waypoint))
-			return ONGOING_ACTION_COMPLETED
-
-		if(controller.get_distance_from(current_waypoint) > 1)
-			return ONGOING_ACTION_UNFINISHED
-
-	if(brain.is_squad_leader())
-		current_order.waiting = TRUE
-		addtimer(CALLBACK(current_order, TYPE_PROC_REF(/datum/ai_order/patrol, set_next_waypoint)), current_order.time_at_waypoint)
-
-	return ONGOING_ACTION_COMPLETED
+	return brain.perform_patrol_waypoint(controller)
