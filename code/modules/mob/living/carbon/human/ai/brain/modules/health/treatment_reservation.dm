@@ -18,7 +18,7 @@
 /datum/human_ai_module/health/proc/can_continue_self_treatment(datum/human_tied_controller/controller, treatment_id = null)
 	if(!isnull(treatment_id) && treatment_id != treatment_generation)
 		return FALSE
-	if(QDELETED(src) || !can_continue_health_work() || (!can_treat_under_current_combat_pressure() && !can_continue_emergency_self_treatment(controller)) || !controller?.can_read_puppet() || controller.is_dead())
+	if(QDELETED(src) || !can_continue_health_work() || (!can_treat_under_current_combat_pressure() && !can_continue_emergency_self_treatment(controller) && !can_tactical_self_treat(controller)) || !controller?.can_read_puppet() || controller.is_dead())
 		cancel_treatment()
 		return FALSE
 	return TRUE

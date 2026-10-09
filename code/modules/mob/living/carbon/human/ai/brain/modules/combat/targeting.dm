@@ -12,6 +12,10 @@
 	var/last_known_target_time = 0
 	/// How long a lost visible target remains worth investigating.
 	var/last_known_target_memory_duration = 10 SECONDS
+	/// Cover can break line of sight; retain that target long enough to leave cover and investigate.
+	var/last_known_target_cover_memory_duration = 20 SECONDS
+	/// TRUE when the current last-known position was recorded during a cover posture.
+	var/last_known_target_from_cover = FALSE
 	/// If TRUE, we care about the target being in view after shooting at them. If not, then we only do a line check instead
 	var/requires_vision = TRUE
 	/// Bonus that keeps the current target stable unless another candidate is clearly better.
@@ -32,6 +36,22 @@
 	var/target_score_active_living_bonus = 10
 	/// Penalty for downed targets when shoot-to-kill still allows selecting them.
 	var/target_score_incapacitated_penalty = 24
+	/// Bonus for close living targets that can immediately threaten the owner.
+	var/target_score_adjacent_living_threat_bonus = 26
+	/// Bonus for living targets still healthy enough to remain a relevant combat threat.
+	var/target_score_healthy_living_bonus = 14
+	/// Bonus for the most recent visible attacker.
+	var/target_score_recent_attacker_bonus = 22
+	/// Extra bonus when the recent attacker directly hit this AI.
+	var/target_score_direct_hit_attacker_bonus = 18
+	/// How long a recent attacker should influence target scoring.
+	var/recent_attacker_memory_duration = 5 SECONDS
+	/// Ref to the most recent visible projectile threat source.
+	var/atom/movable/recent_attacker
+	/// World time when `recent_attacker` was stored.
+	var/recent_attacker_time = 0
+	/// TRUE when the recent projectile threat directly hit this AI.
+	var/recent_attacker_direct_hit = FALSE
 	var/turf/investigation_center
 	var/list/investigation_points
 	var/current_investigation_point = 1
@@ -43,10 +63,12 @@
 
 /datum/human_ai_module/targeting/reset_module()
 	clear_target_turf()
+	clear_recent_attacker()
 	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/suspend_module(clear_inventory = FALSE)
 	clear_target_turf()
+	clear_recent_attacker()
 	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/proc/can_continue_targeting_work()
@@ -126,13 +148,18 @@
 	if(!can_owner_target(firer))
 		return
 
-	if(controller.get_distance_to(firer) <= get_owner_targeting_view_distance())
+	if(controller.get_distance_to(firer) > get_owner_targeting_view_distance())
+		return
+
+	remember_recent_attacker(firer, from_direct_hit)
+	if(!current_target || should_retarget(firer))
 		set_target(firer)
 
 /datum/human_ai_module/targeting/on_combat_exit_started(should_holster_primary = TRUE)
 	if(!can_continue_targeting_work())
 		return
-	lose_target(FALSE)
+	if(has_current_target())
+		lose_target()
 
 /datum/human_ai_module/targeting/on_combat_exit_finished(list/combat_exit_context)
 	if(!can_continue_targeting_work())
@@ -142,7 +169,10 @@
 		lose_target(FALSE)
 
 	if(combat_exit_context?["clear_target_turf"])
-		clear_target_turf()
+		if(has_recent_lost_target())
+			target_turf = null
+		else
+			clear_target_turf()
 
 /datum/human_ai_module/targeting/on_body_position_changed(new_position, old_position)
 	if(!can_continue_targeting_work())
@@ -270,7 +300,8 @@
 /datum/human_ai_module/targeting/proc/has_recent_lost_target()
 	if(!last_known_target_turf)
 		return FALSE
-	if((world.time - last_known_target_time) > last_known_target_memory_duration)
+	var/memory_duration = last_known_target_from_cover ? last_known_target_cover_memory_duration : last_known_target_memory_duration
+	if((world.time - last_known_target_time) > memory_duration)
 		return FALSE
 	return TRUE
 
@@ -285,11 +316,13 @@
 
 	last_known_target_turf = remembered_turf
 	last_known_target_time = world.time
+	last_known_target_from_cover = brain?.has_cover()
 	return TRUE
 
 /datum/human_ai_module/targeting/proc/clear_last_known_target()
 	last_known_target_turf = null
 	last_known_target_time = 0
+	last_known_target_from_cover = FALSE
 
 /datum/human_ai_module/targeting/proc/clear_lost_target_investigation()
 	investigation_center = null
@@ -388,20 +421,28 @@
 	target_turf = null
 	if(!remember_last_known)
 		clear_last_known_target()
+	if(old_target == recent_attacker)
+		clear_recent_attacker()
 
 	if(brain)
 		emit_owner_target_changed(old_target, null)
 
 /datum/human_ai_module/targeting/proc/on_target_delete(datum/source, force)
 	SIGNAL_HANDLER
+	if(source == recent_attacker)
+		clear_recent_attacker()
 	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/proc/on_target_death(datum/source)
 	SIGNAL_HANDLER
+	if(source == recent_attacker)
+		clear_recent_attacker()
 	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/proc/on_target_destroy(datum/source)
 	SIGNAL_HANDLER
+	if(source == recent_attacker)
+		clear_recent_attacker()
 	lose_target(FALSE)
 
 /datum/human_ai_module/targeting/proc/can_handle_runtime_target_signal()
@@ -486,6 +527,11 @@
 	else if(distance <= 3)
 		score += target_score_near_bonus
 
+	if(is_recent_attacker(potential_target))
+		score += target_score_recent_attacker_bonus
+		if(recent_attacker_direct_hit)
+			score += target_score_direct_hit_attacker_bonus
+
 	switch(get_owner_fire_line_safety(potential_target))
 		if(HUMAN_AI_FIRE_LINE_CLEAR)
 			score += target_score_clear_line_bonus
@@ -498,8 +544,38 @@
 			score -= target_score_incapacitated_penalty
 		else
 			score += target_score_active_living_bonus
+			if(distance <= 1)
+				score += target_score_adjacent_living_threat_bonus
+			if(get_living_target_health_ratio(living_target) > 0.35)
+				score += target_score_healthy_living_bonus
 
 	return score
+
+/datum/human_ai_module/targeting/proc/remember_recent_attacker(atom/movable/attacker, from_direct_hit = FALSE)
+	if(!is_valid_target_ref(attacker))
+		return FALSE
+	recent_attacker = attacker
+	recent_attacker_time = world.time
+	recent_attacker_direct_hit = from_direct_hit
+	return TRUE
+
+/datum/human_ai_module/targeting/proc/clear_recent_attacker()
+	recent_attacker = null
+	recent_attacker_time = 0
+	recent_attacker_direct_hit = FALSE
+
+/datum/human_ai_module/targeting/proc/is_recent_attacker(atom/movable/target)
+	if(!recent_attacker || target != recent_attacker)
+		return FALSE
+	if((world.time - recent_attacker_time) > recent_attacker_memory_duration)
+		clear_recent_attacker()
+		return FALSE
+	return TRUE
+
+/datum/human_ai_module/targeting/proc/get_living_target_health_ratio(mob/living/target)
+	if(!target?.maxHealth)
+		return 0
+	return target.health / target.maxHealth
 
 /datum/human_ai_module/targeting/proc/is_valid_target_ref(atom/movable/target)
 	return target && !QDELETED(target)

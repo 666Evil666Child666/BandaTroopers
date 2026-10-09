@@ -9,10 +9,7 @@
 	if(!brain?.has_valid_tied_human() || !controller) // SS220 EDIT: upstream cover action must not score after modular owner teardown
 		return 0
 
-	if(!brain.can_attempt_cover_move(controller, brain.get_gun_data()))
-		return 0
-
-	return 15
+	return brain.get_cover_action_weight(controller, brain.get_gun_data())
 
 /datum/ai_action/take_cover/trigger_action()
 	. = ..()

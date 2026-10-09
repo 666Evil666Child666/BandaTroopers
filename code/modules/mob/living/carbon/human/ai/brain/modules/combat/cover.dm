@@ -6,6 +6,8 @@
 	var/in_cover = FALSE
 	/// Reference to atom currently selected as a cover place
 	var/atom/current_cover
+	/// TRUE while cover is being used as a temporary self-treatment posture.
+	var/medical_retreat = FALSE
 	COOLDOWN_DECLARE(cover_search_cooldown)
 
 	/// If this AI can seek cover while not possessing a gun
@@ -32,6 +34,11 @@
 /datum/human_ai_module/cover/proc/get_cover_destination()
 	RETURN_TYPE(/turf)
 	return get_current_cover()
+
+/datum/human_ai_module/cover/proc/get_cover_action_weight(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
+	if(!can_attempt_cover_move(controller, gun_data))
+		return 0
+	return medical_retreat ? 18 : 15
 
 /datum/human_ai_module/cover/proc/perform_cover_move(datum/human_tied_controller/controller)
 	if(!controller)
@@ -117,8 +124,13 @@
 		return FALSE
 	return can_owner_use_ranged_fire_line(controller, current_target, gun_data)
 
+/datum/human_ai_module/cover/proc/needs_medical_cover(datum/human_tied_controller/controller)
+	return brain?.has_tactical_self_treatment_need(controller)
+
 /datum/human_ai_module/cover/proc/validate_cover_position(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
 	if(!is_in_cover())
+		return TRUE
+	if(medical_retreat && needs_medical_cover(controller))
 		return TRUE
 	if(can_use_cover_as_firing_position(controller, gun_data))
 		return TRUE
@@ -128,6 +140,8 @@
 /datum/human_ai_module/cover/proc/should_hold_cover_position_against_target(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
 	if(!is_in_cover())
 		return FALSE
+	if(medical_retreat && needs_medical_cover(controller))
+		return TRUE
 	var/atom/movable/current_target = get_owner_current_target()
 	if(!current_target || !controller)
 		return FALSE
@@ -145,7 +159,7 @@
 	return TRUE
 
 /datum/human_ai_module/cover/proc/should_block_movement_for_pending_cover()
-	return has_pending_cover()
+	return has_pending_cover() || (is_in_cover() && medical_retreat)
 
 /datum/human_ai_module/cover/proc/should_block_stationary_fire_for_cover()
 	if(!get_owner_current_target())
@@ -165,6 +179,7 @@
 #endif
 	current_cover = null
 	in_cover = FALSE
+	medical_retreat = FALSE
 
 /datum/human_ai_module/cover/reset_module()
 	end_cover()
@@ -174,6 +189,29 @@
 
 /datum/human_ai_module/cover/proc/can_continue_cover_work()
 	return brain?.can_continue_runtime_work()
+
+/datum/human_ai_module/cover/process_module(delta_time)
+	if(!can_continue_cover_work())
+		return
+
+	var/datum/human_tied_controller/controller = context?.controller
+	if(!controller)
+		return
+
+	if(!needs_medical_cover(controller))
+		if(medical_retreat)
+			medical_retreat = FALSE
+			validate_cover_position(controller, get_owner_gun_data())
+		return
+
+	medical_retreat = TRUE
+	if(has_cover() || !can_owner_move_for_action())
+		return
+
+	var/atom/threat = brain.get_aim_target()
+	if(!threat)
+		return
+	try_cover(controller.get_angle_from(threat), threat)
 
 /datum/human_ai_module/cover/on_ai_event(datum/human_ai_event/event)
 	if(!can_continue_cover_work())

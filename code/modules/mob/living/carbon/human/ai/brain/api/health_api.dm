@@ -24,6 +24,10 @@
 	var/datum/human_ai_module/health/health_module = get_health_module()
 	return health_module?.can_emergency_self_treat(controller)
 
+/datum/human_ai_brain/proc/has_tactical_self_treatment_need(datum/human_tied_controller/controller)
+	var/datum/human_ai_module/health/health_module = get_health_module()
+	return health_module?.has_tactical_self_treatment_need(controller)
+
 /datum/human_ai_brain/proc/can_continue_self_treatment_now(datum/human_tied_controller/controller)
 	var/datum/human_ai_module/health/health_module = get_health_module()
 	return health_module?.can_continue_self_treatment_now(controller)

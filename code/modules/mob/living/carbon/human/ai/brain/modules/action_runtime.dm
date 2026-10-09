@@ -4,9 +4,14 @@
 	/// List of whitelisted/blacklisted action datums
 	var/list/action_whitelist = null
 	var/list/action_blacklist = null
+	var/list/action_score_modifiers = null
 
 	/// List of current action datums
 	var/list/ongoing_actions = list()
+
+/datum/human_ai_module/action_runtime/Destroy(force, ...)
+	QDEL_LIST(action_score_modifiers)
+	return ..()
 
 /datum/human_ai_module/action_runtime/proc/clear_actions()
 	for(var/action in ongoing_actions.Copy())
@@ -67,6 +72,22 @@
 /datum/human_ai_module/action_runtime/proc/has_ongoing_throw_action_in_progress()
 	return brain.has_throw_in_progress()
 
+/datum/human_ai_module/action_runtime/proc/set_action_score_modifiers(list/new_score_modifiers)
+	QDEL_LIST(action_score_modifiers)
+	action_score_modifiers = copy_human_ai_action_score_modifiers(new_score_modifiers)
+
+/datum/human_ai_module/action_runtime/proc/get_action_score_modifier(action_type)
+	RETURN_TYPE(/datum/human_ai_action_score_modifier)
+	if(!action_score_modifiers)
+		return null
+	return action_score_modifiers[action_type]
+
+/datum/human_ai_module/action_runtime/proc/get_modified_action_weight(action_type, base_weight)
+	var/datum/human_ai_action_score_modifier/modifier = get_action_score_modifier(action_type)
+	if(!modifier)
+		return base_weight
+	return modifier.apply(base_weight)
+
 /datum/human_ai_module/action_runtime/proc/get_allowed_action_types()
 	var/list/allowed_actions = action_whitelist?.Copy() || list() // SS220 EDIT: runtime selection must not mutate preset whitelists
 	if(action_blacklist)
@@ -96,7 +117,7 @@
 		// SS220 EDIT: skip hand-using actions while a grenade throw is in async flight
 		if(grenade_throw_in_progress && (glob_ref.action_flags & ACTION_USING_HANDS))
 			continue
-		var/weight = glob_ref.get_context_weight(runtime_context)
+		var/weight = get_modified_action_weight(action_type, glob_ref.get_context_weight(runtime_context))
 		if(weight) // No weight means we shouldn't consider this action at all
 			possible_actions[action_type] = weight
 

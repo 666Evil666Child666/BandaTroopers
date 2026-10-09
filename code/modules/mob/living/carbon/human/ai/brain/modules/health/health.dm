@@ -16,6 +16,8 @@
 
 	/// At what percentage of max HP to start searching for medical treatment
 	var/healing_start_threshold = 0.7
+	/// At what percentage of max HP a non-critical AI should seek cover before treating in combat.
+	var/tactical_treatment_health_threshold = 0.5
 	/// Requires this much damage of one type to consider it a problem
 	var/damage_problem_threshold = 5
 	/// Pain percentage (out of 100) for the AI to consider using painkillers

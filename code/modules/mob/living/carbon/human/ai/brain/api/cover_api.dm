@@ -45,6 +45,10 @@
 	var/datum/human_ai_module/cover/cover_module = get_cover_module()
 	return cover_module?.get_cover_destination()
 
+/datum/human_ai_brain/proc/get_cover_action_weight(datum/human_tied_controller/controller, datum/human_ai_firearm_profile/gun_data = null)
+	var/datum/human_ai_module/cover/cover_module = get_cover_module()
+	return cover_module?.get_cover_action_weight(controller, gun_data) || 0
+
 /datum/human_ai_brain/proc/perform_cover_move(datum/human_tied_controller/controller)
 	var/datum/human_ai_module/cover/cover_module = get_cover_module()
 	if(!cover_module)

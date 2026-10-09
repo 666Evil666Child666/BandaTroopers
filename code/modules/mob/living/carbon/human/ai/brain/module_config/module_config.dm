@@ -7,6 +7,7 @@
 	var/list/requested_module_types
 	var/list/action_whitelist
 	var/list/action_blacklist
+	var/list/action_score_modifiers
 
 // ==================== Lifetime ====================
 // Releases modules owned by the config datum.
@@ -18,6 +19,7 @@
 	requested_module_types = null
 	action_whitelist = null
 	action_blacklist = null
+	QDEL_LIST(action_score_modifiers)
 	return ..()
 
 /datum/human_ai_module_config/proc/setup_brain(datum/human_ai_brain/brain, mob/living/carbon/human/new_human)
@@ -31,6 +33,7 @@
 	modules_by_type = null
 	modules_by_id = null
 	requested_module_types = null
+	QDEL_LIST(action_score_modifiers)
 
 // ==================== Process lists ====================
 // Wires created modules into lifecycle, process, event, and query dispatch lists.
@@ -67,6 +70,7 @@
 	if(action_runtime)
 		action_runtime.action_whitelist = action_whitelist?.Copy()
 		action_runtime.action_blacklist = action_blacklist?.Copy()
+		action_runtime.set_action_score_modifiers(action_score_modifiers)
 
 	var/datum/human_ai_module/perception/perception = get_module_by_type(/datum/human_ai_module/perception)
 	perception?.register_signals()
@@ -83,7 +87,7 @@
 
 /datum/human_ai_module_config/default/configure_process_module_lists(datum/human_ai_brain/brain)
 	brain.process_modules_before_posture = build_module_list(brain, list(/datum/human_ai_module/perception))
-	brain.process_modules_after_posture = build_module_list(brain, list(/datum/human_ai_module/targeting, /datum/human_ai_module/combat, /datum/human_ai_module/inventory, /datum/human_ai_module/action_runtime))
+	brain.process_modules_after_posture = build_module_list(brain, list(/datum/human_ai_module/targeting, /datum/human_ai_module/combat, /datum/human_ai_module/inventory, /datum/human_ai_module/cover, /datum/human_ai_module/action_runtime))
 
 /datum/human_ai_module_config/default/configure_event_module_lists(datum/human_ai_brain/brain)
 	register_module_list_for_event(brain, HUMAN_AI_EVENT_INITIALIZED, list(/datum/human_ai_module/inventory, /datum/human_ai_module/admin))

@@ -17,8 +17,6 @@
 		return TRUE
 	if(controller.get_health_ratio() <= 0.35)
 		return TRUE
-	if(controller.is_bleeding() && controller.get_health_ratio() <= healing_start_threshold)
-		return TRUE
 	if(controller.get_brute_loss() >= 35)
 		return TRUE
 	if(controller.get_fire_loss() >= 35)
@@ -42,11 +40,25 @@
 		return FALSE
 	return has_emergency_self_treatment_need(controller)
 
+/datum/human_ai_module/health/proc/has_tactical_self_treatment_need(datum/human_tied_controller/controller)
+	if(!controller?.can_read_puppet() || controller.is_dead() || controller.is_on_fire())
+		return FALSE
+	if(can_treat_under_current_combat_pressure() || has_emergency_self_treatment_need(controller))
+		return FALSE
+	if(controller.get_health_ratio() > tactical_treatment_health_threshold && !controller.is_bleeding() && !controller.has_broken_limbs())
+		return FALSE
+
+	var/mob/living/carbon/human/self_target = controller.get_self_target()
+	return has_applicable_treatment_for(self_target) && healing_start_check_controller(controller)
+
+/datum/human_ai_module/health/proc/can_tactical_self_treat(datum/human_tied_controller/controller)
+	return brain?.is_in_cover() && has_tactical_self_treatment_need(controller)
+
 /datum/human_ai_module/health/proc/can_start_self_treatment_now(datum/human_tied_controller/controller)
-	return (can_treat_under_current_combat_pressure() || can_emergency_self_treat(controller)) && can_self_treat(controller)
+	return (can_treat_under_current_combat_pressure() || can_emergency_self_treat(controller) || can_tactical_self_treat(controller)) && can_self_treat(controller)
 
 /datum/human_ai_module/health/proc/can_continue_self_treatment_now(datum/human_tied_controller/controller)
-	if(!can_treat_under_current_combat_pressure() && !can_continue_emergency_self_treatment(controller))
+	if(!can_treat_under_current_combat_pressure() && !can_continue_emergency_self_treatment(controller) && !can_tactical_self_treat(controller))
 		return FALSE
 	var/mob/living/carbon/human/self_target = controller?.get_self_target()
 	return self_target && !QDELETED(self_target) && self_target.stat != DEAD
@@ -71,6 +83,8 @@
 		return 0
 
 	if(can_emergency_self_treat(controller))
+		return 13
+	if(can_tactical_self_treat(controller))
 		return 13
 
 	return 4
