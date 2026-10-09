@@ -57,8 +57,8 @@ Canonical source of truth for the current HALO modular sync state on BandaTroope
 - HALO module getters no longer create modules lazily, and the generic Human AI component no longer runs a HALO-specific finalize pass.
 - Sangheili actions delegate through brain APIs. Unggoy panic retreat and suicide-bomber execution are owned by the Unggoy module rather than action datums.
 - Projectile-pressure cache, nearby-item, ranged-fire, navigation, and cover integration use the shared modular extension hooks.
-- `halo_ai_composition` covers factory registration, species action policy, and suicide-bomber module composition.
-- The broad `halo_preset_coverage` asset audit remains outside the default include graph: when evaluated during this alignment it reported existing ammo-case and modular icon-state gaps unrelated to Human AI composition.
+- `halo_ai_composition` covers factory registration, species action policy, and suicide-bomber module composition. `halo_ai_runtime_coverage` covers grenade capability, Human AI preset/faction mapping, Covenant friendship, and squad preset references.
+- The broad `halo_preset_coverage` equipment/icon asset audit remains outside the default include graph: when evaluated during this alignment it reported existing ammo-case and modular icon-state gaps unrelated to Human AI composition.
 
 ## 2026-04-28 Modularity Audit
 
