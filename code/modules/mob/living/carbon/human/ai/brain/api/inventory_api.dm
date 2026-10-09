@@ -89,6 +89,10 @@
 	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
 	return inventory_module?.is_looting_disabled()
 
+/datum/human_ai_brain/proc/set_looting_disabled(disabled)
+	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
+	inventory_module?.set_looting_disabled(disabled)
+
 /datum/human_ai_brain/proc/has_pickup_queue()
 	var/datum/human_ai_module/inventory/inventory_module = get_inventory_module()
 	return inventory_module?.has_pickup_queue()

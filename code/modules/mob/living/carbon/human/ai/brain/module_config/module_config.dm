@@ -42,6 +42,10 @@
 	configure_process_module_lists(brain)
 	configure_event_module_lists(brain)
 	configure_query_module_lists(brain)
+	// SS220 EDIT START: modular modules may join existing lifecycle/event dispatch
+	if(hascall(src, "modular_configure_module_lists"))
+		call(src, "modular_configure_module_lists")(brain)
+	// SS220 EDIT END
 
 /datum/human_ai_module_config/proc/configure_lifecycle_module_lists(datum/human_ai_brain/brain)
 	return

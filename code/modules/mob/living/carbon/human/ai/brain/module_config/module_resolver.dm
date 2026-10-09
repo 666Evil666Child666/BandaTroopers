@@ -23,6 +23,10 @@
 	register_module_factory_type(module_factory_types, /datum/human_ai_module/perception)
 	register_module_factory_type(module_factory_types, /datum/human_ai_module/inventory)
 	register_module_factory_type(module_factory_types, /datum/human_ai_module/melee)
+	// SS220 EDIT START: modular Human AI modules extend the factory without core type references
+	if(hascall(src, "modular_register_module_factory_types"))
+		call(src, "modular_register_module_factory_types")(module_factory_types)
+	// SS220 EDIT END
 	return module_factory_types
 
 /datum/human_ai_module_config/proc/register_module_factory_type(list/module_factory_types, module_type, module_factory_type = null)

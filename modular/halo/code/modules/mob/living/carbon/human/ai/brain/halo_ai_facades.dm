@@ -4,17 +4,11 @@
 
 /datum/human_ai_brain/proc/halo_get_unggoy_module()
 	RETURN_TYPE(/datum/human_ai_module/halo_unggoy)
-	var/datum/human_ai_module/halo_unggoy/unggoy_module = get_module(/datum/human_ai_module/halo_unggoy)
-	if(!unggoy_module)
-		unggoy_module = module_config?.setup_module_by_type(src, /datum/human_ai_module/halo_unggoy)
-	return unggoy_module
+	return get_module(/datum/human_ai_module/halo_unggoy)
 
 /datum/human_ai_brain/proc/halo_get_sangheili_module()
 	RETURN_TYPE(/datum/human_ai_module/halo_sangheili)
-	var/datum/human_ai_module/halo_sangheili/sangheili_module = get_module(/datum/human_ai_module/halo_sangheili)
-	if(!sangheili_module)
-		sangheili_module = module_config?.setup_module_by_type(src, /datum/human_ai_module/halo_sangheili)
-	return sangheili_module
+	return get_module(/datum/human_ai_module/halo_sangheili)
 
 /datum/human_ai_brain/proc/halo_get_controller()
 	RETURN_TYPE(/datum/human_tied_controller)
@@ -22,23 +16,6 @@
 	var/datum/human_tied_controller/controller = context?.controller
 	qdel(context)
 	return controller
-
-/datum/human_ai_brain/proc/halo_finalize_human_ai_brain(mob/living/carbon/human/new_human)
-	if(!halo_runtime_uses_projectile_pressure_controls())
-		return
-
-	var/datum/human_ai_module/halo_covenant/halo_covenant_module = get_module(/datum/human_ai_module/halo_covenant)
-	if(!halo_covenant_module)
-		halo_covenant_module = module_config?.setup_module_by_type(src, /datum/human_ai_module/halo_covenant)
-	halo_configure_covenant_module_lists(halo_covenant_module)
-
-/datum/human_ai_brain/proc/halo_configure_covenant_module_lists(datum/human_ai_module/halo_covenant/halo_covenant_module)
-	if(!halo_covenant_module)
-		return
-
-	register_ai_event_subscriber(HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR, halo_covenant_module)
-	register_ai_event_subscriber(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, halo_covenant_module)
-	register_ai_event_subscriber(HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED, halo_covenant_module)
 
 /datum/human_ai_brain/proc/halo_covenant_can_run_movement_action(block_active_grenade = FALSE)
 	return halo_get_covenant_module()?.can_run_movement_action(block_active_grenade)
@@ -91,8 +68,8 @@
 	halo_get_unggoy_module()?.invalidate_runtime_caches()
 	halo_get_sangheili_module()?.invalidate_runtime_caches()
 
-/datum/human_ai_brain/proc/halo_runtime_uses_projectile_pressure_controls()
-	return halo_get_covenant_module()?.uses_projectile_pressure_controls()
+/datum/human_ai_brain/proc/modular_invalidate_runtime_extension_caches()
+	invalidate_halo_runtime_caches()
 
 /datum/human_ai_brain/proc/halo_apply_navigation_profile(short_step_range = 0, path_retarget_slack = 0, nearby_item_interval = 1 SECONDS)
 	halo_get_covenant_module()?.apply_navigation_profile(short_step_range, path_retarget_slack, nearby_item_interval)
@@ -100,11 +77,17 @@
 /datum/human_ai_brain/proc/halo_should_suspend_nearby_item_search(queued_projectiles_override = null)
 	return halo_get_covenant_module()?.should_suspend_nearby_item_search(queued_projectiles_override)
 
+/datum/human_ai_brain/proc/modular_should_suspend_nearby_item_search(queued_projectiles_override = null)
+	return halo_should_suspend_nearby_item_search(queued_projectiles_override)
+
 /datum/human_ai_brain/proc/halo_should_disable_cover_retreat(queued_projectiles_override = null)
 	return halo_get_covenant_module()?.should_disable_cover_retreat(queued_projectiles_override)
 
 /datum/human_ai_brain/proc/halo_should_defer_ranged_fire(atom/threat = null, queued_projectiles_override = null)
 	return halo_get_covenant_module()?.should_defer_ranged_fire(threat, queued_projectiles_override)
+
+/datum/human_ai_brain/proc/modular_should_defer_ranged_fire(atom/threat = null, queued_projectiles_override = null)
+	return halo_should_defer_ranged_fire(threat, queued_projectiles_override)
 
 /datum/human_ai_brain/proc/halo_covenant_weapon_is_cooling(obj/item/weapon/gun/gun = null)
 	return halo_get_covenant_module()?.weapon_is_cooling(gun)
@@ -123,41 +106,17 @@
 /datum/human_ai_brain/proc/halo_unggoy_is_suicide_bomber()
 	return halo_get_unggoy_module()?.is_suicide_bomber()
 
-/datum/human_ai_brain/proc/halo_unggoy_get_suicide_prime_range()
-	return halo_get_unggoy_module()?.get_suicide_prime_range()
+/datum/human_ai_brain/proc/halo_unggoy_get_panic_retreat_weight()
+	return halo_get_unggoy_module()?.get_panic_retreat_weight() || 0
 
-/datum/human_ai_brain/proc/halo_unggoy_get_squad()
-	return halo_get_unggoy_module()?.get_squad()
+/datum/human_ai_brain/proc/halo_unggoy_run_panic_retreat_step()
+	return halo_get_unggoy_module()?.run_panic_retreat_step() || ONGOING_ACTION_COMPLETED
 
-/datum/human_ai_brain/proc/halo_unggoy_get_squad_leader()
-	return halo_get_unggoy_module()?.get_squad_leader()
+/datum/human_ai_brain/proc/halo_unggoy_get_suicide_bomber_weight()
+	return halo_get_unggoy_module()?.get_suicide_bomber_weight() || 0
 
-/datum/human_ai_brain/proc/halo_unggoy_has_active_squad_leader()
-	return halo_get_unggoy_module()?.has_active_squad_leader()
-
-/datum/human_ai_brain/proc/halo_unggoy_get_squad_anchor()
-	return halo_get_unggoy_module()?.get_squad_anchor()
-
-/datum/human_ai_brain/proc/halo_unggoy_get_health_pct()
-	return halo_get_unggoy_module()?.get_health_pct()
-
-/datum/human_ai_brain/proc/halo_unggoy_should_panic()
-	return halo_get_unggoy_module()?.should_panic()
-
-/datum/human_ai_brain/proc/halo_unggoy_should_retreat_on_overheat()
-	return halo_get_unggoy_module()?.should_retreat_on_overheat()
-
-/datum/human_ai_brain/proc/halo_unggoy_should_hold_anchor_on_overheat()
-	return halo_get_unggoy_module()?.should_hold_anchor_on_overheat()
-
-/datum/human_ai_brain/proc/halo_unggoy_should_flee_on_overheat()
-	return halo_get_unggoy_module()?.should_flee_on_overheat()
-
-/datum/human_ai_brain/proc/halo_unggoy_should_use_cover_retreat()
-	return halo_get_unggoy_module()?.should_use_cover_retreat()
-
-/datum/human_ai_brain/proc/halo_unggoy_should_retreat()
-	return halo_get_unggoy_module()?.should_retreat()
+/datum/human_ai_brain/proc/halo_unggoy_run_suicide_bomber_step()
+	return halo_get_unggoy_module()?.run_suicide_bomber_step() || ONGOING_ACTION_COMPLETED
 /datum/human_ai_brain/proc/halo_configure_sangheili_behavior(has_sword = FALSE, sword_only = FALSE, sword_charge_range = 5, unarmed_commit_range = 2)
 	halo_get_sangheili_module()?.configure(has_sword, sword_only, sword_charge_range, unarmed_commit_range)
 
@@ -234,3 +193,33 @@
 
 /datum/human_ai_brain/proc/halo_sangheili_holster_sword(force = FALSE)
 	return halo_get_sangheili_module()?.holster_sword(force)
+
+/datum/human_ai_brain/proc/halo_sangheili_on_sword_charge_added()
+	get_melee_module()?.halo_sangheili_on_sword_charge_added()
+
+/datum/human_ai_brain/proc/halo_sangheili_get_sword_charge_weight()
+	return get_melee_module()?.halo_sangheili_get_sword_charge_weight() || 0
+
+/datum/human_ai_brain/proc/halo_sangheili_cleanup_sword_charge()
+	get_melee_module()?.halo_sangheili_cleanup_sword_charge()
+
+/datum/human_ai_brain/proc/halo_sangheili_run_sword_charge_step()
+	return get_melee_module()?.halo_sangheili_run_sword_charge_step() || ONGOING_ACTION_COMPLETED
+
+/datum/human_ai_brain/proc/halo_sangheili_on_unarmed_action_added()
+	get_melee_module()?.halo_sangheili_on_unarmed_action_added()
+
+/datum/human_ai_brain/proc/halo_sangheili_cleanup_unarmed_action()
+	get_melee_module()?.halo_sangheili_cleanup_unarmed_action()
+
+/datum/human_ai_brain/proc/halo_sangheili_get_kick_weight()
+	return get_melee_module()?.halo_sangheili_get_kick_weight() || 0
+
+/datum/human_ai_brain/proc/halo_sangheili_run_kick_step()
+	return get_melee_module()?.halo_sangheili_run_kick_step() || ONGOING_ACTION_COMPLETED
+
+/datum/human_ai_brain/proc/halo_sangheili_get_overheat_response_weight()
+	return get_melee_module()?.halo_sangheili_get_overheat_response_weight() || 0
+
+/datum/human_ai_brain/proc/halo_sangheili_run_overheat_response_step()
+	return get_melee_module()?.halo_sangheili_run_overheat_response_step() || ONGOING_ACTION_COMPLETED

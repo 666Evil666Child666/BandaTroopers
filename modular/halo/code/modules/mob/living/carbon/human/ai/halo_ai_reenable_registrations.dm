@@ -1,7 +1,3 @@
-// SS220 HALO AI DISABLED:
-// Keep HALO AI integration entries here while the HALO AI include block is disabled.
-// Re-enable this file together with the HALO Human AI modules/actions in modular/halo/_halo.dme.
-
 /datum/admins/proc/modular_append_human_ai_machinegunner_equipment_presets(list/equipment_presets)
 	equipment_presets += list(
 		/datum/equipment_preset/covenant/sangheili/minor/plasma_rifle::name = /datum/equipment_preset/covenant/sangheili/minor/plasma_rifle,
@@ -61,6 +57,3 @@
 		/datum/human_ai_defense/mine/covenant/plasma,
 		/datum/human_ai_defense/mine/covenant/needle,
 	)
-
-/datum/human_ai_action_set/halo_unggoy_suicide_bomber
-	action_whitelist = list(/datum/ai_action/unggoy_suicide_bomber)

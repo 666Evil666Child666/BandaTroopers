@@ -1,5 +1,6 @@
 /datum/equipment_preset/covenant/unggoy
 	name = "Унггой"
+	human_ai_action_set_type = /datum/human_ai_action_set/halo_unggoy
 	expected_species = SPECIES_UNGGOY
 	rank = JOB_COV_CIV
 	assignment = JOB_COV_MINOR
@@ -703,11 +704,6 @@
 	new_human.equip_to_slot_or_del(new /obj/item/weapon/gun/energy/plasma/plasma_pistol(new_human), WEAR_J_STORE)
 	add_ai_injectors(new_human, list(/obj/item/reagent_container/hypospray/autoinjector/bicaridine/halo, /obj/item/reagent_container/hypospray/autoinjector/oxycodone/halo))
 
-/datum/human_ai_action_set/halo_unggoy_suicide_bomber
-	// SS220 HALO AI DISABLED: original suicide bomber action is preserved in halo_ai_reenable_registrations.dm.
-	action_whitelist = list()
-	action_blacklist = list(/datum/ai_action/throw_grenade)
-
 /datum/equipment_preset/covenant/unggoy/ai/suicide_bomber
 	name = "Унггой-смертник"
 	flags = EQUIPMENT_PRESET_EXTRA|EQUIPMENT_PRESET_MARINE
@@ -732,7 +728,4 @@
 
 	brain.halo_configure_unggoy_suicide_bomber(5)
 	brain.set_grenade_throwing_enabled(FALSE)
-	var/datum/human_ai_context/context = brain.create_context()
-	var/datum/human_ai_module/inventory/inventory = context?.get_module(/datum/human_ai_module/inventory)
-	inventory?.set_looting_disabled(TRUE)
-	qdel(context)
+	brain.set_looting_disabled(TRUE)

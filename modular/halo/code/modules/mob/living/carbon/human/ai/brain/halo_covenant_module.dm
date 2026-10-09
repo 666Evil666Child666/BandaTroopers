@@ -7,7 +7,7 @@
 		if(HUMAN_AI_EVENT_RESET_AFTER_WAKE_CLEAR)
 			on_reset()
 		if(HUMAN_AI_EVENT_COMBAT_EXIT_FINISHED, HUMAN_AI_EVENT_COMBAT_EXIT_FORCE_CLEARED)
-			on_combat_exit_finished(event.data?["combat_exit_context"])
+			on_combat_exit_finished(event.get_combat_exit_context())
 
 /datum/human_ai_module/halo_covenant/on_combat_exit_finished(list/combat_exit_context)
 	if(brain.halo_sangheili_should_preserve_drawn_sword())
